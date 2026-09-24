@@ -334,8 +334,15 @@ namespace BetterBow
             bool inHand = c.Hand.IsGrabbing && U.Alive(c.Hand.GrabbedTarget) && c.Hand.GrabbedTarget.Pointer == c.Arrow.Grabbable.Pointer;
             if (!inHand)
             {
-                if (U.Frame - c.Frame < 3 || U.Frame < c.GraceUntil) return;   // a (re)grab may take frames to register
                 bool grip = c.Hand.IsGripGrabActive;
+                // Thrown: grip let go and the arrow is flying. Checked before the grace wait so the
+                // assist starts at once; a re-grab (the reason for the wait) always has grip held.
+                if (!grip && U.Frame - c.Frame >= 3 && ThrowAssist.IsThrow(c.Arrow))
+                {
+                    if (DropCarried(c, "thrown", thrown: true)) ThrowAssist.Throw(c.Arrow);
+                    return;
+                }
+                if (U.Frame - c.Frame < 3 || U.Frame < c.GraceUntil) return;   // a (re)grab may take frames to register
                 float ds = bowReady ? StringDistance(bow, c.Hand) : float.MaxValue;
                 // Grip still held = the hand lost the arrow, the player didn't let go. Near the
                 // string that was a nock attempt: finish it.
@@ -478,8 +485,22 @@ namespace BetterBow
         {
             var back = c.BackPoint;
             var bt = back.transform;
+            // The clone's preview hand carries an ANBWristHud, and ANBWristHud.Awake writes itself into
+            // the game's global ANBwristHudLeft/Right with no check. Once the arrow is destroyed that
+            // slot is dead, and the next pause (phone Settings, menu button) throws half-way: hands
+            // left on the controllers, no menu. Put the game's own HUDs back and remove the clone's.
+            var game = ANBStaticGameManager.ANBmain;
+            var hudL = game?.ANBwristHudLeft; var hudR = game?.ANBwristHudRight;
             var go = Object.Instantiate(back.gameObject, bt.parent);
             go.name = DaggerGripName;
+            if (game != null)
+            {
+                bool tookL = !Same(game.ANBwristHudLeft, hudL), tookR = !Same(game.ANBwristHudRight, hudR);
+                if (tookL) game.ANBwristHudLeft = hudL;
+                if (tookR) game.ANBwristHudRight = hudR;
+                if ((tookL || tookR) && U.Dbg) Log.Msg($"dagger grip clone took the game's {(tookL ? "left " : "")}{(tookR ? "right " : "")}wrist HUD slot - given back");
+            }
+            foreach (var w in go.GetComponentsInChildren<ANBWristHud>(true)) Object.Destroy(w);
             // The grip point carries the hand poser's preview hand (RightHand_Gloves_LOD0 ...) and its
             // wrist health display (UI, not a Renderer). Hidden on the prefab's own points, visible on
             // a runtime clone as a ghost glove on the arrow. The pose itself is data: destroy the
@@ -497,18 +518,9 @@ namespace BetterBow
             }
             HideChildren(go.transform, keep);
 
-            // Direction nock -> tip: from the grip towards the middle of the shaft mesh ('Arrow01 (1)').
-            // The prefab also carries hand-pose preview meshes (RightHand_Gloves, RightHandFinalPalm...).
+            // Direction nock -> tip: from the grip towards the middle of the shaft mesh.
             var from = bt.position;
-            Vector3 mid = from; float best = -1f;
-            foreach (var r in c.Arrow.GetComponentsInChildren<Renderer>(true))
-            {
-                var n = r.name.ToLowerInvariant();
-                if (n.Contains("hand") || n.Contains("palm") || n.Contains("wrist") || n.Contains("glove")) continue;
-                var s = r.bounds.size;
-                float len = MathF.Max(s.x, MathF.Max(s.y, s.z)) + (n.Contains("arrow") ? 10f : 0f);
-                if (len > best) { best = len; mid = r.bounds.center; }
-            }
+            var mid = ShaftMiddle(c.Arrow, from);
             float dx = mid.x - from.x, dy = mid.y - from.y, dz = mid.z - from.z;
             float dl = MathF.Sqrt(dx * dx + dy * dy + dz * dz);
             if (dl > 1e-3f)
@@ -523,12 +535,13 @@ namespace BetterBow
             // to the grip point it holds, so the knuckle line measured in the HELD point's frame is
             // where it will be in the new point's frame too. R turns that line onto the arrow's tip
             // direction: holding a point rotated by R from the back grip puts the tip along it.
-            // Direction: the index->little-finger line, measured on the hand model, came out with the
-            // tip pointing UP in play testing, so Down uses the opposite way.
+            // Direction: index->little finger = tip out past the little finger = Down in a fist.
+            // (1.0.0 had this backwards: the "tip points up" report was made with the old
+            // DaggerOrientation = KnucklesReverse, i.e. the little->index direction.)
             var knuckles = KnuckleLineInHeldPoint(c.Hand, out var span);
             if (knuckles is Vector3 kLocal && dl > 1e-3f)
             {
-                if (tip == "Down") kLocal = new Vector3(-kLocal.x, -kLocal.y, -kLocal.z);
+                if (tip == "Up") kLocal = new Vector3(-kLocal.x, -kLocal.y, -kLocal.z);
                 var tipLocal = bt.InverseTransformDirection(new Vector3(dx / dl, dy / dl, dz / dl));
                 var r = Quaternion.FromToRotation(kLocal, tipLocal);
                 go.transform.Rotate(r.eulerAngles, Space.Self);
@@ -543,6 +556,33 @@ namespace BetterBow
             if (U.Dbg) Log.Msg($"dagger grip built: {Settings.DaggerFromNock.Value * 100:0} cm from the nock, {how}");
             return pg;
         }
+
+        // Centre of the shaft mesh ('Arrow01 (1)'). The prefab also carries hand-pose preview meshes
+        // (RightHand_Gloves, RightHandFinalPalm...), which are skipped.
+        static Vector3 ShaftMiddle(HVRArrow arrow, Vector3 fallback)
+        {
+            Vector3 mid = fallback; float best = -1f;
+            foreach (var r in arrow.GetComponentsInChildren<Renderer>(true))
+            {
+                var n = r.name.ToLowerInvariant();
+                if (n.Contains("hand") || n.Contains("palm") || n.Contains("wrist") || n.Contains("glove")) continue;
+                var s = r.bounds.size;
+                float len = MathF.Max(s.x, MathF.Max(s.y, s.z)) + (n.Contains("arrow") ? 10f : 0f);
+                if (len > best) { best = len; mid = r.bounds.center; }
+            }
+            return mid;
+        }
+
+        // World direction from a point at the nock end towards the tip.
+        internal static Vector3 TipDirection(HVRArrow arrow, Vector3 from)
+        {
+            var mid = ShaftMiddle(arrow, from);
+            float dx = mid.x - from.x, dy = mid.y - from.y, dz = mid.z - from.z;
+            float dl = MathF.Sqrt(dx * dx + dy * dy + dz * dz);
+            return dl > 1e-3f ? new Vector3(dx / dl, dy / dl, dz / dl) : arrow.transform.forward;
+        }
+
+        static bool Same(Object a, Object b) => (a == null ? IntPtr.Zero : a.Pointer) == (b == null ? IntPtr.Zero : b.Pointer);
 
         static void HideChildren(Transform t, List<IntPtr> keep)
         {
@@ -585,22 +625,24 @@ namespace BetterBow
         }
 
         // ---- dropping -------------------------------------------------------------------------
-        void DropCarried(Carry c, string why)
+        // false = the arrow was removed.
+        bool DropCarried(Carry c, string why, bool thrown = false)
         {
             SetCarry(null);
             var g = c.Arrow.Grabbable;
             string where = null;
             if (g.IsSocketed) where = "socketed";                       // never let it occupy a holster
-            else if (U.Alive(c.Bow) && U.Alive(c.Hand) && Zone(c.Bow, c.Hand, out _) is Vector3 z
+            else if (!thrown && U.Alive(c.Bow) && U.Alive(c.Hand) && Zone(c.Bow, c.Hand, out _) is Vector3 z
                      && U.Dist(c.Arrow.transform.position, z) < Settings.QuiverRadius.Value) where = "back in the quiver";
             if (where != null)
             {
                 if (U.Dbg) Log.Msg($"carried arrow {why}: {where} - removed");
                 Object.Destroy(c.Arrow.gameObject);
-                return;
+                return false;
             }
             _dropped.Add(new Dropped { Arrow = c.Arrow, Bow = c.Bow, Loader = c.Loader, Since = U.Now });
-            if (U.Dbg) Log.Msg($"carried arrow {why}: dropped, removed after {Settings.DropLifetime.Value:0} s unless picked up");
+            if (U.Dbg) Log.Msg($"carried arrow {why}: {(thrown ? "flying" : "dropped")}, removed after {Settings.DropLifetime.Value:0} s unless picked up");
+            return true;
         }
 
         // A dropped quiver arrow: removed after the lifetime; picked up by a hand -> carried again.

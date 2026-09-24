@@ -20,18 +20,24 @@ namespace BetterBow
     [HarmonyLib.HarmonyPatch(typeof(ANBKnife), nameof(ANBKnife.stabEnemy))]
     internal static class StabEnemyPatch
     {
-        static void Prefix(ANBKnife __instance)
+        static void Prefix(ANBKnife __instance, Il2CppHurricaneVR.Framework.Core.Stabbing.StabArgs args)
         {
             try
             {
                 ArrowStab.Active = __instance != null && __instance.isArrow;
                 if (U.Dbg && __instance != null && __instance.Pointer == Quiver.CarriedKnife)
                     Log.Msg($"carried quiver arrow stabbed (damage {__instance.knifeDamage})");
+                ThrowAssist.BeforeStab(__instance, args);
+                ThrowAssist.StabStart(__instance, args);
             }
             catch { ArrowStab.Active = false; }
         }
 
-        static void Postfix() => ArrowStab.Active = false;
+        static void Postfix(ANBKnife __instance)
+        {
+            ArrowStab.Active = false;
+            try { ThrowAssist.AfterStab(__instance); ThrowAssist.StabEnd(__instance); } catch { }
+        }
     }
 
     [HarmonyLib.HarmonyPatch(typeof(ANBBreakable), nameof(ANBBreakable.hit))]

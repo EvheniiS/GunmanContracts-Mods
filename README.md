@@ -7,6 +7,8 @@ A [MelonLoader](https://github.com/LavaGang/MelonLoader) mod for **Gunman Contra
   the other hand and press grip to draw an arrow. Bring it to the string to nock it.
 - **Dagger grip.** With a drawn arrow in hand, **A** (right) / **X** (left) flips it into a knife
   grip along your knuckles (tip down by default) and back. A held arrow stabs.
+- **Throw assist.** Throw a drawn arrow and it gets the same aim assist as the game's throwing
+  knives: it homes in on the enemy you are looking at and deals its damage on impact.
 - **String grab on the first press.** Fixes having to press grip twice to get the next arrow when
   shooting fast.
 - **Explosive barrels** detonate from one arrow instead of three.
@@ -33,6 +35,8 @@ In short:
 | No quiver | The only arrow source is `HVRArrowLoader.OnStringGrabbed` | `CreateArrow(false)` spawns an un-nocked arrow into the hand; nocking hands over to the game's own string grab |
 | Barrels need 3 arrows | `ANBBreakable.hit` scales bullet/explosion damage but not arrows (100 vs 250 health) | Raises arrow damage on explosive breakables to the barrel's health |
 | Arrows don't breach doors | `ANBGameLogic.TryKickDoor` is only called from gun code | Calls it from `HVRPhysicsBow.ShootArrow` with the same range and mask |
+| Thrown arrows get no aim assist | `ANBKnife.releaseKnife` needs a `ThrowScript` (`ANBAssistedThrowingObject`); the arrow prefab has none | Adds one tuned from a real throwing knife and runs the knife's three release steps |
+| Thrown arrows stick without damage | `stabEnemy` raycasts from the tip for an enemy hit zone; a ray never sees a collider it starts inside, and a slower arrival is often already inside | Starts that ray 1 cm in front of the first real hit zone along the arrow, skipping the arrow's own colliders |
 
 ## Build
 
@@ -53,7 +57,8 @@ Or put your path in `BetterBow/GameDir.local.props` (git-ignored):
 ## Repository layout
 
 - `BetterBow/`: the mod. `BetterBow.cs` (entry, settings, registry), `StringGrab.cs`, `ArrowPower.cs`
-  (barrels, doors), `Quiver.cs` (quiver, dagger grip).
+  (barrels, doors), `Quiver.cs` (quiver, dagger grip), `ThrowAssist.cs` (thrown arrows),
+  `PauseHands.cs` (pause-menu safety nets).
 - `il2cpp_tools/`: small Python tools for reading the game without Cpp2IL/Il2CppDumper:
   `il2.py` (global-metadata v31 + GameAssembly method/field map), `disx.py` (named disassembly),
   `xref.py` (direct callers). Needs `pefile`, `capstone`, `numpy`. Set `GUNMAN_CONTRACTS_DIR` or a

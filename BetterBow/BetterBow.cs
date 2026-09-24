@@ -12,13 +12,14 @@ using MelonLoader;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(BetterBow.BetterBowMod), "Better Bow", "1.0.0", "Evgeeso")]
+[assembly: MelonInfo(typeof(BetterBow.BetterBowMod), "Better Bow", "1.1.0", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace BetterBow
 {
     // Better Bow = the former Arrow Grab Assist (string grab buffer, arrow spawn retry, explosive
-    // barrels, door breach) and Arrow Quiver (draw from the holster, dagger grip) in one mod.
+    // barrels, door breach) and Arrow Quiver (draw from the holster, dagger grip) in one mod, plus the
+    // knives' throw aim assist for thrown quiver arrows.
     // Each part can be switched off on its own in [BetterBow].
     public class BetterBowMod : MelonMod
     {
@@ -40,7 +41,7 @@ namespace BetterBow
             Settings.Create();
             _stringGrab = new StringGrab();
             _quiver = new Quiver();
-            LoggerInstance.Msg("loaded - string grab buffer, quiver, dagger grip, one-arrow barrels, arrow door breach.");
+            LoggerInstance.Msg("loaded - string grab buffer, quiver, dagger grip, arrow throw assist, one-arrow barrels, arrow door breach, pause/phone hand fix.");
         }
 
         public override void OnSceneWasInitialized(int buildIndex, string sceneName)
@@ -49,6 +50,8 @@ namespace BetterBow
             U.Prune(Hands);
             _stringGrab.OnScene();
             _quiver.OnScene();
+            PauseHands.OnScene();
+            ThrowAssist.OnScene();
             _fallbackScanAt = U.Now + 3.0;
             if (!_warmed) { _warmed = true; WarmUp(); }
         }
@@ -62,6 +65,7 @@ namespace BetterBow
                 if (!U.Alive(Loaders[i]) || !U.Alive(Loaders[i].bow)) Loaders.RemoveAt(i--);
             for (int i = 0; i < Hands.Count; i++)
                 if (!U.Alive(Hands[i])) Hands.RemoveAt(i--);
+            PauseHands.Update();                                        // runs with or without a bow
             if (Loaders.Count == 0) return;                             // no bow in the scene
 
             _stringGrab.Update();
@@ -96,7 +100,7 @@ namespace BetterBow
                 foreach (var t in new[] { typeof(HVRArrow), typeof(HVRArrowLoader), typeof(HVRPhysicsBow), typeof(HVRBowBase),
                                           typeof(HVRHandGrabber), typeof(HVRGrabbable), typeof(HVRSocket), typeof(HVRShoulderSocket),
                                           typeof(HVRPosableGrabPoint), typeof(HVRPosableHand), typeof(Il2CppHurricaneVR.Framework.Shared.HVRController),
-                                          typeof(ANBKnife), typeof(ANBBreakable), typeof(ANBGameLogic), typeof(ANBStaticGameManager),
+                                          typeof(ANBKnife), typeof(ANBAssistedThrowingObject), typeof(ANBBreakable), typeof(ANBGameLogic), typeof(ANBStaticGameManager), typeof(ANBSmartphone),
                                           typeof(Collider), typeof(Renderer), typeof(Camera) })
                 {
                     System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(t.TypeHandle);
@@ -112,9 +116,10 @@ namespace BetterBow
     internal static class Settings
     {
         internal static MelonPreferences_Entry<bool> StringGrab, RetrySpawn, ExplosiveBarrels, BreachDoors,
-            Quiver, HeadFallback, Haptics, GripSwitch, DebugLog;
+            Quiver, HeadFallback, Haptics, GripSwitch, ThrowAssist, HandsKeepParentAfterPause, PhoneSettingsRescue, DebugLog;
         internal static MelonPreferences_Entry<float> StringGrabRadius, StringGrabBuffer, RetryWindow,
-            QuiverRadius, QuiverBuffer, NockRadius, SlipNockRadius, DropLifetime, DaggerFromNock;
+            QuiverRadius, QuiverBuffer, NockRadius, SlipNockRadius, DropLifetime, DaggerFromNock, ThrowAssistSpeed, ThrowStabReach, ThrowStabBack;
+        internal static MelonPreferences_Entry<bool> ThrowAssistAvoidVest;
         internal static MelonPreferences_Entry<string> DaggerTip;
 
         internal static void Create()
@@ -143,7 +148,16 @@ namespace BetterBow
             DaggerFromNock = c.CreateEntry("DaggerGripFromNock", 0.25f, description: "Dagger grip: metres from the nock end towards the tip where the hand holds the arrow.");
             DaggerTip = c.CreateEntry("DaggerTip", "Down", description: "Dagger grip: which way the arrow tip points, Down (default) or Up. The shaft runs along your knuckles either way. With DebugLog on, B / Y flips it in game.");
 
-            DebugLog = c.CreateEntry("DebugLog", false, description: "Log grabs, draws, nocks, grip switches, barrel hits and door breaches to the MelonLoader console.");
+            ThrowAssist = c.CreateEntry("ThrowAssist", true, description: "A quiver arrow thrown by hand gets the game's knife throw aim assist (needs the game's own assisted throw setting on).");
+            ThrowAssistSpeed = c.CreateEntry("ThrowAssistSpeed", 0f, description: "Metres per second a thrown arrow flies to its target. 0 = the same speed as the game's throwing knives.");
+
+            ThrowStabReach = c.CreateEntry("ThrowStabReach", 0.5f, description: "Metres the game's stab check reaches into the enemy when a thrown arrow sticks in. The arrow's own value is tuned for fast bow shots; too short and a thrown arrow sticks in without damage.");
+            ThrowStabBack = c.CreateEntry("ThrowStabBack", 0.3f, description: "Metres behind the arrow tip the stab check also looks, for when the tip is already inside the enemy (a check that starts inside a hit zone never sees it).");
+            ThrowAssistAvoidVest = c.CreateEntry("ThrowAssistAvoidVest", true, description: "A thrown arrow aims at the head of an enemy wearing a vest (an arrow in armor does almost no damage).");
+            HandsKeepParentAfterPause = c.CreateEntry("HandsKeepParentAfterPause", true, description: "Safety net: if a pause leaves your hands attached to the controllers (they then drift away when you move with the stick), put them back.");
+            PhoneSettingsRescue = c.CreateEntry("PhoneSettingsRescue", true, description: "Safety net: if the phone's Settings button gets stuck (its menu switch never finishes), open the menu and unstick it.");
+
+            DebugLog = c.CreateEntry("DebugLog", false, description: "Log grabs, draws, nocks, grip switches, throws and their hits, barrel hits, door breaches and pauses to the MelonLoader console.");
         }
     }
 
