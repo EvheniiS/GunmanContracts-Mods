@@ -7,7 +7,7 @@ using System.Reflection;
 using Il2CppInterop.Runtime.InteropTypes;
 using MelonLoader;
 
-[assembly: MelonInfo(typeof(ArrowGrabAssist.ArrowGrabAssistMod), "ArrowGrabAssist", "1.1.1", "Evhenii")]
+[assembly: MelonInfo(typeof(ArrowGrabAssist.ArrowGrabAssistMod), "ArrowGrabAssist", "1.2.0", "Evhenii")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace ArrowGrabAssist
@@ -23,13 +23,16 @@ namespace ArrowGrabAssist
     //  Fix 2: HVRPhysicsBow clears the previous arrow only after the next FixedUpdate, and
     //         HVRArrowLoader spawns a new one only if the slot is empty. If the string was
     //         grabbed inside that window, re-run the loader once the slot is empty.
-    //  Fix 3: explosive barrels need two arrows. Arrows damage breakables through
-    //         ANBKnife.stabEnemy -> ANBBreakable.hit with the raw knifeDamage (bullets and
-    //         explosions get a multiplier, arrows get none), and the barrel breaks only when
-    //         health <= 0. See ExplosiveArrowPatches below.
+    //  Fix 3: explosive barrels need three arrows (damage 100, health 250). Arrows damage
+    //         breakables through ANBKnife.stabEnemy -> ANBBreakable.hit with the raw knifeDamage
+    //         (bullets and explosions get a multiplier, arrows get none), and the barrel breaks
+    //         only when health <= 0. See ExplosiveArrowPatches below.
+    //  Fix 4: "shoot here to burst open door" ignores arrows. Only gun code calls
+    //         ANBGameLogic.TryKickDoor (ANBHVRGunBase.OnShoot raycasts from the muzzle at the
+    //         shot); the bow never does. See ShootArrowDoorPatch below.
     public class ArrowGrabAssistMod : MelonMod
     {
-        internal static MelonPreferences_Entry<bool> ExplosiveArrows;
+        internal static MelonPreferences_Entry<bool> ExplosiveArrows, ArrowsBreachDoors;
         internal static MelonPreferences_Entry<bool> DebugLogEntry;
         internal static MelonLogger.Instance Log;
         MelonPreferences_Entry<bool> _enabled, _retrySpawn, _debug;
@@ -64,7 +67,8 @@ namespace ArrowGrabAssist
             _buffer = cat.CreateEntry("PressBufferSeconds", 0.35f, description: "How long after pressing grip (while still holding it) the assist may still complete the grab.");
             _retrySpawn = cat.CreateEntry("RetryArrowSpawn", true, description: "Spawn the arrow if the string was grabbed while the previous arrow was still being cleared.");
             _retryWindow = cat.CreateEntry("RetryWindowSeconds", 0.5f, description: "How long after grabbing the string the arrow-spawn retry is allowed.");
-            ExplosiveArrows = cat.CreateEntry("ExplosiveArrowsDetonateBarrels", true, description: "One arrow hit detonates an explosive barrel (the game otherwise needs two).");
+            ExplosiveArrows = cat.CreateEntry("ExplosiveArrowsDetonateBarrels", true, description: "One arrow hit detonates an explosive barrel (the game otherwise needs three).");
+            ArrowsBreachDoors = cat.CreateEntry("ArrowsBreachDoors", true, description: "Shooting an arrow at a door's \"shoot here to burst open door\" mark breaches it, like a gunshot does.");
             _debug = cat.CreateEntry("DebugLog", false, description: "Log every assisted grab / spawn / barrel hit to the MelonLoader console.");
             DebugLogEntry = _debug;
             LoggerInstance.Msg("loaded - grip-press buffer for the bow string, one-arrow explosive barrels.");
@@ -378,6 +382,39 @@ namespace ArrowGrabAssist
         static void Postfix(Il2CppHurricaneVR.Framework.Core.Grabbers.HVRHandGrabber __instance)
         {
             if (__instance != null) Registry.Pending.Add(__instance);
+        }
+    }
+
+    // ---- Fix 4: arrows breach doors ----------------------------------------------------
+    // Door breaching is ANBGameLogic.TryKickDoor(pos, dir): gated by useVRDoorKick, it raycasts
+    // doorKickDistance along dir on doorKickMask, and if the hit collider has an ANBDoorKicker it
+    // calls kicker.doorScript.playerKickDoor() (and the linked kicker's). Its only callers are gun
+    // code: ANBHVRGunBase.OnShoot (VR), Character.OnTryFire and ANBFpsInteraction.Interact (flat).
+    // So call it for the bow too, at the same moment a gun does - when the shot is released -
+    // from the nocked arrow along the shot direction. Same range, mask and gate as the pistol.
+    [HarmonyLib.HarmonyPatch(typeof(Il2CppHurricaneVR.Framework.Weapons.Bow.HVRPhysicsBow), "ShootArrow")]
+    internal static class ShootArrowDoorPatch
+    {
+        static void Prefix(Il2CppHurricaneVR.Framework.Weapons.Bow.HVRPhysicsBow __instance, UnityEngine.Vector3 direction)
+        {
+            if (ArrowGrabAssistMod.ArrowsBreachDoors == null || !ArrowGrabAssistMod.ArrowsBreachDoors.Value) return;
+            try
+            {
+                var game = Il2Cpp.ANBStaticGameManager.ANBmain;
+                var arrow = __instance.Arrow;
+                if (game == null || arrow == null) return;
+                float len = MathF.Sqrt(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z);
+                if (len < 1e-4f) return;
+                var dir = new UnityEngine.Vector3(direction.x / len, direction.y / len, direction.z / len);
+                bool kicked = game.TryKickDoor(arrow.transform.position, dir);
+                if (kicked || (ArrowGrabAssistMod.DebugLogEntry != null && ArrowGrabAssistMod.DebugLogEntry.Value))
+                    ArrowGrabAssistMod.Log.Msg(kicked ? "arrow breached a door"
+                        : $"arrow shot: no door mark in range (door kick {(game.useVRDoorKick ? "on" : "OFF")}, range {game.doorKickDistance:0.#} m)");
+            }
+            catch (Exception e)
+            {
+                ArrowGrabAssistMod.Log?.Warning($"door breach check skipped: {e.Message}");
+            }
         }
     }
 
