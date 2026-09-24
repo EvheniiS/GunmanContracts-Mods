@@ -3,3 +3,5 @@ obj/
 __pycache__/
 *.pkl
 feature/
+game_dir.txt
+GameDir.local.props

@@ -1,6 +1,7 @@
 """Minimal IL2CPP v31 metadata + GameAssembly mapper: method addresses, field offsets, field types."""
 import struct, pefile, pickle, os, bisect
-G = r"E:\SteamLibrary\steamapps\common\Gunman Contracts - Stand Alone"
+from gamedir import game_dir
+G = game_dir()
 MD = G + r"\GunmanContracts_Data\il2cpp_data\Metadata\global-metadata.dat"
 GA = G + r"\GameAssembly.dll"
 d = open(MD, 'rb').read()

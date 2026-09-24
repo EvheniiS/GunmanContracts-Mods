@@ -524,7 +524,7 @@ namespace BetterBow
             // where it will be in the new point's frame too. R turns that line onto the arrow's tip
             // direction: holding a point rotated by R from the back grip puts the tip along it.
             // Direction: the index->little-finger line, measured on the hand model, came out with the
-            // tip pointing UP in play (Evhenii, Sep 24 2026), so Down uses the opposite way.
+            // tip pointing UP in play testing, so Down uses the opposite way.
             var knuckles = KnuckleLineInHeldPoint(c.Hand, out var span);
             if (knuckles is Vector3 kLocal && dl > 1e-3f)
             {

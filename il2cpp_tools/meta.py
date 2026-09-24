@@ -1,5 +1,7 @@
 import struct, sys, re
-P = r"E:\SteamLibrary\steamapps\common\Gunman Contracts - Stand Alone\GunmanContracts_Data\il2cpp_data\Metadata\global-metadata.dat"
+import os
+from gamedir import game_dir
+P = os.path.join(game_dir(), "GunmanContracts_Data", "il2cpp_data", "Metadata", "global-metadata.dat")
 d = open(P, 'rb').read()
 names = ["stringLiteral","stringLiteralData","string","events","properties","methods",
  "parameterDefaultValues","fieldDefaultValues","fieldAndParameterDefaultValueData","fieldMarshaledSizes",
