@@ -41,6 +41,19 @@ game. **`feature/grip-switch` = ongoing work**, built to `feature/ArrowQuiver.dl
 The v0.2.0 source was rebuilt by reversing the 0.3.0 edits. The rebuilt DLL came out at exactly
 27,136 bytes, the same as the tested v0.2.0 build.
 
+### v0.3.2 (feature branch) — dagger grip along the knuckle line; deployed for testing
+Evhenii: with the FlipX dagger grip the arrow **goes through the palm**. It should lie along the
+knuckle line (through the curled fingers), about 90° further round. No axis guessing this time:
+the hand model exposes `HVRHandGrabber._posableHand` → `HVRPosableHand.Index/Pinky` →
+`HVRPosableFinger.Root`. The index→little-finger direction is measured in the frame of the grip
+point currently held. The hand pose is fixed relative to its grip point, so that vector is the same
+in any grip point sharing the pose. The dagger point = back point rotated by
+`R = FromToRotation(knuckleLocal, tipLocal)`. Holding it puts the tip along the knuckle line.
+Config `DaggerOrientation` = `Knuckles` (tip past the little finger, default) | `KnucklesReverse` |
+`FlipX` | `FlipY`. B/Y cycles it live (debug). The log line `dagger grip built: … shaft was N deg
+off the knuckle line, knuckle span X cm` sanity-checks the measurement (span should be about 6–8 cm).
+❓ Test: does the shaft now run through the fingers? Is 25 cm from the nock the right spot?
+
 ### v0.3.1 (feature branch) — fixes after testing 0.3.0
 0.3.0 test: the grip switch works (dagger grip with flip X built and toggled 4×; in Evhenii's
 screenshot the tip comes out of the little-finger side). Problems found:
