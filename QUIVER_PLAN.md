@@ -41,7 +41,26 @@ game. **`feature/grip-switch` = ongoing work**, built to `feature/ArrowQuiver.dl
 The v0.2.0 source was rebuilt by reversing the 0.3.0 edits. The rebuilt DLL came out at exactly
 27,136 bytes, the same as the tested v0.2.0 build.
 
-### v0.3.2 (feature branch) — dagger grip along the knuckle line; deployed for testing
+### v0.3.3 (feature branch) — grip swap without the hand flying off; deployed for testing
+0.3.2 test: **the knuckle alignment is correct**, but (1) **after a swap the hand flew far off to
+the right**, and (2) a dropped dagger arrow still showed the preview's **wrist health display**.
+- (1) Cause, from the disassembly of `<SwapGrabPoint>d__380::MoveNext`: `ChangeGrabPoint` removes the
+  joint, rotates the object with `Quaternion.AngleAxis(angle, GetVector(axis))` around **one fixed
+  axis**, then `PoseHand`s. That only lands when the two grip points differ by a turn about that axis
+  (the 180° flip did, the knuckle-aligned `FromToRotation` doesn't), so the hand ended up dragged to
+  wherever the grip point expected it. **★ Rule: `ChangeGrabPoint` only works between points related
+  by a rotation about a principal axis.** Fix: `SwapGrip` sets the arrow to
+  `A' = H · D⁻¹ · A` (target point D lands exactly on the held point's frame H, so the hand pose
+  doesn't move), then `HVRHandGrabber.Grab(grabbable, HVRGrabTrigger.Active, point)`. That overload
+  force-releases, calls `OrientGrabbable` and completes the grab via `ExecuteNextUpdate`, so the carry
+  has a 30-frame grace (`GraceUntil`) before a missing grab counts as a drop.
+- (2) The health display is UI (CanvasRenderer, not a `Renderer`), so destroying renderers missed it.
+  Every child of the clone is now deactivated except the path to its `HVRHandPoser`.
+- Evhenii also couldn't press **Settings on the in-game phone**. Parked. Neither mod does anything
+  while no bow is in hand (the screenshot shows the bow on the floor), so it's probably unrelated.
+  To rule it out: set `Enabled = false` for both mods and retry.
+
+### v0.3.2 (feature branch) — dagger grip along the knuckle line
 Evhenii: with the FlipX dagger grip the arrow **goes through the palm**. It should lie along the
 knuckle line (through the curled fingers), about 90° further round. No axis guessing this time:
 the hand model exposes `HVRHandGrabber._posableHand` → `HVRPosableHand.Index/Pinky` →
