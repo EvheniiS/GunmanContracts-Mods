@@ -13,7 +13,7 @@ using MelonLoader;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(ArrowQuiver.ArrowQuiverMod), "ArrowQuiver", "0.3.1", "Evhenii")]
+[assembly: MelonInfo(typeof(ArrowQuiver.ArrowQuiverMod), "ArrowQuiver", "0.3.2", "Evhenii")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace ArrowQuiver
@@ -37,8 +37,8 @@ namespace ArrowQuiver
 
         MelonPreferences_Entry<bool> _enabled, _headFallback, _haptics, _gripSwitch;
         MelonPreferences_Entry<float> _quiverRadius, _nockRadius, _buffer, _dropLifetime, _slipRadius, _daggerFromNock;
-        MelonPreferences_Entry<string> _daggerFlip;
-        static readonly string[] FlipAxes = { "X", "Y", "None" };
+        MelonPreferences_Entry<string> _daggerMode;
+        static readonly string[] DaggerModes = { "Knuckles", "KnucklesReverse", "FlipX", "FlipY" };
 
         // Filled by Harmony postfixes on Start (LoaderStartPatch / HandStartPatch) - no scene-wide searches.
         internal static readonly List<HVRArrowLoader> Loaders = new();
@@ -96,7 +96,7 @@ namespace ArrowQuiver
             _slipRadius = cat.CreateEntry("SlipNockRadius", 0.30f, description: "If the arrow slips out of the hand while grip is still held this close to the string, nock it anyway.");
             _gripSwitch = cat.CreateEntry("GripSwitch", true, description: "A (right hand) / X (left hand) switches a quiver arrow between the nocking grip and a reverse dagger grip.");
             _daggerFromNock = cat.CreateEntry("DaggerGripFromNock", 0.25f, description: "Dagger grip: metres from the nock end towards the tip where the hand holds the arrow.");
-            _daggerFlip = cat.CreateEntry("DaggerFlipAxis", "X", description: "Dagger grip: axis the arrow is flipped around (X, Y or None). With DebugLog on, B / Y cycles it in game.");
+            _daggerMode = cat.CreateEntry("DaggerOrientation", "Knuckles", description: "Dagger grip: Knuckles = shaft along the knuckle line, tip out past the little finger; KnucklesReverse = tip out past the index finger; FlipX / FlipY = the old 180-degree flips. With DebugLog on, B / Y cycles it in game.");
             Debug = cat.CreateEntry("DebugLog", false, description: "Log holster tracking, draws, nocks, drops and ammo to the MelonLoader console.");
             LoggerInstance.Msg("loaded - draw arrows from the bow's holster.");
         }
@@ -432,8 +432,9 @@ namespace ArrowQuiver
 
         // ---- grip switch: A / X spins the arrow between the nocking grip and a dagger grip -------
         // Same call the game's knife grip swapper (HVRGrabPointSwapper.Swap) makes. The arrow
-        // prefab has no dagger grip point, so one is cloned from the grip in use: moved along the
-        // shaft and flipped 180 degrees, so the tip comes out of the little-finger side.
+        // prefab has no dagger grip point, so one is cloned from the grip in use, moved along the
+        // shaft and turned so the shaft runs along the knuckle line (through the curled fingers,
+        // not through the palm) with the tip out past the little finger.
         void UpdateGripSwitch(Carry c)
         {
             var ctrl = c.Hand.Controller;
@@ -444,16 +445,21 @@ namespace ArrowQuiver
 
             if (Dbg)
             {
-                // Test aid: B / Y cycles the flip axis, rebuilding the dagger grip.
+                // Test aid: B / Y cycles the dagger orientation. In the dagger grip it applies at once.
                 bool secondary = ctrl.SecondaryButtonState.Active;
                 if (secondary && !c.SecondaryWasDown)
                 {
-                    int i = Array.IndexOf(FlipAxes, FlipAxis());
-                    _daggerFlip.Value = FlipAxes[(i + 1) % FlipAxes.Length];
-                    LoggerInstance.Msg($"dagger flip axis -> {_daggerFlip.Value}");
-                    if (Alive(c.DaggerPoint)) Object.Destroy(c.DaggerPoint.gameObject);
+                    int i = Array.IndexOf(DaggerModes, DaggerMode());
+                    _daggerMode.Value = DaggerModes[(i + 1) % DaggerModes.Length];
+                    LoggerInstance.Msg($"dagger orientation -> {_daggerMode.Value}");
+                    var old = c.DaggerPoint;
                     c.DaggerPoint = null;
-                    if (c.Dagger) { c.Dagger = false; pressed = true; }  // re-enter dagger with the new axis
+                    if (c.Dagger)
+                    {
+                        var fresh = MakeDaggerPoint(c);
+                        if (Alive(fresh)) { c.DaggerPoint = fresh; c.Hand.ChangeGrabPoint(fresh, 0.15f, Il2CppHurricaneVR.Framework.Shared.HVRAxis.X); }
+                    }
+                    if (Alive(old) && (!Alive(c.DaggerPoint) || old.Pointer != c.DaggerPoint.Pointer)) Object.Destroy(old.gameObject);
                 }
                 c.SecondaryWasDown = secondary;
             }
@@ -465,18 +471,19 @@ namespace ArrowQuiver
                 if (!Alive(c.DaggerPoint)) c.DaggerPoint = MakeDaggerPoint(c);
                 if (!Alive(c.DaggerPoint)) return;
                 var target = c.Dagger ? c.BackPoint : c.DaggerPoint;
-                var axis = FlipAxis() == "Y" ? Il2CppHurricaneVR.Framework.Shared.HVRAxis.Y : Il2CppHurricaneVR.Framework.Shared.HVRAxis.X;
+                var axis = DaggerMode() == "FlipY" ? Il2CppHurricaneVR.Framework.Shared.HVRAxis.Y : Il2CppHurricaneVR.Framework.Shared.HVRAxis.X;
                 c.Hand.ChangeGrabPoint(target, 0.15f, axis);
                 c.Dagger = !c.Dagger;
-                if (Dbg) LoggerInstance.Msg($"grip -> {(c.Dagger ? $"dagger (flip {FlipAxis()}, {_daggerFromNock.Value * 100:0} cm from the nock)" : "nocking")}");
+                if (Dbg) LoggerInstance.Msg($"grip -> {(c.Dagger ? $"dagger ({DaggerMode()}, {_daggerFromNock.Value * 100:0} cm from the nock)" : "nocking")}");
             }
             catch (Exception e) { LoggerInstance.Warning($"grip switch failed: {e.GetType().Name}: {e.Message}"); }
         }
 
-        string FlipAxis()
+        string DaggerMode()
         {
-            var v = (_daggerFlip.Value ?? "X").Trim().ToUpperInvariant();
-            return v == "Y" ? "Y" : v == "NONE" ? "None" : "X";
+            var v = (_daggerMode.Value ?? "").Trim();
+            foreach (var m in DaggerModes) if (string.Equals(m, v, StringComparison.OrdinalIgnoreCase)) return m;
+            return DaggerModes[0];
         }
 
         HVRPosableGrabPoint MakeDaggerPoint(Carry c)
@@ -513,10 +520,63 @@ namespace ArrowQuiver
                 go.transform.position = new Vector3(from.x + dx * k, from.y + dy * k, from.z + dz * k);
             }
             go.transform.rotation = bt.rotation;
-            var flip = FlipAxis();
-            if (flip != "None") go.transform.Rotate(flip == "Y" ? new Vector3(0f, 1f, 0f) : new Vector3(1f, 0f, 0f), 180f, Space.Self);
-            if (Dbg) LoggerInstance.Msg($"dagger grip built: {dl * 100:0.0} cm grip->shaft middle, moved {_daggerFromNock.Value * 100:0} cm, flip {flip}");
+            var mode = DaggerMode();
+            string how = mode;
+            if (mode.StartsWith("Knuckles"))
+            {
+                // Shaft along the knuckle line. The hand pose is fixed relative to the grip point it
+                // holds, so the knuckle line measured in the HELD point's frame is where it will be in
+                // the new point's frame too. R turns that line onto the arrow's tip direction:
+                // holding a point rotated by R from the back grip puts the tip along the knuckles.
+                var knuckles = KnuckleLineInHeldPoint(c.Hand, out var span);
+                if (knuckles is Vector3 kLocal && dl > 1e-3f)
+                {
+                    if (mode == "KnucklesReverse") kLocal = new Vector3(-kLocal.x, -kLocal.y, -kLocal.z);
+                    var tipLocal = bt.InverseTransformDirection(new Vector3(dx / dl, dy / dl, dz / dl));
+                    var r = Quaternion.FromToRotation(kLocal, tipLocal);
+                    go.transform.Rotate(r.eulerAngles, Space.Self);
+                    float cos = Math.Clamp(kLocal.x * tipLocal.x + kLocal.y * tipLocal.y + kLocal.z * tipLocal.z, -1f, 1f);
+                    how = $"{mode} (shaft was {MathF.Acos(cos) * 180f / MathF.PI:0} deg off the knuckle line, knuckle span {span * 100:0.0} cm)";
+                }
+                else
+                {
+                    go.transform.Rotate(new Vector3(1f, 0f, 0f), 180f, Space.Self);
+                    how = $"{mode} unavailable (no hand bones) - used FlipX";
+                }
+            }
+            else go.transform.Rotate(mode == "FlipY" ? new Vector3(0f, 1f, 0f) : new Vector3(1f, 0f, 0f), 180f, Space.Self);
+            if (Dbg) LoggerInstance.Msg($"dagger grip built: {dl * 100:0.0} cm grip->shaft middle, moved {_daggerFromNock.Value * 100:0} cm, {how}");
             return pg;
+        }
+
+        // Index-knuckle -> little-finger-knuckle direction, in the frame of the grip point the hand holds.
+        Vector3? KnuckleLineInHeldPoint(HVRHandGrabber hand, out float span)
+        {
+            span = 0f;
+            try
+            {
+                var held = hand.PosableGrabPoint;
+                var ph = hand._posableHand;
+                if (!Alive(ph)) ph = hand.GetComponentInChildren<HVRPosableHand>(true);
+                if (!Alive(held) || !Alive(ph)) return null;
+                var i = FingerBase(ph.Index);
+                var p = FingerBase(ph.Pinky);
+                if (i == null || p == null) return null;
+                float x = p.Value.x - i.Value.x, y = p.Value.y - i.Value.y, z = p.Value.z - i.Value.z;
+                span = MathF.Sqrt(x * x + y * y + z * z);
+                if (span < 0.01f || span > 0.2f) return null;               // not a hand-sized reading
+                return held.transform.InverseTransformDirection(new Vector3(x / span, y / span, z / span));
+            }
+            catch { return null; }
+        }
+
+        static Vector3? FingerBase(HVRPosableFinger f)
+        {
+            if (f == null) return null;
+            if (Alive(f.Root)) return f.Root.position;
+            var bones = f.Bones;
+            if (bones != null && bones.Count > 0 && bones[0] != null && Alive(bones[0].Transform)) return bones[0].Transform.position;
+            return null;
         }
 
         void DropCarried(Carry c, string why)
