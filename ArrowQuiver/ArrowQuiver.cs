@@ -13,7 +13,7 @@ using MelonLoader;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(ArrowQuiver.ArrowQuiverMod), "ArrowQuiver", "0.3.0", "Evhenii")]
+[assembly: MelonInfo(typeof(ArrowQuiver.ArrowQuiverMod), "ArrowQuiver", "0.3.1", "Evhenii")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace ArrowQuiver
@@ -315,8 +315,6 @@ namespace ArrowQuiver
             if (!Alive(arrow)) { LoggerInstance.Warning("CreateArrow returned nothing"); return; }
             var palm = hand.Palm;
             arrow.transform.SetPositionAndRotation(palm.position, palm.rotation);
-            RepairGrabPoints(arrow);
-            IgnoreBowCollisions(arrow, loader.bow);
             var c = new Carry { Arrow = arrow, Hand = hand, Bow = loader.bow, Loader = loader, Frame = _frame };
             SetCarry(c);
             if (!TryGrabCarried(c)) return;
@@ -348,37 +346,6 @@ namespace ArrowQuiver
             }
         }
 
-        // The crash above read a grab point whose Grabbable reference was dead. Point every grab
-        // point of the new arrow at the arrow's own grabbable before the hand uses one.
-        void RepairGrabPoints(HVRArrow arrow)
-        {
-            var g = arrow.Grabbable;
-            int fixedCount = 0;
-            foreach (var pg in arrow.GetComponentsInChildren<HVRPosableGrabPoint>(true))
-            {
-                var pgG = pg.Grabbable;
-                if (Alive(pgG) && pgG.Pointer == g.Pointer) continue;
-                pg.Grabbable = g;
-                fixedCount++;
-            }
-            if (fixedCount > 0) LoggerInstance.Msg($"repaired {fixedCount} grab point(s) on a drawn arrow that pointed at a dead grabbable");
-        }
-
-        // What the game does for a nocked arrow (HVRBowBase.UpdateBowHandCollision), plus the bow
-        // body: the carried arrow must not knock against the bow on the way to the string.
-        static void IgnoreBowCollisions(HVRArrow arrow, HVRPhysicsBow bow)
-        {
-            try
-            {
-                var bh = bow.BowHand;
-                if (Alive(bh)) bh.UpdateCollision(arrow.Grabbable, false);
-                var bowColliders = bow.GetComponentsInChildren<Collider>(true);
-                foreach (var a in arrow.GetComponentsInChildren<Collider>(true))
-                    foreach (var b in bowColliders)
-                        Physics.IgnoreCollision(a, b, true);
-            }
-            catch (Exception e) { Log.Warning($"could not disable arrow-bow collisions: {e.Message}"); }
-        }
 
         // ---- carrying -------------------------------------------------------------------------
         void UpdateCarry()
@@ -518,6 +485,10 @@ namespace ArrowQuiver
             var bt = back.transform;
             var go = Object.Instantiate(back.gameObject, bt.parent);
             go.name = "QuiverDaggerGrip";
+            // The grip point carries the hand poser's preview hand (RightHand_Gloves_LOD0 ...). It
+            // stays hidden on the prefab's own points but shows on a runtime clone as a ghost glove
+            // stuck to the arrow. The pose itself is data, so the meshes can go.
+            foreach (var r in go.GetComponentsInChildren<Renderer>(true)) Object.Destroy(r);
             var pg = go.GetComponent<HVRPosableGrabPoint>();
             if (!Alive(pg)) { Object.Destroy(go); LoggerInstance.Warning("grip switch: cloned grip point has no HVRPosableGrabPoint"); return null; }
             pg.Grabbable = c.Arrow.Grabbable;

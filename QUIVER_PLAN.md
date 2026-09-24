@@ -33,7 +33,33 @@ Log results (19 draws, 13 nocks, 6 stabs, 0 warnings):
   scene as a safety net. Head fallback uses `Camera.main` instead of searching for the rig.
 - Debug logging was never a meaningful cost (~150 lines per session).
 
-### v0.3.0 (Sep 24 2026) — grip switch + robustness; deployed, untested
+### Versioning (Sep 24 2026)
+`GunmanContracts/` is a git repo (local identity `evgeeso <evhenii.soroka@gmail.com>`; the global
+git email is the work one, so never commit here without the local config). **`main` = release**:
+ArrowGrabAssist 1.1.1 + ArrowQuiver 0.2.0, tagged, DLLs in `release/`, and those are deployed to the
+game. **`feature/grip-switch` = ongoing work**, built to `feature/ArrowQuiver.dll` (not deployed).
+The v0.2.0 source was rebuilt by reversing the 0.3.0 edits. The rebuilt DLL came out at exactly
+27,136 bytes, the same as the tested v0.2.0 build.
+
+### v0.3.1 (feature branch) — fixes after testing 0.3.0
+0.3.0 test: the grip switch works (dagger grip with flip X built and toggled 4×; in Evhenii's
+screenshot the tip comes out of the little-finger side). Problems found:
+- **Ghost glove on a dropped dagger arrow** (screenshot): cloning the grip point also cloned the
+  hand poser's preview meshes (`RightHand_Gloves_LOD0`, …), which are hidden on the prefab's own
+  points but visible on the clone. → the clone's renderers are destroyed.
+- **"Grabbing got glitchier, gets stuck, less seamless."** 0.3.0 changed the draw path with
+  `Physics.IgnoreCollision` for arrow × every bow collider plus `bowHand.UpdateCollision`. Changing
+  PhysX ignore pairs on a jointed, held bow is the prime suspect. It also bought nothing: **all 5
+  drops in the session were "grip released"**, i.e. the player let go, never the hand losing the
+  arrow. `RepairGrabPoints` was also removed (never fired). → The draw path is back to 0.2.0's,
+  plus only the try/catch that removes the arrow if `TryGrab` throws. ❓ Retest whether it's
+  seamless again.
+- Still in: grip switch, slip-nock rescue, warm-up (it ran in 51 ms; perf max was still
+  14.7 / 26.8 ms in the first two 30 s windows, with debug `[inspect]` on the first draw).
+- Two hands on one arrow (screenshot 2): HVR allows a second hand on any grabbable. Not handled
+  specially, not obviously a bug. ❓ Ask.
+
+### v0.3.0 (Sep 24 2026) — grip switch + robustness
 - **§3.8 built.** A/X (edge on `Controller.PrimaryButtonState.Active`) calls
   `hand.ChangeGrabPoint(point, 0.15, axis)`, the knife swapper's call. The dagger grip is a runtime
   **clone of the grip point in use** (`hand.PosableGrabPoint`, taken 5 frames after the grab),
