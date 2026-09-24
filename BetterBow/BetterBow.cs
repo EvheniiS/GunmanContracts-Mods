@@ -12,7 +12,7 @@ using MelonLoader;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(BetterBow.BetterBowMod), "Better Bow", "1.1.5", "Evgeeso")]
+[assembly: MelonInfo(typeof(BetterBow.BetterBowMod), "Better Bow", "1.1.0", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace BetterBow
@@ -154,10 +154,10 @@ namespace BetterBow
             ThrowStabReach = c.CreateEntry("ThrowStabReach", 0.5f, description: "Metres the game's stab check reaches into the enemy when a thrown arrow sticks in. The arrow's own value is tuned for fast bow shots; too short and a thrown arrow sticks in without damage.");
             ThrowStabBack = c.CreateEntry("ThrowStabBack", 0.3f, description: "Metres behind the arrow tip the stab check also looks, for when the tip is already inside the enemy (a check that starts inside a hit zone never sees it).");
             ThrowAssistAvoidVest = c.CreateEntry("ThrowAssistAvoidVest", true, description: "A thrown arrow aims at the head of an enemy wearing a vest (an arrow in armor does almost no damage).");
-            HandsKeepParentAfterPause = c.CreateEntry("HandsKeepParentAfterPause", true, description: "After the pause menu closes, put the physics hands back where they were before it opened (fixes hands drifting away when moving with the stick). Pauses are always logged.");
-            PhoneSettingsRescue = c.CreateEntry("PhoneSettingsRescue", true, description: "If the phone's Settings button gets stuck (the game's menu switch never finishes), open the menu and unstick it.");
+            HandsKeepParentAfterPause = c.CreateEntry("HandsKeepParentAfterPause", true, description: "Safety net: if a pause leaves your hands attached to the controllers (they then drift away when you move with the stick), put them back.");
+            PhoneSettingsRescue = c.CreateEntry("PhoneSettingsRescue", true, description: "Safety net: if the phone's Settings button gets stuck (its menu switch never finishes), open the menu and unstick it.");
 
-            DebugLog = c.CreateEntry("DebugLog", false, description: "Log grabs, draws, nocks, grip switches, barrel hits and door breaches to the MelonLoader console.");
+            DebugLog = c.CreateEntry("DebugLog", false, description: "Log grabs, draws, nocks, grip switches, throws and their hits, barrel hits, door breaches and pauses to the MelonLoader console.");
         }
     }
 

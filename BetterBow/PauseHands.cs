@@ -22,7 +22,8 @@ namespace BetterBow
     // switchingToMenu never cleared, so Settings stays dead.
     //  -> Repair dead wrist HUD slots before a pause; put hands found on their Target outside a
     //     pause back under their pre-pause parent; check the parent after every unpause; finish a
-    //     phone menu switch that never completed (PhoneSettingsRescue). Everything is logged.
+    //     phone menu switch that never completed (PhoneSettingsRescue). Repairs are always logged;
+    //     pauses, phone presses and hand distances only with DebugLog.
     internal static class PauseHands
     {
         static Transform _leftBefore, _rightBefore;
@@ -95,7 +96,7 @@ namespace BetterBow
                 _rightBefore = U.Alive(r) ? r.transform.parent : null;
                 _leftBeforeName = PathOf(_leftBefore); _rightBeforeName = PathOf(_rightBefore);
             }
-            Log.Msg($"game {(pausing ? "PAUSE" : "UNPAUSE")} (useHands {useHands}, showMenu {showMenu}) - hand parents: " +
+            if (U.Dbg) Log.Msg($"game {(pausing ? "PAUSE" : "UNPAUSE")} (useHands {useHands}, showMenu {showMenu}) - hand parents: " +
                     $"left '{(U.Alive(l) ? PathOf(l.transform.parent) : "?")}', right '{(U.Alive(r) ? PathOf(r.transform.parent) : "?")}'");
         }
 
@@ -115,7 +116,7 @@ namespace BetterBow
             var now = h.transform.parent;
             string side = left ? "left" : "right";
             bool same = U.Alive(before) ? U.Alive(now) && now.Pointer == before.Pointer : !U.Alive(now);
-            if (same) { Log.Msg($"  {side} hand back under its pre-pause parent '{beforeName}'"); return; }
+            if (same) { if (U.Dbg) Log.Msg($"  {side} hand back under its pre-pause parent '{beforeName}'"); return; }
             if (!Settings.HandsKeepParentAfterPause.Value)
             {
                 Log.Warning($"  {side} hand moved by the pause: was under '{beforeName}', now '{PathOf(now)}' (not restored: HandsKeepParentAfterPause is off)");
@@ -136,7 +137,7 @@ namespace BetterBow
             _phone = phone;
             bool stuck = phone.switchingToMenu;
             var game = ANBStaticGameManager.ANBmain;
-            Log.Msg($"phone Settings pressed (held {phone.isHeld}, in wrist {phone.inWrist}, game paused {(game != null && game.Paused)})" +
+            if (U.Dbg || stuck) Log.Msg($"phone Settings pressed (held {phone.isHeld}, in wrist {phone.inWrist}, game paused {(game != null && game.Paused)})" +
                     (stuck ? " - IGNORED by the game: its previous menu switch never finished" : ""));
             if (!stuck) _phonePressAt = U.Now;
         }
@@ -199,6 +200,7 @@ namespace BetterBow
         // Log when a physics hand stays far from the controller it follows - the visible symptom.
         static void UpdateDrift(ANBGameLogic game)
         {
+            if (!U.Dbg) return;                                         // diagnostics only
             if (game.Paused) { _leftFarSince = _rightFarSince = -1; return; }
             DriftOf(game, true, ref _leftFarSince);
             DriftOf(game, false, ref _rightFarSince);
