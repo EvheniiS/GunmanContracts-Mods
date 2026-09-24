@@ -117,7 +117,7 @@ namespace BetterBow
                 {
                     var target = t.homingTarget;
                     Log.Msg(U.Alive(target)
-                        ? $"arrow thrown at {speed:0.0} m/s (stab ray {knife.knifeRayLength:0.##} m; on a stab it starts {Settings.ThrowStabBack.Value * 100:0} cm behind the tip, reaching {MathF.Max(knife.knifeRayLength, Settings.ThrowStabReach.Value):0.##} m past it) -> homing on '{target.name}' {U.Dist(target.position, rb.position):0.0} m away at {t.speed:0.#} m/s (tip correction {t.aimCorrectionAngle:0} deg){retarget}"
+                        ? $"arrow thrown at {speed:0.0} m/s (stab ray {knife.knifeRayLength:0.##} m; on a stab it looks {MathF.Max(knife.knifeRayLength, Settings.ThrowStabReach.Value):0.##} m ahead and {Settings.ThrowStabBack.Value * 100:0} cm back) -> homing on '{target.name}' {U.Dist(target.position, rb.position):0.0} m away at {t.speed:0.#} m/s (tip correction {t.aimCorrectionAngle:0} deg){retarget}"
                         : $"arrow thrown at {speed:0.0} m/s - no target in view (radius {game.assistedThrowViewRadius:0.#} m, angle {game.assistedThrowViewAngle:0.#} deg)");
                 }
             }
@@ -156,9 +156,15 @@ namespace BetterBow
         //
         // 1.1.3 (ray 0.15 -> 0.5 m) barely helped: the misses name the same colliders as the hits
         // (spine_01 / spine_03). A raycast does not detect a collider it STARTS inside, and the ray
-        // starts at StabOrient = the tip, which on a slower arrival is often already inside the hit
-        // zone. So also start the game's ray ThrowStabBack behind the tip, outside the body: swap
-        // StabOrient for a helper transform placed there for the duration of stabEnemy.
+        // starts at StabOrient = the tip, which is often already inside the hit zone.
+        // 1.1.4 always started the ray 30 cm behind the tip - and then it often hit the arrow's OWN tip
+        // collider ('tip (1)', on StabMask): the game played the impact and dealt no damage.
+        // So pick the start per stab, and hand the game's ray to it by swapping StabOrient for a helper
+        // transform for the duration of stabEnemy:
+        //  1. the game's own ray from the tip already finds a hit zone -> leave it (length extended);
+        //  2. else look along the line from ThrowStabBack behind the tip, skipping the arrow's own
+        //     colliders, and start 1 cm in front of the first enemy hit zone;
+        //  3. else leave the game alone: it unsticks and the stabber tries again on the next contact.
         static Transform _origin;
         static Transform _savedOrient;
         internal static string CheckInfo;
@@ -176,23 +182,60 @@ namespace BetterBow
             var dir = new Vector3(line.x / ll, line.y / ll, line.z / ll);
             float back = MathF.Max(0f, Settings.ThrowStabBack.Value);
             float reach = MathF.Max(k.knifeRayLength, Settings.ThrowStabReach.Value);
+            int mask = k.StabMask.value;
             var tip = orient.position;
-            if (U.Dbg) CheckInfo = OwnCheck(k, tip, dir, reach, back);
 
-            _savedRay = k.knifeRayLength;
-            k.knifeRayLength = back + reach;
-            if (back > 0f)
+            // 1. ahead of the tip, as the game does (but only real hit zones count)
+            RaycastHit? zone = FirstZone(k, tip, dir, reach, mask);
+            if (zone != null)
             {
-                if (!U.Alive(_origin))
-                {
-                    var go = new GameObject("BetterBowStabOrigin");
-                    Object.DontDestroyOnLoad(go);
-                    _origin = go.transform;
-                }
-                _origin.SetPositionAndRotation(new Vector3(tip.x - dir.x * back, tip.y - dir.y * back, tip.z - dir.z * back), orient.rotation);
-                _savedOrient = orient;
-                k.StabOrient = _origin;
+                if (U.Dbg) CheckInfo = $"zone {zone.Value.collider.name} {zone.Value.distance * 100:0} cm ahead of the tip";
             }
+            else
+            {
+                // 2. the tip is already inside: look from behind, past the arrow's own colliders
+                var from = new Vector3(tip.x - dir.x * back, tip.y - dir.y * back, tip.z - dir.z * back);
+                zone = FirstZone(k, from, dir, back + reach, mask);
+                if (zone == null)
+                {
+                    if (U.Dbg) CheckInfo = "no enemy hit zone along the arrow - left to the game (it unsticks and retries)";
+                    return;
+                }
+                if (U.Dbg) CheckInfo = $"tip already inside; zone {zone.Value.collider.name} entered {(back - zone.Value.distance) * 100:0} cm behind the tip";
+            }
+            // Start the game's single ray 1 cm in front of that zone, so nothing else (the arrow's own
+            // tip collider, another collider on the mask) comes first.
+            var hp = zone.Value.point;
+            if (!U.Alive(_origin))
+            {
+                var go = new GameObject("BetterBowStabOrigin");
+                Object.DontDestroyOnLoad(go);
+                _origin = go.transform;
+            }
+            _origin.SetPositionAndRotation(new Vector3(hp.x - dir.x * 0.01f, hp.y - dir.y * 0.01f, hp.z - dir.z * 0.01f), orient.rotation);
+            _savedOrient = orient;
+            k.StabOrient = _origin;
+            _savedRay = k.knifeRayLength;
+            k.knifeRayLength = 0.05f;
+        }
+
+        // The nearest collider along the ray that is an enemy hit zone and not part of this arrow.
+        static RaycastHit? FirstZone(ANBKnife k, Vector3 from, Vector3 dir, float length, int mask)
+        {
+            var hits = Physics.RaycastAll(from, dir, length, mask);
+            RaycastHit? best = null;
+            if (hits == null) return null;
+            for (int i = 0; i < hits.Length; i++)
+            {
+                var h = hits[i];
+                var c = h.collider;
+                if (!U.Alive(c)) continue;
+                var owner = c.GetComponentInParent<ANBKnife>();
+                if (U.Alive(owner) && owner.Pointer == k.Pointer) continue;     // the arrow itself
+                if (!U.Alive(c.GetComponent<ANBEnemyDetect>())) continue;
+                if (best == null || h.distance < best.Value.distance) best = h;
+            }
+            return best;
         }
 
         internal static void AfterStab(ANBKnife k)
@@ -203,21 +246,6 @@ namespace BetterBow
                 if (U.Alive(_savedOrient)) k.StabOrient = _savedOrient;
             }
             _savedRay = -1f; _savedOrient = null;
-        }
-
-        // DebugLog: what the game's ray would find from the tip vs from behind it.
-        static string OwnCheck(ANBKnife k, Vector3 tip, Vector3 dir, float reach, float back)
-        {
-            int mask = k.StabMask.value;
-            string Zone(RaycastHit h)
-            {
-                var z = U.Alive(h.collider) ? h.collider.GetComponent<ANBEnemyDetect>() : null;
-                return $"{h.collider.name}{(U.Alive(z) ? "" : " (not a hit zone)")} at {h.distance:0.00} m";
-            }
-            string a = Physics.Raycast(tip, dir, out var h1, reach, mask) ? Zone(h1) : "nothing";
-            var from = new Vector3(tip.x - dir.x * back, tip.y - dir.y * back, tip.z - dir.z * back);
-            string b = Physics.Raycast(from, dir, out var h2, back + reach, mask) ? Zone(h2) : "nothing";
-            return $"ray from the tip: {a}; from {back * 100:0} cm back: {b}";
         }
 
         internal static void OnScene() => _thrown.Clear();
@@ -255,8 +283,9 @@ namespace BetterBow
             bool armored = U.Alive(zone) && zone.isArmored;
             Log.Msg($"thrown arrow stab #{_stabs + 1} into {U.Name(col)}: {where}" +
                     (CheckInfo != null ? $" [{CheckInfo}]" : "") +
-                    (armored ? " - ARMORED, the game deals 1 armor damage instead of the arrow's " + k.knifeDamage.ToString("0")
-                             : $" - stab damage {k.knifeDamage:0}"));
+                    (!U.Alive(zone) ? " - NOT a hit zone: the game plays the impact but deals no damage"
+                     : armored ? " - ARMORED, the game deals 1 armor damage instead of the arrow's " + k.knifeDamage.ToString("0")
+                     : $" - stab damage {k.knifeDamage:0}"));
         }
 
         // The arrow's own ThrowScript if the prefab has one, else a new one on the rigidbody's object
