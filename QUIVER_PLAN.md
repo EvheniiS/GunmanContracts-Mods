@@ -41,7 +41,27 @@ game. **`feature/grip-switch` = ongoing work**, built to `feature/ArrowQuiver.dl
 The v0.2.0 source was rebuilt by reversing the 0.3.0 edits. The rebuilt DLL came out at exactly
 27,136 bytes, the same as the tested v0.2.0 build.
 
-### v0.3.3 (feature branch) — grip swap without the hand flying off; deployed for testing
+### v0.3.4 (feature branch) — draw crash root cause; deployed with ArrowGrabAssist 1.2.0
+0.3.3 test: **"generally it feels great, the hand switch position is right."** Remaining:
+- **Draw crash, root cause found:** 3 of 49 draws threw, **each 0.3–1.5 s after a dropped arrow**
+  (v0.2.0's single crash followed a drop too). The failing read in `HVRHandGrabber.OnGrabbed` is
+  `[hand+0x288]` = `<PosableGrabPoint>k__BackingField`. It is alive (it passes `op_Implicit`), but its
+  `Grabbable` is dead. A forced `TryGrab` lets the hand reuse that stale cache. Fix: the draw now
+  always passes an explicit point, `Grab(grabbable, Active, NockEndPoint(arrow))` (the grab point
+  closest to the arrow origin = the notch). It also orients the arrow into the hand instead of
+  pulling it in. Exceptions crossing from IL2CPP into managed code are expensive (stack-trace
+  build + log), so the crashes were likely also some of the reported hitches.
+- ❓ **Hands drifting with the left stick** ("at some point my hands started moving together with my
+  left stick; when I run forward the hands go ahead"). Not in the log; cause unknown. Hypotheses:
+  a held item (dagger arrow held tip-down, or the bow) colliding with the player's own body collider
+  while moving, or HVR hand state left behind by a release/re-grab. Needs: when it started (after a
+  grip switch? a drop?), whether it persists after a scene change, and whether the release build
+  (`main`) ever does it.
+- Hitches: steady perf max 2–5 ms per 30 s window = the arrow `Instantiate` on draw (the game
+  instantiates a second arrow on nock). If hitches remain after 0.3.4, reuse the carried arrow as the
+  nocked arrow (`bow.NockArrow(carried)` + `createdNok`) to halve the instantiations.
+
+### v0.3.3 (feature branch) — grip swap without the hand flying off
 0.3.2 test: **the knuckle alignment is correct**, but (1) **after a swap the hand flew far off to
 the right**, and (2) a dropped dagger arrow still showed the preview's **wrist health display**.
 - (1) Cause, from the disassembly of `<SwapGrabPoint>d__380::MoveNext`: `ChangeGrabPoint` removes the
