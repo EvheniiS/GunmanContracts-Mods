@@ -13,7 +13,7 @@ using MelonLoader;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(ArrowQuiver.ArrowQuiverMod), "ArrowQuiver", "0.3.3", "Evhenii")]
+[assembly: MelonInfo(typeof(ArrowQuiver.ArrowQuiverMod), "ArrowQuiver", "0.3.4", "Evhenii")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace ArrowQuiver
@@ -23,7 +23,7 @@ namespace ArrowQuiver
     //  * Quiver zone = the socket the bow was holstered in. While the bow is in hand that socket is
     //    guaranteed empty. Fallback when the bow was never holstered: a point beside the head.
     //  * Draw: grip press with the free hand inside the zone -> HVRArrowLoader.CreateArrow(false)
-    //    (a pure spawn: no nock, no ammo change) and the hand force-grabs it.
+    //    (a pure spawn: no nock, no ammo change) and the hand grabs it on its nock-end grip point.
     //  * Nock: bring the carried arrow to the string -> it is destroyed and the hand grabs the
     //    string through the game's own path (OnStringGrabbed -> CreateArrow(true)), so the nocked
     //    arrow and its ammo accounting are exactly what a normal string grab produces.
@@ -333,18 +333,49 @@ namespace ArrowQuiver
             c.GrabTries++;
             try
             {
-                c.Grabbed = c.Hand.TryGrab(c.Arrow.Grabbable, true);    // force: it was never hovered
+                // Always hand the grab an explicit grip point. A forced TryGrab lets the hand reuse its
+                // cached PosableGrabPoint (HVRHandGrabber+0x288). Right after a dropped arrow, that
+                // cache can still point at a grip whose grabbable is gone, and OnGrabbed then throws
+                // in GetGrabbableRelativeRotation (3 of 49 draws in 0.3.3, every time 0.3-1.5 s after
+                // a drop). Grab(grabbable, trigger, point) is the game's put-this-in-the-hand call: it
+                // orients the arrow to the hand instead of pulling it in, and grabs next update.
+                var point = NockEndPoint(c.Arrow);
+                if (Alive(point))
+                {
+                    c.Hand.Grab(c.Arrow.Grabbable, Il2CppHurricaneVR.Framework.Shared.HVRGrabTrigger.Active, point);
+                    c.BackPoint = point;
+                    c.Grabbed = true;
+                    c.GraceUntil = _frame + 30;
+                }
+                else c.Grabbed = c.Hand.TryGrab(c.Arrow.Grabbable, true);   // force: it was never hovered
                 return true;
             }
             catch (Exception e)
             {
-                // Seen once in 52 draws: an NRE inside HVRPosableGrabPoint.GetGrabbableRelativeRotation.
                 LoggerInstance.Warning($"grabbing the drawn arrow failed ({e.GetType().Name}) - removed it, press again");
+                if (Dbg) LoggerInstance.Warning(e.ToString());
                 try { c.Hand.ForceRelease(); } catch { }
                 Object.Destroy(c.Arrow.gameObject);
                 SetCarry(null);
                 return false;
             }
+        }
+
+        // The arrow's grip at the nock end: the posable grab point closest to the arrow's origin,
+        // which is the notch (logged: GrabPoint at local (0,0,0), the other at z=0.257).
+        static HVRPosableGrabPoint NockEndPoint(HVRArrow arrow)
+        {
+            HVRPosableGrabPoint best = null;
+            float bestD = float.MaxValue;
+            var at = arrow.transform;
+            foreach (var pg in arrow.GetComponentsInChildren<HVRPosableGrabPoint>(false))
+            {
+                if (pg.name == "QuiverDaggerGrip") continue;
+                var p = at.InverseTransformPoint(pg.transform.position);
+                float d = p.x * p.x + p.y * p.y + p.z * p.z;
+                if (d < bestD) { bestD = d; best = pg; }
+            }
+            return best;
         }
 
 
