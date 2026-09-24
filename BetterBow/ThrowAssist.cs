@@ -101,7 +101,7 @@ namespace BetterBow
                 {
                     var target = t.homingTarget;
                     Log.Msg(U.Alive(target)
-                        ? $"arrow thrown at {speed:0.0} m/s -> homing on '{target.name}' {U.Dist(target.position, rb.position):0.0} m away at {t.speed:0.#} m/s"
+                        ? $"arrow thrown at {speed:0.0} m/s -> homing on '{target.name}' {U.Dist(target.position, rb.position):0.0} m away at {t.speed:0.#} m/s (tip correction {t.aimCorrectionAngle:0} deg)"
                         : $"arrow thrown at {speed:0.0} m/s - no target in view (radius {game.assistedThrowViewRadius:0.#} m, angle {game.assistedThrowViewAngle:0.#} deg)");
                 }
             }
