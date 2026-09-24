@@ -7,7 +7,7 @@ using System.Reflection;
 using Il2CppInterop.Runtime.InteropTypes;
 using MelonLoader;
 
-[assembly: MelonInfo(typeof(ArrowGrabAssist.ArrowGrabAssistMod), "ArrowGrabAssist", "1.1.0", "Evhenii")]
+[assembly: MelonInfo(typeof(ArrowGrabAssist.ArrowGrabAssistMod), "ArrowGrabAssist", "1.1.1", "Evhenii")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace ArrowGrabAssist
@@ -72,7 +72,7 @@ namespace ArrowGrabAssist
 
         public override void OnSceneWasInitialized(int buildIndex, string sceneName)
         {
-            _nextScan = 0;
+            _nextScan = Now + 3.0;
             _handState.Clear();
             _bowState.Clear();
         }
@@ -83,7 +83,14 @@ namespace ArrowGrabAssist
             _frame++;
             if (!_typesReady && !ResolveTypes()) return;
 
-            if (Now >= _nextScan) { Rescan(); _nextScan = Now + 2.0; }
+            // Bows, loaders and hands register themselves on Start (Harmony postfixes below), so a
+            // periodic scene search isn't needed. One search per scene remains as a safety net.
+            if (_nextScan >= 0 && Now >= _nextScan) { _nextScan = -1; Rescan(); }
+            DrainRegistrations();
+            // Nothing re-scans any more, so destroyed objects must leave the lists here
+            // (a dead bow would otherwise throw inside UpdateHand and get the hand dropped).
+            for (int i = 0; i < _bows.Count; i++) if (!IsAlive(_bows[i])) _bows.RemoveAt(i--);
+            for (int i = 0; i < _hands.Count; i++) if (!IsAlive(_hands[i])) _hands.RemoveAt(i--);
             if (_bows.Count == 0) return;
 
             for (int i = 0; i < _hands.Count; i++)
@@ -256,16 +263,52 @@ namespace ArrowGrabAssist
             _bows.Clear(); _hands.Clear(); _loaderByBow.Clear();
             _bows.AddRange(FindAll(_tBow));
             _hands.AddRange(FindAll(_tHand));
-            if (_tLoader != null) foreach (var l in FindAll(_tLoader))
+            if (_tLoader != null) foreach (var l in FindAll(_tLoader)) AddLoader(l);
+            LogCounts("scan");
+        }
+
+        // Objects that started since the last frame (queued by the Start postfixes).
+        void DrainRegistrations()
+        {
+            if (Registry.Pending.Count == 0) return;
+            foreach (var o in Registry.Pending)
             {
                 try
                 {
-                    var b = Get(l, "bow");
-                    if (b != null) _loaderByBow[((Il2CppObjectBase)b).Pointer] = l;
+                    if (_tLoader != null && _tLoader.IsInstanceOfType(o))
+                    {
+                        var b = Get(o, "bow");
+                        if (b != null && !Contains(_bows, b)) _bows.Add(b);
+                        AddLoader(o);
+                    }
+                    else if (_tHand.IsInstanceOfType(o) && !Contains(_hands, o)) _hands.Add(o);
                 }
                 catch { }
             }
-            var summary = $"scan: {_bows.Count} bow(s), {_hands.Count} hand(s), {_loaderByBow.Count} arrow loader(s)";
+            Registry.Pending.Clear();
+            LogCounts("registered");
+        }
+
+        void AddLoader(object l)
+        {
+            try
+            {
+                var b = Get(l, "bow");
+                if (b != null) _loaderByBow[((Il2CppObjectBase)b).Pointer] = l;
+            }
+            catch { }
+        }
+
+        static bool Contains(List<object> list, object o)
+        {
+            IntPtr p = ((Il2CppObjectBase)o).Pointer;
+            foreach (var x in list) if (((Il2CppObjectBase)x).Pointer == p) return true;
+            return false;
+        }
+
+        void LogCounts(string what)
+        {
+            var summary = $"{what}: {_bows.Count} bow(s), {_hands.Count} hand(s), {_loaderByBow.Count} arrow loader(s)";
             if (_debug.Value && summary != _lastScan) LoggerInstance.Msg(summary);
             _lastScan = summary;
         }
@@ -311,6 +354,30 @@ namespace ArrowGrabAssist
             _typesReady = true;
             LoggerInstance.Msg($"hooked: {_tBow.FullName}, {_tHand.FullName}, loader={_tLoader != null}");
             return true;
+        }
+    }
+
+    // ---- registration: objects announce themselves on Start instead of being searched for ----
+    internal static class Registry
+    {
+        internal static readonly List<object> Pending = new();
+    }
+
+    [HarmonyLib.HarmonyPatch(typeof(Il2CppHurricaneVR.Framework.Weapons.Bow.HVRArrowLoader), "Start")]
+    internal static class LoaderStartPatch
+    {
+        static void Postfix(Il2CppHurricaneVR.Framework.Weapons.Bow.HVRArrowLoader __instance)
+        {
+            if (__instance != null) Registry.Pending.Add(__instance);
+        }
+    }
+
+    [HarmonyLib.HarmonyPatch(typeof(Il2CppHurricaneVR.Framework.Core.Grabbers.HVRHandGrabber), "Start")]
+    internal static class HandStartPatch
+    {
+        static void Postfix(Il2CppHurricaneVR.Framework.Core.Grabbers.HVRHandGrabber __instance)
+        {
+            if (__instance != null) Registry.Pending.Add(__instance);
         }
     }
 
