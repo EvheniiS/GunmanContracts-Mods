@@ -5,3 +5,9 @@ __pycache__/
 feature/
 game_dir.txt
 GameDir.local.props
+
+# Nexus media (videos, thumbnails, header art and their prompts) and packaged zips
+media/
+release/*.png
+release/*-prompt.txt
+release/*.zip
