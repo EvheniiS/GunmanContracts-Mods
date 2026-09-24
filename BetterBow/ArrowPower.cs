@@ -27,6 +27,7 @@ namespace BetterBow
                 ArrowStab.Active = __instance != null && __instance.isArrow;
                 if (U.Dbg && __instance != null && __instance.Pointer == Quiver.CarriedKnife)
                     Log.Msg($"carried quiver arrow stabbed (damage {__instance.knifeDamage})");
+                ThrowAssist.BeforeStab(__instance);
                 ThrowAssist.StabStart(__instance, args);
             }
             catch { ArrowStab.Active = false; }
@@ -35,7 +36,7 @@ namespace BetterBow
         static void Postfix(ANBKnife __instance)
         {
             ArrowStab.Active = false;
-            try { ThrowAssist.StabEnd(__instance); } catch { }
+            try { ThrowAssist.AfterStab(__instance); ThrowAssist.StabEnd(__instance); } catch { }
         }
     }
 

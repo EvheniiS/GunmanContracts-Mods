@@ -24,7 +24,10 @@ namespace BetterBow
         static bool _haveKnife;
         static float _speed = 10f, _stopDistance = 0.5f, _searchOverride, _flyOverride;
         static bool _ignoreBody, _ignoreLegs, _ignoreArms;
-        static float _bodyPartTime;
+        static float _bodyPartTime, _knifeRay = -1f;
+        // Every quiver arrow the assist has thrown (they can re-stab after the first miss).
+        static readonly System.Collections.Generic.HashSet<IntPtr> _thrown = new();
+        static float _savedRay = -1f;
 
         internal static IntPtr ThrownKnife;                // ANBKnife of the last assisted arrow, for the hit log
 
@@ -38,8 +41,9 @@ namespace BetterBow
             _searchOverride = t.targetSearchDistanceOverride; _flyOverride = t.maxFlyDistanceOverride;
             _ignoreBody = k.ignoreBodyPartsOnThrow; _ignoreLegs = k.ignoreBodyPartsOnThrow_Legs;
             _ignoreArms = k.ignoreBodyPartsOnThrow_Arms; _bodyPartTime = k.throwableBodyPartTime;
+            _knifeRay = k.knifeRayLength;
             if (U.Dbg) Log.Msg($"throw assist tuning from knife '{k.name}': speed {_speed:0.#} m/s, stop {_stopDistance:0.##} m, " +
-                               $"search {_searchOverride:0.#}, max fly {_flyOverride:0.#}, skip body parts {_ignoreBody} (legs {_ignoreLegs}, arms {_ignoreArms}, {_bodyPartTime:0.##} s)");
+                               $"search {_searchOverride:0.#}, max fly {_flyOverride:0.#}, stab ray {_knifeRay:0.##} m, skip body parts {_ignoreBody} (legs {_ignoreLegs}, arms {_ignoreArms}, {_bodyPartTime:0.##} s)");
         }
 
         // Fast enough to count as a throw (the same threshold the game uses for knives).
@@ -106,12 +110,13 @@ namespace BetterBow
                 string retarget = AvoidVest(t);
 
                 ThrownKnife = knife.Pointer;
+                _thrown.Add(knife.Pointer);
                 _stabs = 0;
                 if (U.Dbg)
                 {
                     var target = t.homingTarget;
                     Log.Msg(U.Alive(target)
-                        ? $"arrow thrown at {speed:0.0} m/s -> homing on '{target.name}' {U.Dist(target.position, rb.position):0.0} m away at {t.speed:0.#} m/s (tip correction {t.aimCorrectionAngle:0} deg){retarget}"
+                        ? $"arrow thrown at {speed:0.0} m/s (stab ray {knife.knifeRayLength:0.##} m -> {MathF.Max(knife.knifeRayLength, Settings.ThrowStabReach.Value):0.##} m on a stab) -> homing on '{target.name}' {U.Dist(target.position, rb.position):0.0} m away at {t.speed:0.#} m/s (tip correction {t.aimCorrectionAngle:0} deg){retarget}"
                         : $"arrow thrown at {speed:0.0} m/s - no target in view (radius {game.assistedThrowViewRadius:0.#} m, angle {game.assistedThrowViewAngle:0.#} deg)");
                 }
             }
@@ -140,6 +145,30 @@ namespace BetterBow
         static int _stabs;
         static bool _stabReachedEnemy;
         static string _stabCollider;
+
+        // A stab only does damage if ANBKnife.stabEnemy's check finds an enemy hit zone: a raycast from
+        // StabOrient along the stab line, knifeRayLength long, on StabMask. Otherwise it ForceUnstabs and
+        // the stabber tries again on the next contact - the "arrow stuck in him, wiggling" case (Sep 24
+        // log: 8 misses in 4 ms on spine_01/spine_03, EnemyCollisions layer). A bow shot arrives far
+        // faster and is deeper inside the body when contact registers; the arrow's short ray is tuned
+        // for that. A thrown arrow homes in at knife speed, so lengthen the ray for its stabs only.
+        internal static void BeforeStab(ANBKnife k)
+        {
+            _savedRay = -1f;
+            if (k == null || !_thrown.Contains(k.Pointer)) return;
+            float reach = Settings.ThrowStabReach.Value;
+            if (reach <= k.knifeRayLength) return;
+            _savedRay = k.knifeRayLength;
+            k.knifeRayLength = reach;
+        }
+
+        internal static void AfterStab(ANBKnife k)
+        {
+            if (_savedRay >= 0f && k != null) k.knifeRayLength = _savedRay;
+            _savedRay = -1f;
+        }
+
+        internal static void OnScene() => _thrown.Clear();
 
         internal static void StabStart(ANBKnife k, Il2CppHurricaneVR.Framework.Core.Stabbing.StabArgs args)
         {
