@@ -34,7 +34,8 @@ bow code.
 [size=4][b]Install[/b][/size]
 [list=1]
 [*]Install MelonLoader on [i]GunmanContracts.exe[/i] with the official installer.
-[*]Put [b]BetterBow.dll[/b] into the game's [i]Mods[/i] folder.
+[*]Extract the zip into the game folder (the one with [i]GunmanContracts.exe[/i]).
+[b]BetterBow.dll[/b] ends up in [i]Mods[/i]. Or copy it there by hand.
 [*]If you used [b]Arrow Grab Assist[/b] or [b]Arrow Quiver[/b] before, delete those DLLs from
 [i]Mods[/i]. Better Bow contains both.
 [*]Start the game. The first launch with MelonLoader takes a minute or two.
