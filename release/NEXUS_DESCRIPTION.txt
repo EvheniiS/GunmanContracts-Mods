@@ -69,13 +69,6 @@ PhoneSettingsRescue            = true   safety net for a stuck phone Settings bu
 DebugLog                       = false  log everything to the MelonLoader console
 [/code]
 
-[size=4][b]Good to know[/b][/size]
-[list]
-[*]The game only saves what is in your holsters when you use the gun wall or take the range
-elevator. A bow holstered and then quitting comes back where it was last saved. That's the
-game, not the mod.
-[/list]
-
 [size=4][b]Changelog[/b][/size]
 [b]1.1.0[/b]
 [list]
