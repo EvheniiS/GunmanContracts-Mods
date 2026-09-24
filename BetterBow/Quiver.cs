@@ -521,12 +521,13 @@ namespace BetterBow
             // to the grip point it holds, so the knuckle line measured in the HELD point's frame is
             // where it will be in the new point's frame too. R turns that line onto the arrow's tip
             // direction: holding a point rotated by R from the back grip puts the tip along it.
-            // Direction: the index->little-finger line, measured on the hand model, came out with the
-            // tip pointing UP in play testing, so Down uses the opposite way.
+            // Direction: index->little finger = tip out past the little finger = Down in a fist.
+            // (1.0.0 had this backwards: the "tip points up" report was made with the old
+            // DaggerOrientation = KnucklesReverse, i.e. the little->index direction.)
             var knuckles = KnuckleLineInHeldPoint(c.Hand, out var span);
             if (knuckles is Vector3 kLocal && dl > 1e-3f)
             {
-                if (tip == "Down") kLocal = new Vector3(-kLocal.x, -kLocal.y, -kLocal.z);
+                if (tip == "Up") kLocal = new Vector3(-kLocal.x, -kLocal.y, -kLocal.z);
                 var tipLocal = bt.InverseTransformDirection(new Vector3(dx / dl, dy / dl, dz / dl));
                 var r = Quaternion.FromToRotation(kLocal, tipLocal);
                 go.transform.Rotate(r.eulerAngles, Space.Self);

@@ -41,7 +41,7 @@ namespace BetterBow
             Settings.Create();
             _stringGrab = new StringGrab();
             _quiver = new Quiver();
-            LoggerInstance.Msg("loaded - string grab buffer, quiver, dagger grip, arrow throw assist, one-arrow barrels, arrow door breach.");
+            LoggerInstance.Msg("loaded - string grab buffer, quiver, dagger grip, arrow throw assist, one-arrow barrels, arrow door breach, pause/phone hand fix.");
         }
 
         public override void OnSceneWasInitialized(int buildIndex, string sceneName)
@@ -50,6 +50,7 @@ namespace BetterBow
             U.Prune(Hands);
             _stringGrab.OnScene();
             _quiver.OnScene();
+            PauseHands.OnScene();
             _fallbackScanAt = U.Now + 3.0;
             if (!_warmed) { _warmed = true; WarmUp(); }
         }
@@ -63,6 +64,7 @@ namespace BetterBow
                 if (!U.Alive(Loaders[i]) || !U.Alive(Loaders[i].bow)) Loaders.RemoveAt(i--);
             for (int i = 0; i < Hands.Count; i++)
                 if (!U.Alive(Hands[i])) Hands.RemoveAt(i--);
+            PauseHands.Update();                                        // runs with or without a bow
             if (Loaders.Count == 0) return;                             // no bow in the scene
 
             _stringGrab.Update();
@@ -97,7 +99,7 @@ namespace BetterBow
                 foreach (var t in new[] { typeof(HVRArrow), typeof(HVRArrowLoader), typeof(HVRPhysicsBow), typeof(HVRBowBase),
                                           typeof(HVRHandGrabber), typeof(HVRGrabbable), typeof(HVRSocket), typeof(HVRShoulderSocket),
                                           typeof(HVRPosableGrabPoint), typeof(HVRPosableHand), typeof(Il2CppHurricaneVR.Framework.Shared.HVRController),
-                                          typeof(ANBKnife), typeof(ANBAssistedThrowingObject), typeof(ANBBreakable), typeof(ANBGameLogic), typeof(ANBStaticGameManager),
+                                          typeof(ANBKnife), typeof(ANBAssistedThrowingObject), typeof(ANBBreakable), typeof(ANBGameLogic), typeof(ANBStaticGameManager), typeof(ANBSmartphone),
                                           typeof(Collider), typeof(Renderer), typeof(Camera) })
                 {
                     System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(t.TypeHandle);
@@ -113,7 +115,7 @@ namespace BetterBow
     internal static class Settings
     {
         internal static MelonPreferences_Entry<bool> StringGrab, RetrySpawn, ExplosiveBarrels, BreachDoors,
-            Quiver, HeadFallback, Haptics, GripSwitch, ThrowAssist, DebugLog;
+            Quiver, HeadFallback, Haptics, GripSwitch, ThrowAssist, HandsKeepParentAfterPause, PhoneSettingsRescue, DebugLog;
         internal static MelonPreferences_Entry<float> StringGrabRadius, StringGrabBuffer, RetryWindow,
             QuiverRadius, QuiverBuffer, NockRadius, SlipNockRadius, DropLifetime, DaggerFromNock, ThrowAssistSpeed;
         internal static MelonPreferences_Entry<string> DaggerTip;
@@ -146,6 +148,9 @@ namespace BetterBow
 
             ThrowAssist = c.CreateEntry("ThrowAssist", true, description: "A quiver arrow thrown by hand gets the game's knife throw aim assist (needs the game's own assisted throw setting on).");
             ThrowAssistSpeed = c.CreateEntry("ThrowAssistSpeed", 0f, description: "Metres per second a thrown arrow flies to its target. 0 = the same speed as the game's throwing knives.");
+
+            HandsKeepParentAfterPause = c.CreateEntry("HandsKeepParentAfterPause", true, description: "After the pause menu closes, put the physics hands back where they were before it opened (fixes hands drifting away when moving with the stick). Pauses are always logged.");
+            PhoneSettingsRescue = c.CreateEntry("PhoneSettingsRescue", true, description: "If the phone's Settings button gets stuck (the game's menu switch never finishes), open the menu and unstick it.");
 
             DebugLog = c.CreateEntry("DebugLog", false, description: "Log grabs, draws, nocks, grip switches, barrel hits and door breaches to the MelonLoader console.");
         }

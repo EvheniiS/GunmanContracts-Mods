@@ -61,7 +61,11 @@ namespace BetterBow
                 var game = ANBStaticGameManager.ANBmain;
                 var rb = arrow.Rigidbody;
                 var knife = arrow.GetComponent<ANBKnife>();
-                if (game == null || !U.Alive(rb) || !U.Alive(knife)) return;
+                if (game == null || !U.Alive(rb) || !U.Alive(knife))
+                {
+                    if (U.Dbg) Log.Msg($"arrow throw assist: nothing to work with (game {game != null}, rigidbody {U.Alive(rb)}, knife {U.Alive(knife)})");
+                    return;
+                }
                 var v = rb.linearVelocity;
                 float speed = MathF.Sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
                 if (!game.assistedThrow)
@@ -75,8 +79,12 @@ namespace BetterBow
                     return;
                 }
 
+                bool had = U.Alive(knife.ThrowScript);
                 var t = ThrowScriptOf(arrow, knife, rb);
-                if (t == null || t.isHoming) return;
+                if (t == null) return;
+                // No "already homing" check: the constructor sets isHoming = true, so a fresh script
+                // reads as homing (1.1.0 returned there on every throw, silently).
+                if (U.Dbg) Log.Msg($"arrow throw script: {(had ? "the arrow's own" : "added by the mod")}, allowAssistedThrow {knife.allowAssistedThrow}");
                 t.dontUse = false;
                 if (Settings.ThrowAssistSpeed.Value > 0f) t.speed = Settings.ThrowAssistSpeed.Value;
                 // Keep the arrow pointing at the target the whole way, no knife spin.
