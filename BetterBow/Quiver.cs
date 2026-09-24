@@ -28,7 +28,6 @@ namespace BetterBow
     internal sealed class Quiver
     {
         internal static IntPtr CarriedKnife;               // ANBKnife of the carried arrow, for the stab log
-        static readonly string[] DaggerModes = { "Knuckles", "KnucklesReverse", "FlipX", "FlipY" };
 
         readonly Dictionary<IntPtr, BowState> _bowState = new();
         readonly Dictionary<IntPtr, HandState> _handState = new();
@@ -407,9 +406,8 @@ namespace BetterBow
                 bool secondary = ctrl.SecondaryButtonState.Active;
                 if (secondary && !c.SecondaryWasDown)
                 {
-                    int i = Array.IndexOf(DaggerModes, DaggerMode());
-                    Settings.DaggerOrientation.Value = DaggerModes[(i + 1) % DaggerModes.Length];
-                    Log.Msg($"dagger orientation -> {Settings.DaggerOrientation.Value}");
+                    Settings.DaggerTip.Value = DaggerTip() == "Down" ? "Up" : "Down";
+                    Log.Msg($"dagger tip -> {Settings.DaggerTip.Value}");
                     var old = c.DaggerPoint;
                     c.DaggerPoint = null;
                     if (c.Dagger)
@@ -430,7 +428,7 @@ namespace BetterBow
                 if (!U.Alive(c.DaggerPoint)) return;
                 SwapGrip(c, c.Dagger ? c.BackPoint : c.DaggerPoint);
                 c.Dagger = !c.Dagger;
-                if (U.Dbg) Log.Msg($"grip -> {(c.Dagger ? $"dagger ({DaggerMode()}, {Settings.DaggerFromNock.Value * 100:0} cm from the nock)" : "nocking")}");
+                if (U.Dbg) Log.Msg($"grip -> {(c.Dagger ? $"dagger (tip {DaggerTip()}, {Settings.DaggerFromNock.Value * 100:0} cm from the nock)" : "nocking")}");
             }
             catch (Exception e) { Log.Warning($"grip switch failed: {e.GetType().Name}: {e.Message}"); }
         }
@@ -473,12 +471,8 @@ namespace BetterBow
             if (U.Dbg) Log.Msg($"grip swap: target point {U.Dist(tt.position, hp) * 100:0.0} cm from the old grip frame");
         }
 
-        static string DaggerMode()
-        {
-            var v = (Settings.DaggerOrientation.Value ?? "").Trim();
-            foreach (var m in DaggerModes) if (string.Equals(m, v, StringComparison.OrdinalIgnoreCase)) return m;
-            return DaggerModes[0];
-        }
+        static string DaggerTip() =>
+            string.Equals((Settings.DaggerTip.Value ?? "").Trim(), "Up", StringComparison.OrdinalIgnoreCase) ? "Up" : "Down";
 
         HVRPosableGrabPoint MakeDaggerPoint(Carry c)
         {
@@ -523,31 +517,29 @@ namespace BetterBow
                 go.transform.position = new Vector3(from.x + dx * k, from.y + dy * k, from.z + dz * k);
             }
             go.transform.rotation = bt.rotation;
-            var mode = DaggerMode();
-            string how = mode;
-            if (mode.StartsWith("Knuckles"))
+            var tip = DaggerTip();
+            string how;
+            // Shaft along the knuckle line, through the curled fingers. The hand pose is fixed relative
+            // to the grip point it holds, so the knuckle line measured in the HELD point's frame is
+            // where it will be in the new point's frame too. R turns that line onto the arrow's tip
+            // direction: holding a point rotated by R from the back grip puts the tip along it.
+            // Direction: the index->little-finger line, measured on the hand model, came out with the
+            // tip pointing UP in play (Evhenii, Sep 24 2026), so Down uses the opposite way.
+            var knuckles = KnuckleLineInHeldPoint(c.Hand, out var span);
+            if (knuckles is Vector3 kLocal && dl > 1e-3f)
             {
-                // Shaft along the knuckle line. The hand pose is fixed relative to the grip point it
-                // holds, so the knuckle line measured in the HELD point's frame is where it will be in
-                // the new point's frame too. R turns that line onto the arrow's tip direction:
-                // holding a point rotated by R from the back grip puts the tip along the knuckles.
-                var knuckles = KnuckleLineInHeldPoint(c.Hand, out var span);
-                if (knuckles is Vector3 kLocal && dl > 1e-3f)
-                {
-                    if (mode == "KnucklesReverse") kLocal = new Vector3(-kLocal.x, -kLocal.y, -kLocal.z);
-                    var tipLocal = bt.InverseTransformDirection(new Vector3(dx / dl, dy / dl, dz / dl));
-                    var r = Quaternion.FromToRotation(kLocal, tipLocal);
-                    go.transform.Rotate(r.eulerAngles, Space.Self);
-                    float cos = Math.Clamp(kLocal.x * tipLocal.x + kLocal.y * tipLocal.y + kLocal.z * tipLocal.z, -1f, 1f);
-                    how = $"{mode} (shaft was {MathF.Acos(cos) * 180f / MathF.PI:0} deg off the knuckle line, knuckle span {span * 100:0.0} cm)";
-                }
-                else
-                {
-                    go.transform.Rotate(new Vector3(1f, 0f, 0f), 180f, Space.Self);
-                    how = $"{mode} unavailable (no hand bones) - used FlipX";
-                }
+                if (tip == "Down") kLocal = new Vector3(-kLocal.x, -kLocal.y, -kLocal.z);
+                var tipLocal = bt.InverseTransformDirection(new Vector3(dx / dl, dy / dl, dz / dl));
+                var r = Quaternion.FromToRotation(kLocal, tipLocal);
+                go.transform.Rotate(r.eulerAngles, Space.Self);
+                float cos = Math.Clamp(kLocal.x * tipLocal.x + kLocal.y * tipLocal.y + kLocal.z * tipLocal.z, -1f, 1f);
+                how = $"tip {tip} (shaft was {MathF.Acos(cos) * 180f / MathF.PI:0} deg off the knuckle line, knuckle span {span * 100:0.0} cm)";
             }
-            else go.transform.Rotate(mode == "FlipY" ? new Vector3(0f, 1f, 0f) : new Vector3(1f, 0f, 0f), 180f, Space.Self);
+            else
+            {
+                go.transform.Rotate(new Vector3(1f, 0f, 0f), 180f, Space.Self);
+                how = "no hand bones found - plain 180-degree flip";
+            }
             if (U.Dbg) Log.Msg($"dagger grip built: {Settings.DaggerFromNock.Value * 100:0} cm from the nock, {how}");
             return pg;
         }

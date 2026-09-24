@@ -11,7 +11,8 @@ shoulder with the other hand and press grip: you draw an arrow. Bring it to the 
 it. The quiver is wherever the bow was holstered, so the other shoulder stays free for a rifle
 or shotgun. It works with either hand. Taking an arrow straight from the string still works too.
 [*][b]Dagger grip.[/b] Holding a drawn arrow, press [b]A[/b] (right hand) or [b]X[/b] (left hand) to
-flip it into a knife grip, tip down past your little finger. Press again to switch back.
+flip it into a knife grip: the shaft runs along your knuckles, tip pointing down (or up, if
+you prefer: DaggerTip). Press again to switch back.
 A held arrow stabs enemies either way.
 [*][b]String grab on the first press.[/b] When shooting fast you often had to press grip twice
 to get the next arrow. The game only grabs on the exact frame you press grip, and while grip is
@@ -53,6 +54,7 @@ DroppedArrowLifetime           = 10     seconds before a dropped arrow disappear
 HapticOnDraw                   = true   short buzz when you draw
 GripSwitch                     = true   A / X switches to the dagger grip
 DaggerGripFromNock             = 0.25   where on the shaft the dagger grip holds
+DaggerTip                      = Down   dagger grip tip points Down or Up
 DebugLog                       = false  log everything to the MelonLoader console
 [/code]
 

@@ -115,7 +115,7 @@ namespace BetterBow
             Quiver, HeadFallback, Haptics, GripSwitch, DebugLog;
         internal static MelonPreferences_Entry<float> StringGrabRadius, StringGrabBuffer, RetryWindow,
             QuiverRadius, QuiverBuffer, NockRadius, SlipNockRadius, DropLifetime, DaggerFromNock;
-        internal static MelonPreferences_Entry<string> DaggerOrientation;
+        internal static MelonPreferences_Entry<string> DaggerTip;
 
         internal static void Create()
         {
@@ -141,7 +141,7 @@ namespace BetterBow
 
             GripSwitch = c.CreateEntry("GripSwitch", true, description: "A (right hand) / X (left hand) switches a quiver arrow between the nocking grip and a dagger grip.");
             DaggerFromNock = c.CreateEntry("DaggerGripFromNock", 0.25f, description: "Dagger grip: metres from the nock end towards the tip where the hand holds the arrow.");
-            DaggerOrientation = c.CreateEntry("DaggerOrientation", "Knuckles", description: "Dagger grip: Knuckles = shaft along the knuckles, tip out past the little finger; KnucklesReverse = tip out past the index finger; FlipX / FlipY = plain 180-degree flips. With DebugLog on, B / Y cycles it in game.");
+            DaggerTip = c.CreateEntry("DaggerTip", "Down", description: "Dagger grip: which way the arrow tip points, Down (default) or Up. The shaft runs along your knuckles either way. With DebugLog on, B / Y flips it in game.");
 
             DebugLog = c.CreateEntry("DebugLog", false, description: "Log grabs, draws, nocks, grip switches, barrel hits and door breaches to the MelonLoader console.");
         }
