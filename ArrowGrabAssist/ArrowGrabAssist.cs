@@ -7,7 +7,7 @@ using System.Reflection;
 using Il2CppInterop.Runtime.InteropTypes;
 using MelonLoader;
 
-[assembly: MelonInfo(typeof(ArrowGrabAssist.ArrowGrabAssistMod), "ArrowGrabAssist", "1.2.0", "Evhenii")]
+[assembly: MelonInfo(typeof(ArrowGrabAssist.ArrowGrabAssistMod), "ArrowGrabAssist", "1.2.0", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace ArrowGrabAssist
