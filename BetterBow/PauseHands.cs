@@ -3,29 +3,26 @@ using Il2Cpp;
 using Il2CppHurricaneVR.Framework.Core.Player;
 using UnityEngine;
 using static BetterBow.BetterBowMod;
+using Object = UnityEngine.Object;
 
 namespace BetterBow
 {
     // ---- Pause menu / phone Settings: log it, and undo what it leaves behind ------------------------
-    // Not a bow feature, but it breaks the bow (hands drift away when moving with the left stick).
+    // Not a bow feature, but it broke with the bow (hands drift away when moving with the left stick,
+    // phone Settings does nothing).
     //
-    // ANBGameLogic.pauseGame(useHands, showMenu) is a toggle on Paused. In VR:
-    //  * pausing reparents both physics hands (ANBUIManager.LeftHand / RightHand, HVRJointHand) onto
-    //    their own Target, so they follow the controllers while timeScale is 0;
-    //  * unpausing (only when useHands) reparents them to playerHealth.transform.parent - the player
-    //    rig - which need not be where they were before the pause. A physics hand parented under the
-    //    rig is dragged along by locomotion ON TOP of its joint pulling it to the controller, so it
-    //    runs ahead of the player: the "hands move away when I move with the left stick" symptom.
-    //  -> Remember each hand's parent when the game pauses; after the unpause put it back if it
-    //     differs (HandsKeepParentAfterPause), and log both either way.
-    //
-    // The phone's Settings button is ANBSmartphone.showMainMenu: it returns at once while
-    // switchingToMenu is set, sets it, and starts showMenuExec, which releases the phone, waits
-    // 0.05 s, calls pauseGame(true, true) and only then clears switchingToMenu. If that coroutine
-    // dies on the way (its object gets disabled, e.g. the phone going back to the wrist), the flag
-    // stays set and every later press is ignored: "Settings stops responding".
-    //  -> If the flag is still set a second after a press and the game hasn't paused, finish the
-    //     coroutine's job: pauseGame(true, true) and clear the flag (PhoneSettingsRescue).
+    // ANBGameLogic.pauseGame(useHands, showMenu) is a toggle on Paused. In VR, pausing first reparents
+    // both physics hands (ANBUIManager.LeftHand / RightHand, HVRJointHand) onto their own Target so
+    // they follow the controllers while timeScale is 0, then calls .gameObject on ANBwristHudLeft and
+    // ANBwristHudRight, then sets timeScale, Paused and shows the menu. Unpausing puts the hands back
+    // under the player rig. Log of Sep 24 2026: the pause threw at the wrist HUD step because the
+    // slot held a destroyed ANBWristHud (taken by the dagger grip's cloned grip point, see
+    // Quiver.MakeDaggerPoint). Result: hands stuck on the controllers with the game running (they
+    // get dragged by locomotion on top of their joint pull), no menu, and the phone's
+    // switchingToMenu never cleared, so Settings stays dead.
+    //  -> Repair dead wrist HUD slots before a pause; put hands found on their Target outside a
+    //     pause back under their pre-pause parent; check the parent after every unpause; finish a
+    //     phone menu switch that never completed (PhoneSettingsRescue). Everything is logged.
     internal static class PauseHands
     {
         static Transform _leftBefore, _rightBefore;
@@ -60,9 +57,37 @@ namespace BetterBow
         }
 
         // ---- pause / unpause -----------------------------------------------------------------------
+        // Found in the Sep 24 log: pauseGame threw a NullReferenceException half-way (after moving the
+        // hands onto their controllers, before Paused/timeScale/menu) because ANBwristHudRight was a
+        // destroyed object - ANBWristHud.Awake on a cloned arrow grip point had taken the slot (fixed
+        // at the source in Quiver.MakeDaggerPoint). The pause branch calls .gameObject on both wrist
+        // HUDs without the liveness check the unpause branch has, so repair dead slots first.
+        static void RepairWristHuds(ANBGameLogic game)
+        {
+            var l = game.ANBwristHudLeft; var r = game.ANBwristHudRight;
+            bool deadL = l != null && !U.Alive(l), deadR = r != null && !U.Alive(r);
+            if (!deadL && !deadR) return;
+            // Each HUD knows its partner.
+            ANBWristHud fixL = deadL && U.Alive(r) ? r.otherWristHud : null;
+            ANBWristHud fixR = deadR && U.Alive(l) ? l.otherWristHud : null;
+            if ((deadL && !U.Alive(fixL)) || (deadR && !U.Alive(fixR)))
+                foreach (var o in Object.FindObjectsByType(Il2CppInterop.Runtime.Il2CppType.Of<ANBWristHud>(), FindObjectsSortMode.None))
+                {
+                    var w = o.TryCast<ANBWristHud>();
+                    if (!U.Alive(w) || U.Alive(w.GetComponentInParent<Il2CppHurricaneVR.Framework.Weapons.Bow.HVRArrow>())) continue;
+                    if (deadL && !U.Alive(fixL) && w.isLeft) fixL = w;
+                    if (deadR && !U.Alive(fixR) && w.isRight) fixR = w;
+                }
+            if (deadL) game.ANBwristHudLeft = U.Alive(fixL) ? fixL : null;
+            if (deadR) game.ANBwristHudRight = U.Alive(fixR) ? fixR : null;
+            Log.Warning($"the game's {(deadL ? "left " : "")}{(deadR ? "right " : "")}wrist HUD slot held a destroyed object " +
+                        $"(the pause would have crashed half-way) - repaired: left {U.Name(game.ANBwristHudLeft)}, right {U.Name(game.ANBwristHudRight)}");
+        }
+
         internal static void BeforePause(ANBGameLogic game, bool useHands, bool showMenu)
         {
             bool pausing = !game.Paused;
+            if (pausing) RepairWristHuds(game);
             var l = Hand(game, true); var r = Hand(game, false);
             if (pausing)
             {
@@ -124,6 +149,7 @@ namespace BetterBow
             try
             {
                 UpdatePhone(game);
+                RecoverStuckHands(game);
                 UpdateDrift(game);
             }
             catch (Exception e) { if (U.Dbg) Log.Warning($"pause/hand check failed: {e.GetType().Name}: {e.Message}"); }
@@ -146,6 +172,28 @@ namespace BetterBow
             if (!Settings.PhoneSettingsRescue.Value) return;
             _phone.switchingToMenu = false;
             game.pauseGame(true, true);
+        }
+
+        // A pause that crashed half-way leaves the hands parented to their own Target (the controller
+        // pose) with the game running: the "hands move away when I use the stick" state. The game never
+        // does that outside a pause, so undo it.
+        static void RecoverStuckHands(ANBGameLogic game)
+        {
+            if (game.Paused || !Settings.HandsKeepParentAfterPause.Value) return;
+            Unstick(game, true, _leftBefore, _leftBeforeName);
+            Unstick(game, false, _rightBefore, _rightBeforeName);
+        }
+
+        static void Unstick(ANBGameLogic game, bool left, Transform before, string beforeName)
+        {
+            var h = Hand(game, left);
+            if (h == null || !U.Alive(h.Target)) return;
+            var p = h.transform.parent;
+            if (!U.Alive(p) || p.Pointer != h.Target.Pointer) return;
+            var to = U.Alive(before) ? before : game.playerHealth != null && U.Alive(game.playerHealth) ? game.playerHealth.transform.parent : null;
+            if (!U.Alive(to)) return;
+            h.transform.SetParent(to, true);
+            Log.Warning($"{(left ? "left" : "right")} hand was left on its controller by an unfinished pause - moved back under '{PathOf(to)}'");
         }
 
         // Log when a physics hand stays far from the controller it follows - the visible symptom.

@@ -12,7 +12,7 @@ using MelonLoader;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(BetterBow.BetterBowMod), "Better Bow", "1.1.1", "Evgeeso")]
+[assembly: MelonInfo(typeof(BetterBow.BetterBowMod), "Better Bow", "1.1.2", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace BetterBow
@@ -118,6 +118,7 @@ namespace BetterBow
             Quiver, HeadFallback, Haptics, GripSwitch, ThrowAssist, HandsKeepParentAfterPause, PhoneSettingsRescue, DebugLog;
         internal static MelonPreferences_Entry<float> StringGrabRadius, StringGrabBuffer, RetryWindow,
             QuiverRadius, QuiverBuffer, NockRadius, SlipNockRadius, DropLifetime, DaggerFromNock, ThrowAssistSpeed;
+        internal static MelonPreferences_Entry<bool> ThrowAssistAvoidVest;
         internal static MelonPreferences_Entry<string> DaggerTip;
 
         internal static void Create()
@@ -149,6 +150,7 @@ namespace BetterBow
             ThrowAssist = c.CreateEntry("ThrowAssist", true, description: "A quiver arrow thrown by hand gets the game's knife throw aim assist (needs the game's own assisted throw setting on).");
             ThrowAssistSpeed = c.CreateEntry("ThrowAssistSpeed", 0f, description: "Metres per second a thrown arrow flies to its target. 0 = the same speed as the game's throwing knives.");
 
+            ThrowAssistAvoidVest = c.CreateEntry("ThrowAssistAvoidVest", true, description: "A thrown arrow aims at the head of an enemy wearing a vest (an arrow in armor does almost no damage).");
             HandsKeepParentAfterPause = c.CreateEntry("HandsKeepParentAfterPause", true, description: "After the pause menu closes, put the physics hands back where they were before it opened (fixes hands drifting away when moving with the stick). Pauses are always logged.");
             PhoneSettingsRescue = c.CreateEntry("PhoneSettingsRescue", true, description: "If the phone's Settings button gets stuck (the game's menu switch never finishes), open the menu and unstick it.");
 

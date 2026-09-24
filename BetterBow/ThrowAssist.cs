@@ -103,17 +103,77 @@ namespace BetterBow
                 if (knife.ignoreBodyPartsOnThrow) knife.StartCoroutine(knife.ToggleBodyPartCollisionsExec(0f));
                 knife.makeTempStabAll();
                 t.StartAssistedThrow();
+                string retarget = AvoidVest(t);
 
                 ThrownKnife = knife.Pointer;
+                _stabs = 0;
                 if (U.Dbg)
                 {
                     var target = t.homingTarget;
                     Log.Msg(U.Alive(target)
-                        ? $"arrow thrown at {speed:0.0} m/s -> homing on '{target.name}' {U.Dist(target.position, rb.position):0.0} m away at {t.speed:0.#} m/s (tip correction {t.aimCorrectionAngle:0} deg)"
+                        ? $"arrow thrown at {speed:0.0} m/s -> homing on '{target.name}' {U.Dist(target.position, rb.position):0.0} m away at {t.speed:0.#} m/s (tip correction {t.aimCorrectionAngle:0} deg){retarget}"
                         : $"arrow thrown at {speed:0.0} m/s - no target in view (radius {game.assistedThrowViewRadius:0.#} m, angle {game.assistedThrowViewAngle:0.#} deg)");
                 }
             }
             catch (Exception e) { Log.Warning($"arrow throw assist skipped: {e.GetType().Name}: {e.Message}"); }
+        }
+
+        // The game's homing always picks the enemy's knife spot on the chest. A stab into a hit zone
+        // marked isArmored goes to ANBBasicNPC.TakeArmorDamage with a fixed damage of 1 (see
+        // ANBGameLogic.StabEnemyFinal), so an arrow thrown at a vest sticks and does nothing.
+        // Aim at the head instead when the enemy wears one.
+        static string AvoidVest(ANBAssistedThrowingObject t)
+        {
+            var target = t.homingTarget;
+            if (!U.Alive(target)) return "";
+            var npc = target.GetComponentInParent<ANBBasicNPC>();
+            if (!U.Alive(npc)) return " (no enemy script above the target)";
+            if (!npc.hasVest) return " (no vest)";
+            if (!Settings.ThrowAssistAvoidVest.Value) return " (enemy wears a vest - ThrowAssistAvoidVest is off)";
+            var head = npc.aimAtHead;
+            if (!U.Alive(head)) return " (enemy wears a vest, no head aim point)";
+            t.homingTarget = head;
+            return $" - enemy wears a vest, retargeted to '{head.name}'";
+        }
+
+        // ---- what a thrown arrow's stab actually did (DebugLog) -----------------------------------
+        static int _stabs;
+        static bool _stabReachedEnemy;
+        static string _stabCollider;
+
+        internal static void StabStart(ANBKnife k, Il2CppHurricaneVR.Framework.Core.Stabbing.StabArgs args)
+        {
+            if (!U.Dbg || k == null || k.Pointer != ThrownKnife) return;
+            _stabReachedEnemy = false;
+            _stabCollider = "?";
+            try
+            {
+                var col = args?.Collision?.collider;
+                if (U.Alive(col)) _stabCollider = $"{col.name} (layer {LayerMask.LayerToName(col.gameObject.layer)})";
+            }
+            catch { }
+        }
+
+        internal static void StabEnd(ANBKnife k)
+        {
+            if (!U.Dbg || k == null || k.Pointer != ThrownKnife) return;
+            if (++_stabs > 12) return;
+            if (!_stabReachedEnemy)
+                Log.Msg($"thrown arrow stab #{_stabs} into {_stabCollider}: no enemy hit zone on the stab ray - no damage");
+        }
+
+        internal static void EnemyStab(ANBKnife k, Collider col)
+        {
+            if (!U.Dbg || k == null || k.Pointer != ThrownKnife) return;
+            _stabReachedEnemy = true;
+            var zone = U.Alive(col) ? col.GetComponent<ANBEnemyDetect>() : null;
+            string where = !U.Alive(zone) ? "no hit-zone script"
+                : zone.head ? "head" : zone.chest ? "chest" : zone.stomach ? "stomach" : zone.groin ? "groin"
+                : zone.leftArm || zone.rightArm ? "arm" : zone.leftLeg || zone.rightLeg ? "leg" : "other";
+            bool armored = U.Alive(zone) && zone.isArmored;
+            Log.Msg($"thrown arrow stab #{_stabs + 1} into {U.Name(col)}: {where}" +
+                    (armored ? " - ARMORED, the game deals 1 armor damage instead of the arrow's " + k.knifeDamage.ToString("0")
+                             : $" - stab damage {k.knifeDamage:0}"));
         }
 
         // The arrow's own ThrowScript if the prefab has one, else a new one on the rigidbody's object
@@ -141,6 +201,15 @@ namespace BetterBow
             var at = arrow.transform;
             var tip = at.InverseTransformDirection(Quiver.TipDirection(arrow, at.position));
             return -MathF.Atan2(tip.x, tip.z) * 180f / MathF.PI;
+        }
+    }
+
+    [HarmonyLib.HarmonyPatch(typeof(ANBGameLogic), nameof(ANBGameLogic.StabEnemyFinal))]
+    internal static class StabEnemyFinalPatch
+    {
+        static void Prefix(Collider collider, ANBKnife knifeScript)
+        {
+            try { ThrowAssist.EnemyStab(knifeScript, collider); } catch { }
         }
     }
 

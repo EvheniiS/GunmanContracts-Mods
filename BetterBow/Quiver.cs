@@ -485,8 +485,22 @@ namespace BetterBow
         {
             var back = c.BackPoint;
             var bt = back.transform;
+            // The clone's preview hand carries an ANBWristHud, and ANBWristHud.Awake writes itself into
+            // the game's global ANBwristHudLeft/Right with no check. Once the arrow is destroyed that
+            // slot is dead, and the next pause (phone Settings, menu button) throws half-way: hands
+            // left on the controllers, no menu. Put the game's own HUDs back and remove the clone's.
+            var game = ANBStaticGameManager.ANBmain;
+            var hudL = game?.ANBwristHudLeft; var hudR = game?.ANBwristHudRight;
             var go = Object.Instantiate(back.gameObject, bt.parent);
             go.name = DaggerGripName;
+            if (game != null)
+            {
+                bool tookL = !Same(game.ANBwristHudLeft, hudL), tookR = !Same(game.ANBwristHudRight, hudR);
+                if (tookL) game.ANBwristHudLeft = hudL;
+                if (tookR) game.ANBwristHudRight = hudR;
+                if ((tookL || tookR) && U.Dbg) Log.Msg($"dagger grip clone took the game's {(tookL ? "left " : "")}{(tookR ? "right " : "")}wrist HUD slot - given back");
+            }
+            foreach (var w in go.GetComponentsInChildren<ANBWristHud>(true)) Object.Destroy(w);
             // The grip point carries the hand poser's preview hand (RightHand_Gloves_LOD0 ...) and its
             // wrist health display (UI, not a Renderer). Hidden on the prefab's own points, visible on
             // a runtime clone as a ghost glove on the arrow. The pose itself is data: destroy the
@@ -567,6 +581,8 @@ namespace BetterBow
             float dl = MathF.Sqrt(dx * dx + dy * dy + dz * dz);
             return dl > 1e-3f ? new Vector3(dx / dl, dy / dl, dz / dl) : arrow.transform.forward;
         }
+
+        static bool Same(Object a, Object b) => (a == null ? IntPtr.Zero : a.Pointer) == (b == null ? IntPtr.Zero : b.Pointer);
 
         static void HideChildren(Transform t, List<IntPtr> keep)
         {
