@@ -1,29 +1,31 @@
-[size=5][b]Arrow Grab Assist[/b][/size]
+[size=5][b]Better Bow[/b][/size]
 
-Grab the next arrow on the [b]first[/b] grip press, every time, even when you're firing fast.
-Plus: [b]one arrow now detonates an explosive barrel[/b] instead of two.
+The bow in Gunman Contracts, fixed and expanded: a [b]quiver on your shoulder[/b], an arrow you can
+[b]stab with[/b], a string that grabs on the [b]first[/b] press, arrows that [b]blow up barrels[/b] and
+[b]breach doors[/b]. Everything is optional and can be switched off on its own.
 
-[size=4][b]The problem[/b][/size]
-When you shoot fast, you often have to press grip twice to get the next arrow off the string.
-The game only grabs on the exact frame you press grip, and while you hold grip the hand can't
-pick up anything new. If your hand reaches the string a moment after you press, the press is
-ignored and you have to release and press again.
-
-In testing, the hand was usually only [b]2–6 cm[/b] from the string when the game ignored the
-press. The grab zone isn't too small; early presses were being thrown away.
-
-[size=4][b]What the mod does[/b][/size]
+[size=4][b]Features[/b][/size]
 [list]
-[*][b]Grip-press buffer:[/b] if you press grip near the bow string (within 15 cm) while holding the
-bow in your other hand and the game misses it, the mod completes the grab through the game's own
-grab function. Arrows, ammo and haptics behave exactly as normal. It only affects the bow
-string; everything else grabs as before.
-[*][b]Explosive barrels:[/b] arrows hit breakables with their raw damage (bullets and explosions get
-a multiplier, arrows don't), so a barrel needed two arrows. Now an arrow hit on an
-[i]explosive[/i] barrel always detonates it. Knives, bullets and non-explosive objects are unchanged.
+[*][b]Quiver.[/b] Holster the bow on a shoulder and take it in one hand. Reach back to that
+shoulder with the other hand and press grip: you draw an arrow. Bring it to the string to nock
+it. The quiver is wherever the bow was holstered, so the other shoulder stays free for a rifle
+or shotgun. It works with either hand. Taking an arrow straight from the string still works too.
+[*][b]Dagger grip.[/b] Holding a drawn arrow, press [b]A[/b] (right hand) or [b]X[/b] (left hand) to
+flip it into a knife grip, tip down past your little finger. Press again to switch back.
+A held arrow stabs enemies either way.
+[*][b]String grab on the first press.[/b] When shooting fast you often had to press grip twice
+to get the next arrow. The game only grabs on the exact frame you press grip, and while grip is
+held the hand can't pick up anything new, so a press a moment early was thrown away. Better Bow
+completes that grab through the game's own grab code (15 cm around the string).
+Tested: 55 of 55 fast draws on the first press.
+[*][b]Explosive barrels:[/b] one arrow detonates them. Arrows hit with raw damage (100) while a
+barrel has 250 health, so it took three. Knives, bullets and other objects are unchanged.
+[*][b]Doors:[/b] shooting an arrow at a door's "shoot here to burst open door" mark breaches it,
+exactly like a pistol shot (same range). Before, only guns could do it.
 [/list]
 
-Tested: 55 of 55 fast draws grabbed on the first press.
+Arrow counts, ammo and scoring are untouched: every arrow still goes through the game's own
+bow code.
 
 [size=4][b]Requirements[/b][/size]
 [url=https://github.com/LavaGang/MelonLoader/releases]MelonLoader 0.7.x[/url] (tested with 0.7.3)
@@ -31,22 +33,37 @@ Tested: 55 of 55 fast draws grabbed on the first press.
 [size=4][b]Install[/b][/size]
 [list=1]
 [*]Install MelonLoader on [i]GunmanContracts.exe[/i] with the official installer.
-[*]Put [b]ArrowGrabAssist.dll[/b] into the game's [i]Mods[/i] folder.
+[*]Put [b]BetterBow.dll[/b] into the game's [i]Mods[/i] folder.
+[*]If you used [b]Arrow Grab Assist[/b] or [b]Arrow Quiver[/b] before, delete those DLLs from
+[i]Mods[/i]. Better Bow contains both.
 [*]Start the game. The first launch with MelonLoader takes a minute or two.
 [/list]
 
 [size=4][b]Settings (optional)[/b][/size]
-After the first launch, edit [i]UserData\MelonPreferences.cfg[/i], section [b][ArrowGrabAssist][/b]:
+After the first launch, edit [i]UserData\MelonPreferences.cfg[/i], section [b][BetterBow][/b]:
 [code]
-Enabled                        = true   master switch
-GrabRadius                     = 0.15   metres from hand to string
-PressBufferSeconds             = 0.35   how late after pressing grip the grab can still happen
-RetryArrowSpawn                = true   spawn the arrow if the string was grabbed too soon after a shot
+StringGrabAssist               = true   the first-press string grab
+StringGrabRadius               = 0.15   metres from hand to string
 ExplosiveArrowsDetonateBarrels = true   one arrow detonates an explosive barrel
-DebugLog                       = false  log every assisted grab / barrel hit to the console
+ArrowsBreachDoors              = true   arrows open "shoot here" doors
+Quiver                         = true   draw arrows from the bow's holster
+QuiverRadius                   = 0.20   how close to the holster the hand must be
+NockRadius                     = 0.15   how close to the string a carried arrow nocks
+DroppedArrowLifetime           = 10     seconds before a dropped arrow disappears
+HapticOnDraw                   = true   short buzz when you draw
+GripSwitch                     = true   A / X switches to the dagger grip
+DaggerGripFromNock             = 0.25   where on the shaft the dagger grip holds
+DebugLog                       = false  log everything to the MelonLoader console
 [/code]
 
+[size=4][b]Good to know[/b][/size]
+[list]
+[*]The game only saves what is in your holsters when you use the gun wall or take the range
+elevator. A bow holstered and then quitting comes back where it was last saved. That's the
+game, not the mod.
+[/list]
+
 [size=4][b]Uninstall[/b][/size]
-Delete [i]Mods\ArrowGrabAssist.dll[/i].
+Delete [i]Mods\BetterBow.dll[/i].
 
 Tested on game version 0.3.1.0, MelonLoader 0.7.3, Quest 3 via Virtual Desktop.

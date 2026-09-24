@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <AssemblyName>ArrowQuiver</AssemblyName>
-    <RootNamespace>ArrowQuiver</RootNamespace>
+    <AssemblyName>BetterBow</AssemblyName>
+    <RootNamespace>BetterBow</RootNamespace>
     <Nullable>disable</Nullable>
     <LangVersion>latest</LangVersion>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
