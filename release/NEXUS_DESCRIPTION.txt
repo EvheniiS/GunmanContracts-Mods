@@ -1,0 +1,52 @@
+[size=5][b]Arrow Grab Assist[/b][/size]
+
+Grab the next arrow on the [b]first[/b] grip press, every time, even when you're firing fast.
+Plus: [b]one arrow now detonates an explosive barrel[/b] instead of two.
+
+[size=4][b]The problem[/b][/size]
+When you shoot fast, you often have to press grip twice to get the next arrow off the string.
+The game only grabs on the exact frame you press grip, and while you hold grip the hand can't
+pick up anything new. If your hand reaches the string a moment after you press, the press is
+ignored and you have to release and press again.
+
+In testing, the hand was usually only [b]2–6 cm[/b] from the string when the game ignored the
+press. The grab zone isn't too small; early presses were being thrown away.
+
+[size=4][b]What the mod does[/b][/size]
+[list]
+[*][b]Grip-press buffer:[/b] if you press grip near the bow string (within 15 cm) while holding the
+bow in your other hand and the game misses it, the mod completes the grab through the game's own
+grab function. Arrows, ammo and haptics behave exactly as normal. It only affects the bow
+string; everything else grabs as before.
+[*][b]Explosive barrels:[/b] arrows hit breakables with their raw damage (bullets and explosions get
+a multiplier, arrows don't), so a barrel needed two arrows. Now an arrow hit on an
+[i]explosive[/i] barrel always detonates it. Knives, bullets and non-explosive objects are unchanged.
+[/list]
+
+Tested: 55 of 55 fast draws grabbed on the first press.
+
+[size=4][b]Requirements[/b][/size]
+[url=https://github.com/LavaGang/MelonLoader/releases]MelonLoader 0.7.x[/url] (tested with 0.7.3)
+
+[size=4][b]Install[/b][/size]
+[list=1]
+[*]Install MelonLoader on [i]GunmanContracts.exe[/i] with the official installer.
+[*]Put [b]ArrowGrabAssist.dll[/b] into the game's [i]Mods[/i] folder.
+[*]Start the game. The first launch with MelonLoader takes a minute or two.
+[/list]
+
+[size=4][b]Settings (optional)[/b][/size]
+After the first launch, edit [i]UserData\MelonPreferences.cfg[/i], section [b][ArrowGrabAssist][/b]:
+[code]
+Enabled                        = true   master switch
+GrabRadius                     = 0.15   metres from hand to string
+PressBufferSeconds             = 0.35   how late after pressing grip the grab can still happen
+RetryArrowSpawn                = true   spawn the arrow if the string was grabbed too soon after a shot
+ExplosiveArrowsDetonateBarrels = true   one arrow detonates an explosive barrel
+DebugLog                       = false  log every assisted grab / barrel hit to the console
+[/code]
+
+[size=4][b]Uninstall[/b][/size]
+Delete [i]Mods\ArrowGrabAssist.dll[/i].
+
+Tested on game version 0.3.1.0, MelonLoader 0.7.3, Quest 3 via Virtual Desktop.

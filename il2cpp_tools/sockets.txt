@@ -1,0 +1,199 @@
+== 1132 HurricaneVR.Framework.Core.Utils.HVRShoulderSocket
+   F VelocityCutoff                       float                                                   0x1d0
+   F storeID                              bool                                                    0x1d4
+   F leftShoulder                         bool                                                    0x1d5
+   F rightShoulder                        bool                                                    0x1d6
+   M bool CanHover(HurricaneVR.Framework.Core.HVRGrabbable grabbable)
+   M void OnGrabbed(HurricaneVR.Framework.Core.Grabbers.HVRGrabArgs args)
+   M void OnReleased(HurricaneVR.Framework.Core.HVRGrabbable grabbable)
+   M void .ctor()
+== 1131 HurricaneVR.Framework.Core.Utils.HVRShoulderGrabber
+   F VelocityCutoff                       float                                                   0xd0
+   M bool CanHover(HurricaneVR.Framework.Core.HVRGrabbable grabbable)
+   M void .ctor()
+== 938 HurricaneVR.Framework.Core.HVRSocketLink
+   F Socket                               HurricaneVR.Framework.Core.Grabbers.HVRSocket           0x20
+   F ReturnTime                           float                                                   0x28
+   F PlaySocketedSFX                      bool                                                    0x2c
+   F <Grabbable>k__BackingField           HurricaneVR.Framework.Core.HVRGrabbable                 0x30
+   F _returning                           bool                                                    0x38
+   F _time                                float                                                   0x3c
+   F _elapsed                             float                                                   0x40
+   F _startPos                            UnityEngine.Vector3                                     0x44
+   F _startRot                            UnityEngine.Quaternion                                  0x50
+   M HurricaneVR.Framework.Core.HVRGrabbable get_Grabbable()
+   M void set_Grabbable(HurricaneVR.Framework.Core.HVRGrabbable value)
+   M void Awake()
+   M void Setup()
+   M void Update()
+   M void OnGrabbableReleased(HurricaneVR.Framework.Core.Grabbers.HVRGrabberBase arg0, HurricaneVR.Framework.Core.HVRGrabbable arg1)
+   M void .ctor()
+   M void <Setup>b__13_0()
+== 1105 HurricaneVR.Framework.Core.Grabbers.HVRSocket
+   F GrabControl                          HurricaneVR.Framework.Shared.HVRGrabControls            0xc0
+   F GrabDetectionType                    HurricaneVR.Framework.Shared.HVRGrabDetection           0xc4
+   F CheckHandOverlap                     bool                                                    0xc8
+   F ReleasesOnHover                      bool                                                    0xc9
+   F InstantHandPose                      bool                                                    0xca
+   F HoldType                             HurricaneVR.Framework.Core.Grabbers.SocketHoldType      0xcc
+   F AutoSpawnPrefab                      UnityEngine.GameObject                                  0xd0
+   F GrabTimeout                          float                                                   0xd8
+   F GrabbableMustBeHeld                  bool                                                    0xdc
+   F GrabsFromHand                        bool                                                    0xdd
+   F HoverActions                         array[]                                                 0xe0
+   F HandGrabActions                      array[]                                                 0xe8
+   F ParentDisablesGrab                   bool                                                    0xf0
+   F ParentGrabbable                      HurricaneVR.Framework.Core.HVRGrabbable                 0xf8
+   F CanRemoveGrabbable                   bool                                                    0x100
+   F ScaleGrabbable                       bool                                                    0x101
+   F Size                                 float                                                   0x104
+   F CanGrabStabbingGrabbable             bool                                                    0x108
+   F AudioGrabbedOverride                 UnityEngine.AudioClip                                   0x110
+   F AudioReleasedOverride                UnityEngine.AudioClip                                   0x118
+   F AudioGrabbedFallback                 UnityEngine.AudioClip                                   0x120
+   F AudioReleasedFallback                UnityEngine.AudioClip                                   0x128
+   F SocketFilters                        array[]                                                 0x130
+   F FilterCondition                      HurricaneVR.Framework.Core.Grabbers.SocketCondition     0x138
+   F DistanceSource                       UnityEngine.Transform                                   0x140
+   F PoseTag                              string                                                  0x148
+   F DisableCollision                     bool                                                    0x150
+   F SpawnedPrefab                        HurricaneVR.Framework.Core.Grabbers.SocketSpawnEvent    0x158
+   F DebugScale                           bool                                                    0x160
+   F grabbedObject                        UnityEngine.GameObject                                  0x168
+   F _previousParent                      UnityEngine.Transform                                   0x170
+   F _previousScale                       UnityEngine.Vector3                                     0x178
+   F _appQuitting                         bool                                                    0x184
+   F _timeoutGrabbable                    HurricaneVR.Framework.Core.HVRGrabbable                 0x188
+   F _rbInterpolation                     UnityEngine.RigidbodyInterpolation                      0x190
+   F _rbDrag                              float                                                   0x194
+   F _rbAngularDrag                       float                                                   0x198
+   F _rbMass                              float                                                   0x19c
+   F _rbGravity                           bool                                                    0x1a0
+   F _rbKinematic                         bool                                                    0x1a1
+   F _socketMass                          float                                                   0x1a4
+   F _hadRigidBody                        bool                                                    0x1a8
+   F _ignoreGrabSFX                       bool                                                    0x1a9
+   F _fixPositionRoutine                  UnityEngine.Coroutine                                   0x1b0
+   F <LinkedGrabbable>k__BackingField     HurricaneVR.Framework.Core.HVRGrabbable                 0x1b8
+   F <CanInteract>k__BackingField         bool                                                    0x1c0
+   F <PoseHash>k__BackingField            generic                                                 0x1c4
+   F useGunHaptics                        bool                                                    0x1cc
+   M HurricaneVR.Framework.Core.HVRGrabbable get_LinkedGrabbable()
+   M void set_LinkedGrabbable(HurricaneVR.Framework.Core.HVRGrabbable value)
+   M bool get_IsGrabActivated()
+   M bool get_IsHoldActive()
+   M bool get_AllowSwap()
+   M bool get_CanInteract()
+   M void set_CanInteract(bool value)
+   M bool get_IsSocket()
+   M generic get_PoseHash()
+   M void set_PoseHash(generic value)
+   M bool get_CanAddGrabbable()
+   M void Start()
+   M void GunHoverHaptics(HurricaneVR.Framework.Core.HVRGrabbable grabbable)
+   M void SetupParentDisablesGrab()
+   M System.Collections.IEnumerator WaitForUpdate(System.Action action)
+   M void CheckAutoSpawn()
+   M void OnApplicationQuit()
+   M void Update()
+   M bool CheckHover()
+   M bool CanHover(HurricaneVR.Framework.Core.HVRGrabbable grabbable)
+   M void OnHoverEnter(HurricaneVR.Framework.Core.HVRGrabbable grabbable)
+   M void OnHandGrabberEntered()
+   M void OnHandGrabberExited()
+   M void OnHoverGrabbableReleased(HurricaneVR.Framework.Core.Grabbers.HVRGrabberBase grabber, HurricaneVR.Framework.Core.HVRGrabbable grabbable)
+   M System.Collections.IEnumerator TryGrabGrabbable(HurricaneVR.Framework.Core.HVRGrabbable grabbable)
+   M void OnHoverExit(HurricaneVR.Framework.Core.HVRGrabbable grabbable)
+   M void CheckGrab()
+   M bool CanGrab(HurricaneVR.Framework.Core.HVRGrabbable grabbable)
+   M bool CanGrabEx(HurricaneVR.Framework.Core.HVRGrabbable grabbable)
+   M bool IsValid(HurricaneVR.Framework.Core.HVRGrabbable grabbable)
+   M void OnBeforeHover(HurricaneVR.Framework.Core.HVRGrabbable grabbable)
+   M void OnAfterHover(HurricaneVR.Framework.Core.HVRGrabbable grabbable)
+   M void OnGrabbed(HurricaneVR.Framework.Core.Grabbers.HVRGrabArgs args)
+   M void AttachGrabbable(HurricaneVR.Framework.Core.HVRGrabbable grabbable)
+   M UnityEngine.Vector3 GetTargetPosition(HurricaneVR.Framework.Core.HVRGrabbable grabbable)
+   M UnityEngine.Quaternion GetTargetRotation(HurricaneVR.Framework.Core.HVRGrabbable grabbable)
+   M void OnGrabbableParented(HurricaneVR.Framework.Core.HVRGrabbable grabbable)
+   M void PositionGrabbable(HurricaneVR.Framework.Core.HVRGrabbable grabbable)
+   M void RotateGrabbable(HurricaneVR.Framework.Core.HVRGrabbable grabbable)
+   M void HandleRigidBodyGrab(HurricaneVR.Framework.Core.HVRGrabbable grabbable)
+   M void CleanupRigidBody(HurricaneVR.Framework.Core.HVRGrabbable grabbable)
+   M System.Collections.IEnumerator SetPositionNextFrame(HurricaneVR.Framework.Core.HVRGrabbable grabbable)
+   M void PlaySocketedSFX(HurricaneVR.Framework.Core.Sockets.HVRSocketable socketable)
+   M void PlayUnsocketedSFX(HurricaneVR.Framework.Core.HVRGrabbable grabbable)
+   M void PlaySFX(UnityEngine.AudioClip clip)
+   M float GetSocketableScaleSize(HurricaneVR.Framework.Core.Sockets.HVRSocketable socketable)
+   M void UpdateScale(HurricaneVR.Framework.Core.HVRGrabbable grabbable)
+   M UnityEngine.Vector3 ComputeScale(HurricaneVR.Framework.Core.Sockets.HVRSocketable socketable)
+   M void OnReleased(HurricaneVR.Framework.Core.HVRGrabbable grabbable)
+   M void toggleRemoveGrabbable(bool state)
+   M bool CanGrabbableBeRemoved(HurricaneVR.Framework.Core.Grabbers.HVRHandGrabber hand)
+   M System.Collections.IEnumerator GrabTimeoutRoutine(HurricaneVR.Framework.Core.HVRGrabbable grabbable)
+   M bool TryGrab(HurricaneVR.Framework.Core.HVRGrabbable grabbable, bool force, bool ignoreGrabSound)
+   M float GetDistanceToGrabber(UnityEngine.Vector3 point)
+   M float GetSquareDistanceToGrabber(UnityEngine.Vector3 point)
+   M void ToggleCanRemoveGrabbable(bool on)
+   M void .ctor()
+== 1057 HurricaneVR.Framework.Core.Sockets.HVRANBSocketHoverFade
+   F colorBase                            UnityEngine.Color                                       0x28
+   F colorHover                           UnityEngine.Color                                       0x38
+   F colorNormal                          UnityEngine.Color                                       0x48
+   F colorInvisible                       UnityEngine.Color                                       0x58
+   F rend                                 UnityEngine.Renderer                                    0x68
+   F duration                             float                                                   0x70
+   F gunIn                                bool                                                    0x74
+   F useHandHover                         bool                                                    0x75
+   F alwaysVisible                        bool                                                    0x76
+   F holster                              HurricaneVR.Framework.Core.Grabbers.HVRSocket           0x78
+   M void Start()
+   M System.Collections.IEnumerator lerpFunction(UnityEngine.Color endValue)
+   M void OnHoverEnter(HurricaneVR.Framework.Core.Grabbers.HVRSocket socket, HurricaneVR.Framework.Core.HVRGrabbable grabbable, bool isValid)
+   M void OnHoverExit(HurricaneVR.Framework.Core.Grabbers.HVRSocket socket, HurricaneVR.Framework.Core.HVRGrabbable grabbable, bool isValid)
+   M void entering()
+   M void exiting()
+   M bool gunInSocket()
+   M void .ctor()
+== 980 HurricaneVR.Framework.Core.Player.HVRCameraRig
+   F HeightKey                            string                                                  0x0
+   F Camera                               UnityEngine.Transform                                   0x20
+   F FloorOffset                          UnityEngine.Transform                                   0x28
+   F CameraScale                          UnityEngine.Transform                                   0x30
+   F CameraYOffset                        float                                                   0x38
+   F EyeHeight                            float                                                   0x3c
+   F SitStanding                          HurricaneVR.Framework.Core.Player.HVRSitStand           0x40
+   F DebugKeyboardOffset                  bool                                                    0x44
+   F DebugKeyboardIncrement               float                                                   0x48
+   F SaveCalibrationHeight                bool                                                    0x4c
+   F DebugCalibMode                       HurricaneVR.Framework.Core.Player.HVRDebugCalibrate     0x50
+   F DebugCalibMovedThreshold             float                                                   0x54
+   F DebugKeyboardRecalibrate             bool                                                    0x58
+   F RecalibrateKey                       UnityEngine.KeyCode                                     0x5c
+   F PlayerControllerYOffset              float                                                   0x60
+   F AdjustedCameraHeight                 float                                                   0x64
+   F SittingOffset                        float                                                   0x68
+   F _cameraStartingPosition              UnityEngine.Vector3                                     0x6c
+   F _scale                               float                                                   0x78
+   F <IsMine>k__BackingField              bool                                                    0x7c
+   M bool get_IsMine()
+   M void set_IsMine(bool value)
+   M void Start()
+   M void DebugCalibrate()
+   M void CalibrateFromSaved()
+   M System.Collections.IEnumerator CalibrateOnHMDMoved()
+   M void Update()
+   M float GetYOffset()
+   M void UpdateFloorOffset()
+   M void DebugHeightOffset()
+   M void CalibrateHeight(float height)
+   M void Calibrate()
+   M void SetSitStandMode(HurricaneVR.Framework.Core.Player.HVRSitStand sitStand)
+   M void .ctor()
+== 1108 HurricaneVR.Framework.Core.Grabbers.SocketHoldType
+   F value__                              int                                                     0x10
+   F Kinematic                            HurricaneVR.Framework.Core.Grabbers.SocketHoldType      0x0
+   F RemoveRigidbody                      HurricaneVR.Framework.Core.Grabbers.SocketHoldType      0x0
+== 1107 HurricaneVR.Framework.Core.Grabbers.SocketCondition
+   F value__                              int                                                     0x10
+   F AND                                  HurricaneVR.Framework.Core.Grabbers.SocketCondition     0x0
+   F OR                                   HurricaneVR.Framework.Core.Grabbers.SocketCondition     0x0

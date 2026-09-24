@@ -1,0 +1,117 @@
+== 1019 HurricaneVR.Framework.Core.HandPoser.HVRGrabPointSwapper
+   F GrabPoints                           array[]                                                 0x28
+   F RotateAxis                           array[]                                                 0x30
+   F SwapTime                             float                                                   0x38
+   F OtherHands                           array[]                                                 0x40
+   M void Awake()
+   M void CheckInput(HurricaneVR.Framework.Shared.HVRController controller)
+   M bool GetActivated(HurricaneVR.Framework.Shared.HVRController controller)
+   M void Swap()
+   M void OnGrabPointSwapped(HurricaneVR.Framework.Core.HandPoser.HVRPosableGrabPoint previous, HurricaneVR.Framework.Core.HandPoser.HVRPosableGrabPoint next)
+   M void .ctor()
+== 914 HurricaneVR.Framework.Core.ANBHVRGrabbable
+   F AutoGrabOnHover                      bool                                                    0x318
+   F ReEnableAfterBreak                   float                                                   0x31c
+   F ANBPhysicsScript                     ANBGeneratePhysics                                      0x320
+   F AutoGrabbed                          bool                                                    0x328
+   F ANBgrabber                           HurricaneVR.Framework.Core.Grabbers.HVRGrabberBase      0x330
+   F ANBgrabberPos                        UnityEngine.Transform                                   0x338
+   F ANBgrabberGunHand                    ANBControllerPos                                        0x340
+   F ANBgrabberGunHandHolder              ANBControllerPos                                        0x348
+   F handGrabGraceTime                    float                                                   0x350
+   F dontAttachToStartingSocket           bool                                                    0x354
+   F isPistolWithAutograbStabilizer       bool                                                    0x355
+   F isStabilizer                         bool                                                    0x356
+   F isPistolStabilizer                   bool                                                    0x357
+   F isMag                                bool                                                    0x358
+   F stabilizerClassicGrabCollider        UnityEngine.Collider                                    0x360
+   F stabilizerExitCollider               UnityEngine.Collider                                    0x368
+   F stabilizerGrabbable                  HurricaneVR.Framework.Core.ANBHVRGrabbable              0x370
+   F switchedGP                           bool                                                    0x378
+   F GrabPointsAlternate                  generic                                                 0x380
+   F GrabPointsOrig                       generic                                                 0x388
+   F collisionChanged                     bool                                                    0x390
+   F FPScollider                          UnityEngine.GameObject                                  0x398
+   F grabOffsetPosition                   UnityEngine.Vector3                                     0x3a0
+   F grabRotationOffset                   UnityEngine.Quaternion                                  0x3ac
+   F justHandGrabbed                      float                                                   0x3bc
+   F FPSgrabbed                           bool                                                    0x3c0
+   F hideInFPS                            bool                                                    0x3c1
+   F noPickUpInFPS                        bool                                                    0x3c2
+   F grabOffsetRotation                   UnityEngine.Quaternion                                  0x3c4
+   F grabXOffset                          float                                                   0x3d4
+   F grabYOffset                          float                                                   0x3d8
+   F grabZOffset                          float                                                   0x3dc
+   F collisionDetectionModeDefault        UnityEngine.CollisionDetectionMode                      0x3e0
+   F solverIterationsDefault              int                                                     0x3e4
+   F solverVelocityIterationsDefault      int                                                     0x3e8
+   F bluntWeapon                          ANBBluntWeapon                                          0x3f0
+   M void Awake()
+   M void resetAutoStabilizer()
+   M void Start()
+   M void magReleaseFix()
+   M void switchGrabPoints(bool on)
+   M void Update()
+   M void GunUpdateCall()
+   M void registerOtherHandToStabilizer(HurricaneVR.Framework.Core.Grabbers.HVRHandGrabber handGrabber)
+   M void OnAfterHandGrabberAdded(HurricaneVR.Framework.Core.Grabbers.HVRHandGrabber handGrabber)
+   M void OnAfterHandGrabberRemoved(HurricaneVR.Framework.Core.Grabbers.HVRHandGrabber handGrabber)
+   M void ForceRelease()
+   M void OnGrabbed(HurricaneVR.Framework.Core.Grabbers.HVRGrabberBase grabber)
+   M void OnReleased(HurricaneVR.Framework.Core.Grabbers.HVRGrabberBase grabber)
+   M System.Collections.IEnumerator switchCollisionModeBack()
+   M void .ctor()
+== 1037 HurricaneVR.Framework.Core.HandPoser.HVRPosableGrabPoint
+   F PoserIndex                           int                                                     0x20
+   F IsJointAnchor                        bool                                                    0x24
+   F IsForceGrabbable                     bool                                                    0x25
+   F OneHandOnly                          bool                                                    0x26
+   F AllowedAngleDifference               float                                                   0x28
+   F CheckDistance                        bool                                                    0x2c
+   F MaxDistance                          float                                                   0x30
+   F LeftHand                             bool                                                    0x34
+   F RightHand                            bool                                                    0x35
+   F Group                                int                                                     0x38
+   F HandRotationOffset                   UnityEngine.Vector3                                     0x3c
+   F HandPositionOffset                   UnityEngine.Vector3                                     0x48
+   F GrabIndicatorPosition                UnityEngine.Transform                                   0x58
+   F VisualGrabPoint                      UnityEngine.Transform                                   0x60
+   F HandPoser                            HurricaneVR.Framework.Core.HandPoser.HVRHandPoser       0x68
+   F Grabbable                            HurricaneVR.Framework.Core.HVRGrabbable                 0x70
+   F IsLineGrab                           bool                                                    0x78
+   F LineStart                            UnityEngine.Transform                                   0x80
+   F LineEnd                              UnityEngine.Transform                                   0x88
+   F CanLineFlip                          bool                                                    0x90
+   F LooseDamper                          float                                                   0x94
+   F LooseAngularDamper                   float                                                   0x98
+   F LineCanReposition                    bool                                                    0x9c
+   F LineInitialCanReposition             bool                                                    0x9d
+   F LineCanRotate                        bool                                                    0x9e
+   F LineFreeRotation                     bool                                                    0x9f
+   F LineInitialCanRotate                 bool                                                    0xa0
+   F <LeftPoseOffset>k__BackingField      UnityEngine.Quaternion                                  0xa4
+   F <RightPoseOffset>k__BackingField     UnityEngine.Quaternion                                  0xb4
+   F <LeftPosePositionOffset>k__BackingField UnityEngine.Vector3                                     0xc4
+   F <RightPosePositionOffset>k__BackingField UnityEngine.Vector3                                     0xd0
+   F Others                               generic                                                 0xe0
+   M UnityEngine.Vector3 get_WorldLine()
+   M UnityEngine.Vector3 get_WorldLineMiddle()
+   M UnityEngine.Quaternion get_LeftPoseOffset()
+   M void set_LeftPoseOffset(UnityEngine.Quaternion value)
+   M UnityEngine.Quaternion get_RightPoseOffset()
+   M void set_RightPoseOffset(UnityEngine.Quaternion value)
+   M UnityEngine.Vector3 get_LeftPosePositionOffset()
+   M void set_LeftPosePositionOffset(UnityEngine.Vector3 value)
+   M UnityEngine.Vector3 get_RightPosePositionOffset()
+   M void set_RightPosePositionOffset(UnityEngine.Vector3 value)
+   M void Awake()
+   M void Start()
+   M void AddGroupedGrabPoint(HurricaneVR.Framework.Core.HandPoser.HVRPosableGrabPoint p)
+   M UnityEngine.Vector3 GetPoseWorldPosition(HurricaneVR.Framework.Shared.HVRHandSide side)
+   M UnityEngine.Vector3 GetPosePositionOffset(HurricaneVR.Framework.Shared.HVRHandSide side)
+   M UnityEngine.Quaternion GetPoseRotationOffset(HurricaneVR.Framework.Shared.HVRHandSide side)
+   M UnityEngine.Quaternion GetPoseWorldRotation(HurricaneVR.Framework.Shared.HVRHandSide side)
+   M UnityEngine.Quaternion GetGrabbableRelativeRotation(HurricaneVR.Framework.Shared.HVRHandSide side)
+   M void .ctor()
+== 928 HurricaneVR.Framework.Core.HVRGrabPoints
+   M void .ctor()

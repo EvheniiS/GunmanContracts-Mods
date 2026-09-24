@@ -1,0 +1,195 @@
+== 95 ANBBreakable
+   F breakableType                            BreakableType                                 0x20
+   F health                                   float                                         0x24
+   F healthMin                                float                                         0x28
+   F healthStart                              float                                         0x2c
+   F indistructable                           bool                                          0x30
+   F onlyByPlayer                             bool                                          0x31
+   F indistructableStart                      bool                                          0x32
+   F indistructableByCheckpoint               bool                                          0x33
+   F indistructableBeforeCheckpoint           int                                           0x34
+   F indistructableAfterCheckpoint            int                                           0x38
+   F onImpact                                 bool                                          0x3c
+   F breakMagnitude                           float                                         0x40
+   F breakVelocityReduction                   float                                         0x44
+   F bulletDamageMultiplier                   float                                         0x48
+   F explosionDamageMultiplier                float                                         0x4c
+   F isShattered                              bool                                          0x50
+   F slomoOnBreak                             bool                                          0x51
+   F forceSlomo                               bool                                          0x52
+   F timeOverride                             float                                         0x54
+   F breakEffect                              UnityEngine.GameObject                        0x58
+   F breakEffectHighDetail                    UnityEngine.GameObject                        0x60
+   F breakEffectMediumDetail                  UnityEngine.GameObject                        0x68
+   F breakEffectLowDetail                     UnityEngine.GameObject                        0x70
+   F breakEffectLifetime                      float                                         0x78
+   F noRotationOnBreakEffect                  bool                                          0x7c
+   F breakEffectInRoot                        bool                                          0x7d
+   F breakEffectEmissionBoundsToMesh          bool                                          0x7e
+   F breakEffectEmissionBoundsMesh            UnityEngine.Renderer                          0x80
+   F restoreInContract                        bool                                          0x88
+   F restoreInTakedown                        bool                                          0x89
+   F restoreInLaststand                       bool                                          0x8a
+   F autoRestoreAfterTime                     float                                         0x8c
+   F CallOnBreak                              ANBBreakableEvent                             0x90
+   F useProximityCall                         bool                                          0x98
+   F triggerProximity                         float                                         0x9c
+   F proximityCallDelay                       float                                         0xa0
+   F proximityObject                          UnityEngine.Transform                         0xa8
+   F proximityObjectActiveCheck               bool                                          0xb0
+   F CallOnBreakProximity                     ANBBreakableEvent                             0xb8
+   F decalsOnBreak                            bool                                          0xc0
+   F decal                                    UnityEngine.GameObject                        0xc8
+   F decalDown                                bool                                          0xd0
+   F decalUp                                  bool                                          0xd1
+   F decalSides                               bool                                          0xd2
+   F decalDistance                            float                                         0xd4
+   F decalMask                                UnityEngine.LayerMask                         0xd8
+   F removeAllDecalsOnBreak                   bool                                          0xdc
+   F PhysicsComponent                         ANBGeneratePhysics                            0xe0
+   F endPhysicsOnBreak                        bool                                          0xe8
+   F resetPosition                            bool                                          0xe9
+   F startPos                                 UnityEngine.Vector3                           0xec
+   F startRot                                 UnityEngine.Quaternion                        0xf8
+   F MakePhysicsObject                        bool                                          0x108
+   F makeGrabbable                            bool                                          0x109
+   F makeNavMeshObstacle                      bool                                          0x10a
+   F makeCarveNavMesh                         bool                                          0x10b
+   F keepExistingColliders                    bool                                          0x10c
+   F disableMeshes                            array[]                                       0x110
+   F enableMeshes                             array[]                                       0x118
+   F enablePhysicObjects                      array[]                                       0x120
+   F physicsObjectsLifetime                   float                                         0x128
+   F physicsObjectsPos                        generic                                       0x130
+   F physicsObjectsRot                        generic                                       0x138
+   F extraDisableMesh                         UnityEngine.Renderer                          0x140
+   F presetFracture                           bool                                          0x148
+   F presetFractureFolder                     UnityEngine.GameObject                        0x150
+   F liveFracture                             bool                                          0x158
+   F fractureMesh                             UnityEngine.Renderer                          0x160
+   F fractureObject                           UnityEngine.GameObject                        0x168
+   F fractureComponent                        Fracture                                      0x170
+   F isKinematic                              bool                                          0x178
+   F collisionDamageWithMass                  float                                         0x17c
+   F fracturedObjectLayer                     UnityEngine.LayerMask                         0x180
+   F changeRenderLayer                        bool                                          0x184
+   F fracturedObjectRenderlayer               uint                                          0x188
+   F sideStuckPieces                          bool                                          0x18c
+   F sideStuckPiecesMax                       float                                         0x190
+   F sideStuckColliderParent                  UnityEngine.GameObject                        0x198
+   F sideStuckColliders                       array[]                                       0x1a0
+   F fractureOptions                          FractureOptions                               0x1a8
+   F refractureOptions                        RefractureOptions                             0x1b0
+   F useDetailSettings                        bool                                          0x1b8
+   F explosionForceOnPiecesMultiplier         float                                         0x1bc
+   F bulletForceOnPieces                      bool                                          0x1c0
+   F bulletForceRadius                        float                                         0x1c4
+   F bulletForceStrength                      float                                         0x1c8
+   F forceDelay                               float                                         0x1cc
+   F stuckPieces                              float                                         0x1d0
+   F stuckPiecesStay                          float                                         0x1d4
+   F stuckPiecesReleaseInterval               float                                         0x1d8
+   F freezeAfter                              float                                         0x1dc
+   F killAfter                                float                                         0x1e0
+   F breakSound                               UnityEngine.AudioClip                         0x1e8
+   F breakSoundDistant                        UnityEngine.AudioClip                         0x1f0
+   F breakSoundDistance                       float                                         0x1f8
+   F alertCallOnBreak                         bool                                          0x1fc
+   F noiseCallOnBreak                         bool                                          0x1fd
+   F alertWorldOnBreak                        bool                                          0x1fe
+   F alertCallRadiusOnBreak                   float                                         0x200
+   F explosionOnBreak                         bool                                          0x204
+   F explosionRadius                          float                                         0x208
+   F incendiaryRadius                         float                                         0x20c
+   F playerDamageRadius                       float                                         0x210
+   F playerDamageMax                          float                                         0x214
+   F enemyDamageRadius                        float                                         0x218
+   F explosionDamage                          float                                         0x21c
+   F explosionForce                           float                                         0x220
+   F explosionTorque                          float                                         0x224
+   F explosionForceEnemy                      float                                         0x228
+   F castBullets                              int                                           0x22c
+   F bulletSpread                             float                                         0x230
+   F PuppetMasterCullVolumeMask               UnityEngine.LayerMask                         0x234
+   F explosionMask                            UnityEngine.LayerMask                         0x238
+   F checkExplosionObstructions               bool                                          0x23c
+   F nonObstructionRadius                     float                                         0x240
+   F explosionObstructionMask                 UnityEngine.LayerMask                         0x244
+   F minSizeObstruction                       float                                         0x248
+   F myCols                                   array[]                                       0x250
+   F waitBeforeExplosionPush                  float                                         0x258
+   F explosionOrigin                          UnityEngine.Transform                         0x260
+   F PhysicsClipPause                         bool                                          0x268
+   F effectPos                                UnityEngine.Vector3                           0x26c
+   F exploding                                bool                                          0x278
+   F gettingHit                               bool                                          0x279
+   F abortAndDelete                           bool                                          0x27a
+   F forcePos                                 UnityEngine.Vector3                           0x27c
+   F RBlib                                    array[]                                       0x288
+   F run                                      float                                         0x290
+   F storedFragmentCount                      float                                         0x294
+   F storedExplosionDirection                 UnityEngine.Vector3                           0x298
+   F storedExplosionForce                     float                                         0x2a4
+   F storedExplosionDmg                       float                                         0x2a8
+   F storedExplosionSet                       bool                                          0x2ac
+   F useAutoAimTarget                         bool                                          0x2ad
+   F autoAimTarget                            UnityEngine.Transform                         0x2b0
+   F disableRenderers                         array[]                                       0x2b8
+   F disableColliders                         array[]                                       0x2c0
+   F fracturedObjects                         UnityEngine.GameObject                        0x2c8
+   F noCollision                              bool                                          0x2d0
+   F traceCollision                           bool                                          0x2d1
+   F traceExplosionColliders                  bool                                          0x2d2
+   F explColliders                            array[]                                       0x2d8
+   F resetGraceTime                           float                                         0x2e0
+   F grabbableScript                          HurricaneVR.Framework.Core.ANBHVRGrabbable    0x2e8
+   F isResetting                              bool                                          0x2f0
+   F invincibleTime                           float                                         0x2f4
+   F startVisible                             bool                                          0x2f8
+   F savedCheckpoint                          int                                           0x2fc
+   F initDone                                 bool                                          0x300
+   M void Awake()
+   M void checkIndistructable()
+   M void Init()
+   M void toggleIndistructable(bool on)
+   M void setBreakEffect()
+   M void execPresetFracture()
+   M void precomputeFracture()
+   M string GetFirstLayerName(UnityEngine.LayerMask layerMask)
+   M void hitDelayed(UnityEngine.Vector3 origin, float bulletDamage, bool isBullet, float distance, bool isExplosion, float fromEnemy)
+   M System.Collections.IEnumerator hitDelayedExec(UnityEngine.Vector3 origin, float bulletDamage, bool isBullet, float distance, bool isExplosion, float fromEnemy)
+   M void hit(UnityEngine.Vector3 origin, float bulletDamage, bool isBullet, float distance, bool isExplosion, float fromEnemy)
+   M System.Collections.IEnumerator hitAfterTime(float bulletDamage, bool isBullet, float waitTime)
+   M bool checkObstruction(UnityEngine.Vector3 originPos, UnityEngine.Collider col, float testIteration)
+   M System.Collections.IEnumerator breakEffectTimer(float recRun)
+   M System.Collections.IEnumerator physicObjectsTimer(float recRun)
+   M void toggleProximityCall(bool on)
+   M System.Collections.IEnumerator proximityTriggerExec()
+   M void shatterMe(bool isBullet)
+   M UnityEngine.AudioClip getBreakSound()
+   M void SpawnDecals()
+   M System.Collections.IEnumerator decalRemover()
+   M void hideObject()
+   M void resetMe()
+   M void onDisable()
+   M void onEnable()
+   M System.Collections.IEnumerator RBChangeAfter(bool freeze, float recRun)
+   M System.Collections.IEnumerator RBToNMapManager()
+   M void OnCollisionEnter(UnityEngine.Collision collision)
+   M void temporaryInvincible()
+   M System.Collections.IEnumerator temporaryInvincibleExec()
+   M System.Collections.IEnumerator ReapplyVelocityNextFrame(UnityEngine.Rigidbody rb, UnityEngine.Vector3 originalVelocity)
+   M void storeExplosionForce(UnityEngine.Vector3 direction, float explosionForce, float normalizedDmg)
+   M System.Collections.IEnumerator applyStoredExplosionAfterTime()
+   M System.Collections.IEnumerator applyForceAfterTime()
+   M UnityEngine.Vector3 GetColliderCenter(UnityEngine.Transform targetTransform)
+   M System.Collections.IEnumerator applyBulletForceAfterTime()
+   M System.Collections.IEnumerator sideStuckExec()
+   M System.Collections.IEnumerator stuckRandomPieces()
+   M System.Collections.IEnumerator autoRestore()
+   M System.Collections.IEnumerator unstuckPieces(UnityEngine.Rigidbody rb, float waitTime)
+   M void ShootBullets(UnityEngine.Transform origin, UnityEngine.Vector3 direction)
+   M void PlayClip(UnityEngine.AudioClip clip)
+   M System.Collections.IEnumerator PhysicsClipWait()
+   M System.Collections.IEnumerator BulletForcePush(UnityEngine.Rigidbody rb, float normalizedForce, UnityEngine.Vector3 direction)
+   M void .ctor()

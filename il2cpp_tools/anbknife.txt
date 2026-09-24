@@ -1,0 +1,95 @@
+== 297 ANBKnife
+   F isWeapon                                 bool                                          0x20
+   F isPen                                    bool                                          0x21
+   F StabOrient                               UnityEngine.Transform                         0x28
+   F stabDirection                            UnityEngine.Transform                         0x30
+   F StabMask                                 UnityEngine.LayerMask                         0x38
+   F StabWorldMask                            UnityEngine.LayerMask                         0x3c
+   F hitEffect                                UnityEngine.GameObject                        0x40
+   F knifeRayLength                           float                                         0x48
+   F knifeDamage                              float                                         0x4c
+   F useRaycastEntry                          bool                                          0x50
+   F useWorldDecals                           bool                                          0x51
+   F knifeID                                  string                                        0x58
+   F disableOnHandsOff                        bool                                          0x60
+   F attachToColliderOnStabbing               bool                                          0x61
+   F disableOnSocketed                        UnityEngine.GameObject                        0x68
+   F Stabber                                  HurricaneVR.Framework.Core.Stabbing.HVRStabber 0x70
+   F rb                                       UnityEngine.Rigidbody                         0x78
+   F GrabbableScript                          HurricaneVR.Framework.Core.ANBHVRGrabbable    0x80
+   F SocketTag                                HurricaneVR.Framework.Core.Sockets.HVRTagSocketable 0x88
+   F inHand                                   string                                        0x90
+   F isHeld                                   bool                                          0x98
+   F stabColliders                            array[]                                       0xa0
+   F allColliders                             array[]                                       0xa8
+   F disableCollidersOnHumanStab              bool                                          0xb0
+   F KnifeColliderCheck                       UnityEngine.GameObject                        0xb8
+   F nonTriggerColliders                      generic                                       0xc0
+   F FrictionMat                              UnityEngine.PhysicsMaterial                   0xc8
+   F isArrow                                  bool                                          0xd0
+   F killInteractionOnImpact                  bool                                          0xd1
+   F killInteractionAfter                     float                                         0xd4
+   F killInteractionOnWorld                   bool                                          0xd8
+   F reparent                                 bool                                          0xd9
+   F reverseFullstabDistance                  float                                         0xdc
+   F killArrowOnHumanHit                      bool                                          0xe0
+   F arrowScript                              HurricaneVR.Framework.Weapons.Bow.HVRArrow    0xe8
+   F canSlash                                 bool                                          0xf0
+   F slashDamage                              float                                         0xf4
+   F stabThresholdMomentum                    float                                         0xf8
+   F allowedAngle                             float                                         0xfc
+   F slashBreak                               float                                         0x100
+   F stabMovement                             bool                                          0x104
+   F stabActive                               bool                                          0x105
+   F slashBreakCurrent                        float                                         0x108
+   F ThrowScript                              ANBAssistedThrowingObject                     0x110
+   F allowAssistedThrow                       bool                                          0x118
+   F switchStabAnything                       bool                                          0x119
+   F switchIgnoreAngle                        bool                                          0x11a
+   F switchIgnoreVelocity                     bool                                          0x11b
+   F ivcDefault                               bool                                          0x11c
+   F saDefault                                bool                                          0x11d
+   F ignoreBodyPartsOnThrow                   bool                                          0x11e
+   F ignoreBodyPartsOnThrow_Legs              bool                                          0x11f
+   F ignoreBodyPartsOnThrow_Arms              bool                                          0x120
+   F throwableBodyPartTime                    float                                         0x124
+   F autoReturnAfterCurrent                   float                                         0x128
+   F socketed                                 bool                                          0x12c
+   F savedHolster                             HurricaneVR.Framework.Core.Grabbers.HVRSocket 0x130
+   F savedHolsterLeft                         bool                                          0x138
+   F throwStabAutoDepth                       float                                         0x13c
+   F throwStabLockTime                        float                                         0x140
+   F hideInFPS                                bool                                          0x144
+   F noPickUpInFPS                            bool                                          0x145
+   F myWallSpot                               HurricaneVR.Framework.Core.Grabbers.HVRSocket 0x148
+   F inWall                                   bool                                          0x150
+   F KnifeSlotPreview                         UnityEngine.GameObject                        0x158
+   F WPT                                      ANBWeaponType                                 0x160
+   F killsNeededToUnlock                      float                                         0x168
+   F lastStabbedCollider                      UnityEngine.Collider                          0x170
+   F lastStabbedColliderSet                   bool                                          0x178
+   M void Awake()
+   M void Start()
+   M void checkSpawnConversion()
+   M void checkInWall()
+   M void returnKnife()
+   M void stabEnemy(HurricaneVR.Framework.Core.Stabbing.StabArgs args)
+   M void disableStabberCollisions(bool on)
+   M void unstab()
+   M System.Collections.IEnumerator ForceFullStab(float stabtime, ANBEnemyDetect edt, UnityEngine.RaycastHit hit)
+   M bool IsInLayerMask(UnityEngine.GameObject obj, UnityEngine.LayerMask layerMask)
+   M void switchCollisions(bool includeAll)
+   M void grabKnife(HurricaneVR.Framework.Core.Grabbers.HVRHandGrabber hand, HurricaneVR.Framework.Core.HVRGrabbable grabbable)
+   M void releaseKnife()
+   M System.Collections.IEnumerator ToggleCollisions(float timeOverride)
+   M void abortHoming()
+   M System.Collections.IEnumerator ToggleBodyPartCollisionsExec(float timeOverride)
+   M System.Collections.IEnumerator disableStabber()
+   M void ToggleBodyPartCollisions()
+   M void makeTempStabAll()
+   M System.Collections.IEnumerator makeTempStabAllExec()
+   M void Update()
+   M void checkAutoReturn()
+   M void toggleSlash(bool on)
+   M void registerKnifeKill()
+   M void .ctor()

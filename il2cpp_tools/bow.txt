@@ -1,0 +1,275 @@
+== [792] HurricaneVR.Framework.Weapons.Bow.HVRArrow  fields=6 methods=18
+   F Notch (type#44526)
+   F <NotchPointLocal>k__BackingField (type#45929)
+   F <Rigidbody>k__BackingField (type#41093)
+   F <Grabbable>k__BackingField (type#32603)
+   F <ForwardGrabbable>k__BackingField (type#32467)
+   F <Flying>k__BackingField (type#26855)
+   M get_NotchPointLocal
+   M set_NotchPointLocal
+   M get_Rigidbody
+   M set_Rigidbody
+   M get_Grabbable
+   M set_Grabbable
+   M get_ForwardGrabbable
+   M set_ForwardGrabbable
+   M get_Flying
+   M set_Flying
+   M Awake
+   M EnableForwardGrabbable
+   M DisableForwardGrabbable
+   M OnGrabbed
+   M Update
+   M FixedUpdate
+   M OnCollisionEnter
+   M .ctor
+== [793] HurricaneVR.Framework.Weapons.Bow.HVRArrowLoader  fields=3 methods=6
+   F NockGrabbable (type#32605)
+   F ArrowPrefab (type#31992)
+   F <bow>k__BackingField (type#32735)
+   M get_bow
+   M set_bow
+   M Start
+   M OnStringGrabbed
+   M CreateArrow
+   M .ctor
+== [795] HurricaneVR.Framework.Weapons.Bow.HVRArrowPassthrough  fields=1 methods=3
+   F Arrow (type#32605)
+   M Start
+   M OnGrabbed
+   M .ctor
+== [796] HurricaneVR.Framework.Weapons.Bow.HVRBowAnimator  fields=4 methods=6
+   F Animator (type#25620)
+   F <Bow>k__BackingField (type#32735)
+   F gbs (type#24812)
+   F grabbable (type#32605)
+   M get_Bow
+   M set_Bow
+   M Start
+   M OnEnable
+   M Update
+   M .ctor
+== [797] <EnableBowHandCollisionRoutine>d__93  fields=5 methods=6
+   F <>1__state (type#35136)
+   F <>2__current (type#38458)
+   F hand (type#32646)
+   F arrow (type#32605)
+   F <>4__this (type#32479)
+   M .ctor
+   M System.IDisposable.Dispose
+   M MoveNext
+   M System.Collections.Generic.IEnumerator<System.Object>.get_Current
+   M System.Collections.IEnumerator.Reset
+   M System.Collections.IEnumerator.get_Current
+== [798] HurricaneVR.Framework.Weapons.Bow.HVRBowBase  fields=43 methods=47
+   F NockGrabbable (type#32605)
+   F StringLimit (type#42158)
+   F StringDropLimit (type#42158)
+   F StringLimitStyle (type#32482)
+   F ShootThreshold (type#42158)
+   F Speed (type#42158)
+   F SpeedCurve (type#25553)
+   F ReverseArrowsRests (type#26860)
+   F LeftRest (type#44526)
+   F RightRest (type#44526)
+   F ForwardMarker (type#44526)
+   F StringHaptics (type#26860)
+   F BowHandHaptics (type#26860)
+   F HapticStep (type#42158)
+   F HapticsMinAmplitude (type#42158)
+   F HapticsMaxAmplitude (type#42158)
+   F HapticsDuration (type#42158)
+   F HapticsFrequency (type#42158)
+   F StringClip (type#26081)
+   F StringMinPitch (type#42158)
+   F StringMaxPitch (type#42158)
+   F minNockDistanceForSound (type#42158)
+   F maxNockDistanceForSound (type#42158)
+   F ReleasedSFX (type#22865)
+   F <Rest>k__BackingField (type#44524)
+   F <TensionDynamic>k__BackingField (type#42154)
+   F Tension (type#42158)
+   F <Arrow>k__BackingField (type#32462)
+   F <NockSocket>k__BackingField (type#32730)
+   F Grabbable (type#32605)
+   F Rigidbody (type#41096)
+   F nockStartObj (type#44526)
+   F NockHand (type#32645)
+   F BowHand (type#32645)
+   F _nockStart (type#45929)
+   F _nockDir (type#45929)
+   F _nockDistance (type#42158)
+   F _previousHeld (type#26855)
+   F _previousHapticDistance (type#42154)
+   F _shootSpeed (type#42154)
+   F _previousArrowSleep (type#42154)
+   F gunbase (type#24812)
+   F VRShootDirection (type#44526)
+   M get_Rest
+   M set_Rest
+   M get_TensionDynamic
+   M set_TensionDynamic
+   M get_Forward
+   M get_WorldForward
+   M get_ArrowNocked
+   M get_Arrow
+   M set_Arrow
+   M get_NockSocket
+   M set_NockSocket
+   M Awake
+   M Start
+   M Update
+   M UpdateBow
+   M FixedUpdate
+   M BeforeFixedUpdateBow
+   M AfterFixedUpdateBow
+   M FixedUpdateBow
+   M NockArrow
+   M CheckArrowRelease
+   M OnArrowShot
+   M ArrowShootCall
+   M ShootArrow
+   M CheckDropArrow
+   M UpdateHaptics
+   M PlayStringSFX
+   M PlayReleasedSFX
+   M OnGrabbed
+   M OnReleased
+   M BeforeNockHovered
+   M OnArrowSocketed
+   M OnArrowNocked
+   M OnNockedArrowGrabbed
+   M OnHandGrabbed
+   M OnHandReleased
+   M OnStringReleased
+   M OnStringGrabbed
+   M OnBowSocketed
+   M OnBowUnsocketed
+   M OnArrowDropped
+   M OnArrowRemoved
+   M UpdateBowHandCollision
+   M EnableBowHandCollisionRoutine
+   M OnDrawGizmosSelected
+   M .ctor
+   M <OnArrowRemoved>b__91_0
+== [799] HurricaneVR.Framework.Weapons.Bow.HVRBowLimitStyle  fields=4 methods=0
+   F value__ (type#35158)
+   F Limit (type#32483)
+   F ShootArrow (type#32483)
+   F DropArrow (type#32483)
+== [800] HurricaneVR.Framework.Weapons.Bow.HVRBowEvent  fields=0 methods=1
+   M .ctor
+== [801] HurricaneVR.Framework.Weapons.Bow.HVRNockingPoint  fields=0 methods=5
+   M Start
+   M OnGrabbed
+   M OnReleased
+   M OnHoverEnter
+   M .ctor
+== [803] HurricaneVR.Framework.Weapons.Bow.HVRPhysicsBow  fields=11 methods=17
+   F StringSpring (type#42158)
+   F StringHeldSpring (type#42158)
+   F CanNockRotate (type#26860)
+   F _stringJoint (type#28328)
+   F _stringLimitJoint (type#28328)
+   F _nockJoint (type#28328)
+   F _restJoint (type#28328)
+   F _nockPosition (type#45929)
+   F jointStringOverride (type#42158)
+   F createdNok (type#26860)
+   F ignoreBodyPartsOnShoot (type#26860)
+   M get_NockRigidbody
+   M Start
+   M Update
+   M AfterFixedUpdateBow
+   M UpdateRestAnchor
+   M OnStringReleased
+   M OnStringGrabbed
+   M OnArrowNocked
+   M OnBowSocketed
+   M OnBowUnsocketed
+   M OnArrowRemoved
+   M ShootArrow
+   M SetupStringJoint
+   M SetupNockJoint
+   M SetupRestJoint
+   M .ctor
+   M <>n__0
+== [14323] Valve.VR.InteractionSystem.Arrow  fields=17 methods=8
+   F glintParticle (type#38936)
+   F arrowHeadRB (type#41096)
+   F shaftRB (type#41096)
+   F targetPhysMaterial (type#39109)
+   F prevPosition (type#45929)
+   F prevRotation (type#39996)
+   F prevVelocity (type#45929)
+   F prevHeadPosition (type#45929)
+   F fireReleaseSound (type#42401)
+   F airReleaseSound (type#42401)
+   F hitTargetSound (type#42401)
+   F hitGroundSound (type#39218)
+   F inFlight (type#26855)
+   F released (type#26855)
+   F hasSpreadFire (type#26855)
+   F travelledFrames (type#35136)
+   F scaleParentObject (type#31989)
+   M Start
+   M FixedUpdate
+   M ArrowReleased
+   M SetCollisionMode
+   M OnCollisionEnter
+   M StickInTarget
+   M OnDestroy
+   M .ctor
+== [14324] <ArrowReleaseHaptics>d__25  fields=3 methods=6
+   F <>1__state (type#35136)
+   F <>2__current (type#38458)
+   F <>4__this (type#25784)
+   M .ctor
+   M System.IDisposable.Dispose
+   M MoveNext
+   M System.Collections.Generic.IEnumerator<System.Object>.get_Current
+   M System.Collections.IEnumerator.Reset
+   M System.Collections.IEnumerator.get_Current
+== [14325] Valve.VR.InteractionSystem.ArrowHand  fields=18 methods=12
+   F hand (type#32928)
+   F bow (type#36635)
+   F currentArrow (type#31989)
+   F arrowPrefab (type#31992)
+   F arrowNockTransform (type#44526)
+   F nockDistance (type#42158)
+   F lerpCompleteDistance (type#42158)
+   F rotationLerpThreshold (type#42158)
+   F positionLerpThreshold (type#42158)
+   F allowArrowSpawn (type#26855)
+   F nocked (type#26855)
+   F nockedWithType (type#32163)
+   F inNockRange (type#26855)
+   F arrowLerpComplete (type#26855)
+   F arrowSpawnSound (type#42401)
+   F allowTeleport (type#25414)
+   F maxArrowCount (type#35141)
+   F arrowList (type#14287)
+   M Awake
+   M OnAttachedToHand
+   M InstantiateArrow
+   M HandAttachedUpdate
+   M OnDetachedFromHand
+   M FireArrow
+   M EnableArrowSpawn
+   M ArrowReleaseHaptics
+   M OnHandFocusLost
+   M OnHandFocusAcquired
+   M FindBow
+   M .ctor
+== [14326] Valve.VR.InteractionSystem.ArrowheadRotation  fields=0 methods=2
+   M Start
+   M .ctor
+== [14337] Valve.VR.InteractionSystem.SoundBowClick  fields=5 methods=3
+   F bowClick (type#26081)
+   F pitchTensionCurve (type#25553)
+   F minPitch (type#42158)
+   F maxPitch (type#42158)
+   F thisAudioSource (type#26169)
+   M Awake
+   M PlayBowTensionClicks
+   M .ctor

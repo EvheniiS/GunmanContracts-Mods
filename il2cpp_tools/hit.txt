@@ -1,0 +1,106 @@
+==== ANBBreakable::hit @ 0x181bfd500
+181bfd500: mov    qword ptr [rsp + 8], rbx
+181bfd505: mov    qword ptr [rsp + 0x10], rsi
+181bfd50a: push   rdi
+181bfd50b: sub    rsp, 0x40
+181bfd50f: cmp    byte ptr [rip + 0x306fca0], 0
+181bfd516: movzx  esi, r9b
+181bfd51a: movaps xmmword ptr [rsp + 0x30], xmm6
+181bfd51f: mov    rbx, rdx
+181bfd522: movaps xmm6, xmm2
+181bfd525: mov    rdi, rcx
+181bfd528: jne    0x181bfd53d
+181bfd52a: lea    rcx, [rip + 0x2dd1557]
+181bfd531: call   0x1805178f0
+181bfd536: mov    byte ptr [rip + 0x306fc79], 1
+181bfd53d: mov    rcx, qword ptr [rip + 0x2dd1544]
+181bfd544: cmp    dword ptr [rcx + 0xe4], 0
+181bfd54b: jne    0x181bfd559
+181bfd54d: call   0x180517c90
+181bfd552: mov    rcx, qword ptr [rip + 0x2dd152f]
+181bfd559: mov    rax, qword ptr [rcx + 0xb8]
+181bfd560: mov    rdx, qword ptr [rax + 0xa0]
+181bfd567: test   rdx, rdx
+181bfd56a: je     0x181bfd6e6
+181bfd570: cmp    byte ptr [rdx + 0x1451], 0
+181bfd577: je     0x181bfd5c3
+181bfd579: cmp    byte ptr [rdi + 0x33], 0
+181bfd57d: je     0x181bfd5c3
+181bfd57f: cmp    dword ptr [rcx + 0xe4], 0
+181bfd586: jne    0x181bfd594
+181bfd588: call   0x180517c90
+181bfd58d: mov    rcx, qword ptr [rip + 0x2dd14f4]
+181bfd594: mov    rax, qword ptr [rcx + 0xb8]
+181bfd59b: mov    rcx, qword ptr [rax + 0xa0]
+181bfd5a2: test   rcx, rcx
+181bfd5a5: je     0x181bfd6e6
+181bfd5ab: mov    eax, dword ptr [rdi + 0x2fc]
+181bfd5b1: cmp    dword ptr [rcx + 0x1470], eax
+181bfd5b7: je     0x181bfd5c3
+181bfd5b9: xor    edx, edx
+181bfd5bb: mov    rcx, rdi
+181bfd5be: call   0x181bfc900    ; ANBBreakable::checkIndistructable
+181bfd5c3: xorps  xmm1, xmm1
+181bfd5c6: comiss xmm1, dword ptr [rdi + 0x24]
+181bfd5ca: jae    0x181bfd6d1
+181bfd5d0: cmp    byte ptr [rdi + 0x279], 0
+181bfd5d7: jne    0x181bfd6d1
+181bfd5dd: cmp    byte ptr [rdi + 0x2f0], 0
+181bfd5e4: jne    0x181bfd6d1
+181bfd5ea: movss  xmm0, dword ptr [rdi + 0x2f4]
+181bfd5f2: comiss xmm0, xmm1
+181bfd5f5: ja     0x181bfd6d1
+181bfd5fb: cmp    byte ptr [rdi + 0x30], 0
+181bfd5ff: jne    0x181bfd6d1
+181bfd605: cmp    byte ptr [rdi + 0x31], 0
+181bfd609: je     0x181bfd61d
+181bfd60b: movss  xmm0, dword ptr [rsp + 0x80]
+181bfd614: comiss xmm0, xmm1
+181bfd617: ja     0x181bfd6d1
+181bfd61d: movsd  xmm0, qword ptr [rbx]
+181bfd621: mov    eax, dword ptr [rbx + 8]
+181bfd624: movaps xmmword ptr [rsp + 0x20], xmm7
+181bfd629: movss  xmm7, dword ptr [rsp + 0x70]
+181bfd62f: mulss  xmm7, dword ptr [rip + 0x1e646ad]
+181bfd637: mov    byte ptr [rdi + 0x279], 1
+181bfd63e: movsd  qword ptr [rdi + 0x27c], xmm0
+181bfd646: mov    dword ptr [rdi + 0x284], eax
+181bfd64c: test   sil, sil
+181bfd64f: jne    0x181bfd65f
+181bfd651: cmp    byte ptr [rsp + 0x78], sil
+181bfd656: je     0x181bfd664
+181bfd658: mulss  xmm6, dword ptr [rdi + 0x4c]
+181bfd65d: jmp    0x181bfd664
+181bfd65f: mulss  xmm6, dword ptr [rdi + 0x48]
+181bfd664: cmp    byte ptr [rip + 0x306fb4c], 0
+181bfd66b: jne    0x181bfd680
+181bfd66d: lea    rcx, [rip + 0x2df9a5c]
+181bfd674: call   0x1805178f0
+181bfd679: mov    byte ptr [rip + 0x306fb37], 1
+181bfd680: mov    rcx, qword ptr [rip + 0x2df9a49]
+181bfd687: call   0x180517b90
+181bfd68c: xor    edx, edx
+181bfd68e: mov    rcx, rax
+181bfd691: mov    rbx, rax
+181bfd694: call   0x1805e6240    ; FHierarchyIcons::.cctor
+181bfd699: lea    rcx, [rbx + 0x28]
+181bfd69d: mov    dword ptr [rbx + 0x10], 0
+181bfd6a4: mov    rdx, rdi
+181bfd6a7: mov    qword ptr [rbx + 0x28], rdi
+181bfd6ab: call   0x180516af0
+181bfd6b0: xor    r8d, r8d
+181bfd6b3: movss  dword ptr [rbx + 0x24], xmm6
+181bfd6b8: mov    rdx, rbx
+181bfd6bb: movss  dword ptr [rbx + 0x20], xmm7
+181bfd6c0: mov    rcx, rdi
+181bfd6c3: mov    byte ptr [rbx + 0x30], sil
+181bfd6c7: call   0x18359b710    ; UnityEngine.MonoBehaviour::StartCoroutine
+181bfd6cc: movaps xmm7, xmmword ptr [rsp + 0x20]
+181bfd6d1: mov    rbx, qword ptr [rsp + 0x50]
+181bfd6d6: mov    rsi, qword ptr [rsp + 0x58]
+181bfd6db: movaps xmm6, xmmword ptr [rsp + 0x30]
+181bfd6e0: add    rsp, 0x40
+181bfd6e4: pop    rdi
+181bfd6e5: ret    
+181bfd6e6: call   0x180517bf0
+181bfd6eb: int3   
