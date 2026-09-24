@@ -12,7 +12,7 @@ using MelonLoader;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(BetterBow.BetterBowMod), "Better Bow", "1.1.3", "Evgeeso")]
+[assembly: MelonInfo(typeof(BetterBow.BetterBowMod), "Better Bow", "1.1.4", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace BetterBow
@@ -118,7 +118,7 @@ namespace BetterBow
         internal static MelonPreferences_Entry<bool> StringGrab, RetrySpawn, ExplosiveBarrels, BreachDoors,
             Quiver, HeadFallback, Haptics, GripSwitch, ThrowAssist, HandsKeepParentAfterPause, PhoneSettingsRescue, DebugLog;
         internal static MelonPreferences_Entry<float> StringGrabRadius, StringGrabBuffer, RetryWindow,
-            QuiverRadius, QuiverBuffer, NockRadius, SlipNockRadius, DropLifetime, DaggerFromNock, ThrowAssistSpeed, ThrowStabReach;
+            QuiverRadius, QuiverBuffer, NockRadius, SlipNockRadius, DropLifetime, DaggerFromNock, ThrowAssistSpeed, ThrowStabReach, ThrowStabBack;
         internal static MelonPreferences_Entry<bool> ThrowAssistAvoidVest;
         internal static MelonPreferences_Entry<string> DaggerTip;
 
@@ -152,6 +152,7 @@ namespace BetterBow
             ThrowAssistSpeed = c.CreateEntry("ThrowAssistSpeed", 0f, description: "Metres per second a thrown arrow flies to its target. 0 = the same speed as the game's throwing knives.");
 
             ThrowStabReach = c.CreateEntry("ThrowStabReach", 0.5f, description: "Metres the game's stab check reaches into the enemy when a thrown arrow sticks in. The arrow's own value is tuned for fast bow shots; too short and a thrown arrow sticks in without damage.");
+            ThrowStabBack = c.CreateEntry("ThrowStabBack", 0.3f, description: "Metres behind the arrow tip where that stab check starts, so it begins outside the enemy's body (a check that starts inside a hit zone never sees it).");
             ThrowAssistAvoidVest = c.CreateEntry("ThrowAssistAvoidVest", true, description: "A thrown arrow aims at the head of an enemy wearing a vest (an arrow in armor does almost no damage).");
             HandsKeepParentAfterPause = c.CreateEntry("HandsKeepParentAfterPause", true, description: "After the pause menu closes, put the physics hands back where they were before it opened (fixes hands drifting away when moving with the stick). Pauses are always logged.");
             PhoneSettingsRescue = c.CreateEntry("PhoneSettingsRescue", true, description: "If the phone's Settings button gets stuck (the game's menu switch never finishes), open the menu and unstick it.");

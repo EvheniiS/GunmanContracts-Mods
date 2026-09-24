@@ -4,6 +4,7 @@ using Il2CppHurricaneVR.Framework.Weapons.Bow;
 using Il2CppInterop.Runtime;
 using UnityEngine;
 using static BetterBow.BetterBowMod;
+using Object = UnityEngine.Object;
 
 namespace BetterBow
 {
@@ -116,7 +117,7 @@ namespace BetterBow
                 {
                     var target = t.homingTarget;
                     Log.Msg(U.Alive(target)
-                        ? $"arrow thrown at {speed:0.0} m/s (stab ray {knife.knifeRayLength:0.##} m -> {MathF.Max(knife.knifeRayLength, Settings.ThrowStabReach.Value):0.##} m on a stab) -> homing on '{target.name}' {U.Dist(target.position, rb.position):0.0} m away at {t.speed:0.#} m/s (tip correction {t.aimCorrectionAngle:0} deg){retarget}"
+                        ? $"arrow thrown at {speed:0.0} m/s (stab ray {knife.knifeRayLength:0.##} m; on a stab it starts {Settings.ThrowStabBack.Value * 100:0} cm behind the tip, reaching {MathF.Max(knife.knifeRayLength, Settings.ThrowStabReach.Value):0.##} m past it) -> homing on '{target.name}' {U.Dist(target.position, rb.position):0.0} m away at {t.speed:0.#} m/s (tip correction {t.aimCorrectionAngle:0} deg){retarget}"
                         : $"arrow thrown at {speed:0.0} m/s - no target in view (radius {game.assistedThrowViewRadius:0.#} m, angle {game.assistedThrowViewAngle:0.#} deg)");
                 }
             }
@@ -152,20 +153,71 @@ namespace BetterBow
         // log: 8 misses in 4 ms on spine_01/spine_03, EnemyCollisions layer). A bow shot arrives far
         // faster and is deeper inside the body when contact registers; the arrow's short ray is tuned
         // for that. A thrown arrow homes in at knife speed, so lengthen the ray for its stabs only.
-        internal static void BeforeStab(ANBKnife k)
+        //
+        // 1.1.3 (ray 0.15 -> 0.5 m) barely helped: the misses name the same colliders as the hits
+        // (spine_01 / spine_03). A raycast does not detect a collider it STARTS inside, and the ray
+        // starts at StabOrient = the tip, which on a slower arrival is often already inside the hit
+        // zone. So also start the game's ray ThrowStabBack behind the tip, outside the body: swap
+        // StabOrient for a helper transform placed there for the duration of stabEnemy.
+        static Transform _origin;
+        static Transform _savedOrient;
+        internal static string CheckInfo;
+
+        internal static void BeforeStab(ANBKnife k, Il2CppHurricaneVR.Framework.Core.Stabbing.StabArgs args)
         {
-            _savedRay = -1f;
+            _savedRay = -1f; _savedOrient = null; CheckInfo = null;
             if (k == null || !_thrown.Contains(k.Pointer)) return;
-            float reach = Settings.ThrowStabReach.Value;
-            if (reach <= k.knifeRayLength) return;
+            var orient = k.StabOrient;
+            var stabber = k.Stabber;
+            if (!U.Alive(orient) || !U.Alive(stabber)) return;
+            var line = stabber.StabLineWorld;
+            float ll = MathF.Sqrt(line.x * line.x + line.y * line.y + line.z * line.z);
+            if (ll < 1e-4f) return;
+            var dir = new Vector3(line.x / ll, line.y / ll, line.z / ll);
+            float back = MathF.Max(0f, Settings.ThrowStabBack.Value);
+            float reach = MathF.Max(k.knifeRayLength, Settings.ThrowStabReach.Value);
+            var tip = orient.position;
+            if (U.Dbg) CheckInfo = OwnCheck(k, tip, dir, reach, back);
+
             _savedRay = k.knifeRayLength;
-            k.knifeRayLength = reach;
+            k.knifeRayLength = back + reach;
+            if (back > 0f)
+            {
+                if (!U.Alive(_origin))
+                {
+                    var go = new GameObject("BetterBowStabOrigin");
+                    Object.DontDestroyOnLoad(go);
+                    _origin = go.transform;
+                }
+                _origin.SetPositionAndRotation(new Vector3(tip.x - dir.x * back, tip.y - dir.y * back, tip.z - dir.z * back), orient.rotation);
+                _savedOrient = orient;
+                k.StabOrient = _origin;
+            }
         }
 
         internal static void AfterStab(ANBKnife k)
         {
-            if (_savedRay >= 0f && k != null) k.knifeRayLength = _savedRay;
-            _savedRay = -1f;
+            if (k != null)
+            {
+                if (_savedRay >= 0f) k.knifeRayLength = _savedRay;
+                if (U.Alive(_savedOrient)) k.StabOrient = _savedOrient;
+            }
+            _savedRay = -1f; _savedOrient = null;
+        }
+
+        // DebugLog: what the game's ray would find from the tip vs from behind it.
+        static string OwnCheck(ANBKnife k, Vector3 tip, Vector3 dir, float reach, float back)
+        {
+            int mask = k.StabMask.value;
+            string Zone(RaycastHit h)
+            {
+                var z = U.Alive(h.collider) ? h.collider.GetComponent<ANBEnemyDetect>() : null;
+                return $"{h.collider.name}{(U.Alive(z) ? "" : " (not a hit zone)")} at {h.distance:0.00} m";
+            }
+            string a = Physics.Raycast(tip, dir, out var h1, reach, mask) ? Zone(h1) : "nothing";
+            var from = new Vector3(tip.x - dir.x * back, tip.y - dir.y * back, tip.z - dir.z * back);
+            string b = Physics.Raycast(from, dir, out var h2, back + reach, mask) ? Zone(h2) : "nothing";
+            return $"ray from the tip: {a}; from {back * 100:0} cm back: {b}";
         }
 
         internal static void OnScene() => _thrown.Clear();
@@ -188,7 +240,8 @@ namespace BetterBow
             if (!U.Dbg || k == null || k.Pointer != ThrownKnife) return;
             if (++_stabs > 12) return;
             if (!_stabReachedEnemy)
-                Log.Msg($"thrown arrow stab #{_stabs} into {_stabCollider}: no enemy hit zone on the stab ray - no damage");
+                Log.Msg($"thrown arrow stab #{_stabs} into {_stabCollider}: no enemy hit zone on the stab ray - no damage" +
+                        (CheckInfo != null ? $" [{CheckInfo}]" : ""));
         }
 
         internal static void EnemyStab(ANBKnife k, Collider col)
@@ -201,6 +254,7 @@ namespace BetterBow
                 : zone.leftArm || zone.rightArm ? "arm" : zone.leftLeg || zone.rightLeg ? "leg" : "other";
             bool armored = U.Alive(zone) && zone.isArmored;
             Log.Msg($"thrown arrow stab #{_stabs + 1} into {U.Name(col)}: {where}" +
+                    (CheckInfo != null ? $" [{CheckInfo}]" : "") +
                     (armored ? " - ARMORED, the game deals 1 armor damage instead of the arrow's " + k.knifeDamage.ToString("0")
                              : $" - stab damage {k.knifeDamage:0}"));
         }

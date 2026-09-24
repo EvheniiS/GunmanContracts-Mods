@@ -27,7 +27,7 @@ namespace BetterBow
                 ArrowStab.Active = __instance != null && __instance.isArrow;
                 if (U.Dbg && __instance != null && __instance.Pointer == Quiver.CarriedKnife)
                     Log.Msg($"carried quiver arrow stabbed (damage {__instance.knifeDamage})");
-                ThrowAssist.BeforeStab(__instance);
+                ThrowAssist.BeforeStab(__instance, args);
                 ThrowAssist.StabStart(__instance, args);
             }
             catch { ArrowStab.Active = false; }
