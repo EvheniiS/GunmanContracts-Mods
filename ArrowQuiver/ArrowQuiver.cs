@@ -13,7 +13,7 @@ using MelonLoader;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(ArrowQuiver.ArrowQuiverMod), "ArrowQuiver", "0.2.0", "Evhenii")]
+[assembly: MelonInfo(typeof(ArrowQuiver.ArrowQuiverMod), "ArrowQuiver", "0.3.4", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace ArrowQuiver
@@ -23,7 +23,7 @@ namespace ArrowQuiver
     //  * Quiver zone = the socket the bow was holstered in. While the bow is in hand that socket is
     //    guaranteed empty. Fallback when the bow was never holstered: a point beside the head.
     //  * Draw: grip press with the free hand inside the zone -> HVRArrowLoader.CreateArrow(false)
-    //    (a pure spawn: no nock, no ammo change) and the hand force-grabs it.
+    //    (a pure spawn: no nock, no ammo change) and the hand grabs it on its nock-end grip point.
     //  * Nock: bring the carried arrow to the string -> it is destroyed and the hand grabs the
     //    string through the game's own path (OnStringGrabbed -> CreateArrow(true)), so the nocked
     //    arrow and its ammo accounting are exactly what a normal string grab produces.
@@ -35,8 +35,10 @@ namespace ArrowQuiver
         internal static MelonPreferences_Entry<bool> Debug;
         internal static IntPtr CarriedKnife;               // ANBKnife of the carried arrow, for the stab log
 
-        MelonPreferences_Entry<bool> _enabled, _headFallback, _haptics;
-        MelonPreferences_Entry<float> _quiverRadius, _nockRadius, _buffer, _dropLifetime;
+        MelonPreferences_Entry<bool> _enabled, _headFallback, _haptics, _gripSwitch;
+        MelonPreferences_Entry<float> _quiverRadius, _nockRadius, _buffer, _dropLifetime, _slipRadius, _daggerFromNock;
+        MelonPreferences_Entry<string> _daggerMode;
+        static readonly string[] DaggerModes = { "Knuckles", "KnucklesReverse", "FlipX", "FlipY" };
 
         // Filled by Harmony postfixes on Start (LoaderStartPatch / HandStartPatch) - no scene-wide searches.
         internal static readonly List<HVRArrowLoader> Loaders = new();
@@ -70,6 +72,10 @@ namespace ArrowQuiver
         {
             public HVRArrow Arrow; public HVRHandGrabber Hand; public HVRPhysicsBow Bow; public HVRArrowLoader Loader;
             public bool Grabbed; public int GrabTries; public long Frame; public bool PoseLogged;
+            public long GraceUntil;                        // frame until which "not in hand" is expected
+            // grip switch (A / X)
+            public HVRPosableGrabPoint BackPoint, DaggerPoint;
+            public bool Dagger, PrimaryWasDown, SecondaryWasDown;
         }
         class PendingNock { public HVRHandGrabber Hand; public HVRPhysicsBow Bow; public int Tries; public bool Grabbed; }
         class Dropped { public HVRArrow Arrow; public HVRPhysicsBow Bow; public HVRArrowLoader Loader; public double Since; }
@@ -88,6 +94,10 @@ namespace ArrowQuiver
             _headFallback = cat.CreateEntry("UseHeadFallback", true, description: "If the bow was never holstered, put the quiver beside the head on the drawing hand's side.");
             _dropLifetime = cat.CreateEntry("DroppedArrowLifetime", 10f, description: "Seconds before a dropped quiver arrow is removed (the timer pauses while it is held).");
             _haptics = cat.CreateEntry("HapticOnDraw", true, description: "Short controller pulse when an arrow is drawn.");
+            _slipRadius = cat.CreateEntry("SlipNockRadius", 0.30f, description: "If the arrow slips out of the hand while grip is still held this close to the string, nock it anyway.");
+            _gripSwitch = cat.CreateEntry("GripSwitch", true, description: "A (right hand) / X (left hand) switches a quiver arrow between the nocking grip and a reverse dagger grip.");
+            _daggerFromNock = cat.CreateEntry("DaggerGripFromNock", 0.25f, description: "Dagger grip: metres from the nock end towards the tip where the hand holds the arrow.");
+            _daggerMode = cat.CreateEntry("DaggerOrientation", "Knuckles", description: "Dagger grip: Knuckles = shaft along the knuckle line, tip out past the little finger; KnucklesReverse = tip out past the index finger; FlipX / FlipY = the old 180-degree flips. With DebugLog on, B / Y cycles it in game.");
             Debug = cat.CreateEntry("DebugLog", false, description: "Log holster tracking, draws, nocks, drops and ammo to the MelonLoader console.");
             LoggerInstance.Msg("loaded - draw arrows from the bow's holster.");
         }
@@ -102,6 +112,33 @@ namespace ArrowQuiver
             _handState.Clear();
             Prune(Loaders); Prune(Hands);
             _fallbackScanAt = Now + 3.0;
+            if (!_warmed) { _warmed = true; WarmUp(); }
+        }
+
+        // First-use costs (JIT of this mod's methods, interop type setup) otherwise land on the first
+        // bow grab / draw as a visible hitch (perf log: 39-55 ms once). Pay them during a scene load.
+        bool _warmed;
+        void WarmUp()
+        {
+            var sw = Stopwatch.StartNew();
+            try
+            {
+                const System.Reflection.BindingFlags all = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static |
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.DeclaredOnly;
+                foreach (var m in typeof(ArrowQuiverMod).GetMethods(all))
+                    if (!m.IsAbstract && !m.ContainsGenericParameters)
+                        try { System.Runtime.CompilerServices.RuntimeHelpers.PrepareMethod(m.MethodHandle); } catch { }
+                foreach (var t in new[] { typeof(HVRArrow), typeof(HVRArrowLoader), typeof(HVRPhysicsBow), typeof(HVRBowBase),
+                                          typeof(HVRHandGrabber), typeof(HVRGrabbable), typeof(HVRSocket), typeof(HVRShoulderSocket),
+                                          typeof(HVRPosableGrabPoint), typeof(Il2CppHurricaneVR.Framework.Shared.HVRController),
+                                          typeof(ANBKnife), typeof(ANBGameLogic), typeof(ANBStaticGameManager), typeof(Collider), typeof(Renderer) })
+                {
+                    System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(t.TypeHandle);
+                    Il2CppType.From(t);
+                }
+            }
+            catch (Exception e) { LoggerInstance.Warning($"warm-up incomplete: {e.Message}"); }
+            if (Dbg) LoggerInstance.Msg($"warm-up done in {sw.Elapsed.TotalMilliseconds:0} ms");
         }
 
         public override void OnUpdate()
@@ -281,7 +318,7 @@ namespace ArrowQuiver
             arrow.transform.SetPositionAndRotation(palm.position, palm.rotation);
             var c = new Carry { Arrow = arrow, Hand = hand, Bow = loader.bow, Loader = loader, Frame = _frame };
             SetCarry(c);
-            TryGrabCarried(c);
+            if (!TryGrabCarried(c)) return;
             if (_haptics.Value) try { hand.Controller.Vibrate(0.35f, 0.06f, 150f); } catch { }
             if (Dbg)
             {
@@ -290,11 +327,57 @@ namespace ArrowQuiver
             }
         }
 
-        void TryGrabCarried(Carry c)
+        // false = the grab threw and the arrow was removed (never leave an untracked arrow behind).
+        bool TryGrabCarried(Carry c)
         {
             c.GrabTries++;
-            c.Grabbed = c.Hand.TryGrab(c.Arrow.Grabbable, true);        // force: it was never hovered
+            try
+            {
+                // Always hand the grab an explicit grip point. A forced TryGrab lets the hand reuse its
+                // cached PosableGrabPoint (HVRHandGrabber+0x288). Right after a dropped arrow, that
+                // cache can still point at a grip whose grabbable is gone, and OnGrabbed then throws
+                // in GetGrabbableRelativeRotation (3 of 49 draws in 0.3.3, every time 0.3-1.5 s after
+                // a drop). Grab(grabbable, trigger, point) is the game's put-this-in-the-hand call: it
+                // orients the arrow to the hand instead of pulling it in, and grabs next update.
+                var point = NockEndPoint(c.Arrow);
+                if (Alive(point))
+                {
+                    c.Hand.Grab(c.Arrow.Grabbable, Il2CppHurricaneVR.Framework.Shared.HVRGrabTrigger.Active, point);
+                    c.BackPoint = point;
+                    c.Grabbed = true;
+                    c.GraceUntil = _frame + 30;
+                }
+                else c.Grabbed = c.Hand.TryGrab(c.Arrow.Grabbable, true);   // force: it was never hovered
+                return true;
+            }
+            catch (Exception e)
+            {
+                LoggerInstance.Warning($"grabbing the drawn arrow failed ({e.GetType().Name}) - removed it, press again");
+                if (Dbg) LoggerInstance.Warning(e.ToString());
+                try { c.Hand.ForceRelease(); } catch { }
+                Object.Destroy(c.Arrow.gameObject);
+                SetCarry(null);
+                return false;
+            }
         }
+
+        // The arrow's grip at the nock end: the posable grab point closest to the arrow's origin,
+        // which is the notch (logged: GrabPoint at local (0,0,0), the other at z=0.257).
+        static HVRPosableGrabPoint NockEndPoint(HVRArrow arrow)
+        {
+            HVRPosableGrabPoint best = null;
+            float bestD = float.MaxValue;
+            var at = arrow.transform;
+            foreach (var pg in arrow.GetComponentsInChildren<HVRPosableGrabPoint>(false))
+            {
+                if (pg.name == "QuiverDaggerGrip") continue;
+                var p = at.InverseTransformPoint(pg.transform.position);
+                float d = p.x * p.x + p.y * p.y + p.z * p.z;
+                if (d < bestD) { bestD = d; best = pg; }
+            }
+            return best;
+        }
+
 
         // ---- carrying -------------------------------------------------------------------------
         void UpdateCarry()
@@ -310,7 +393,7 @@ namespace ArrowQuiver
                     LoggerInstance.Warning("could not put the arrow in the hand - removed it");
                     Object.Destroy(c.Arrow.gameObject); SetCarry(null); return;
                 }
-                TryGrabCarried(c);
+                if (!TryGrabCarried(c)) return;
                 if (Dbg && c.Grabbed) LoggerInstance.Msg($"arrow grabbed after {c.GrabTries} tries");
                 return;
             }
@@ -323,37 +406,274 @@ namespace ArrowQuiver
                 SetCarry(null); return;
             }
 
+            bool bowReady = Alive(bow) && Alive(bow.BowHand) && bow.BowHand.Pointer != c.Hand.Pointer;
             bool inHand = c.Hand.IsGrabbing && Alive(c.Hand.GrabbedTarget) && c.Hand.GrabbedTarget.Pointer == c.Arrow.Grabbable.Pointer;
             if (!inHand)
             {
-                if (_frame - c.Frame < 3) return;                       // the grab may take a frame to register
-                DropCarried(c, "released");
+                if (_frame - c.Frame < 3 || _frame < c.GraceUntil) return;   // a (re)grab may take frames to register
+                bool grip = c.Hand.IsGripGrabActive;
+                float ds = bowReady ? StringDistance(bow, c.Hand) : float.MaxValue;
+                // Grip still held = the hand lost the arrow, the player didn't let go. Near the
+                // string that was a nock attempt: finish it.
+                if (grip && ds < _slipRadius.Value && !Alive(bow.Arrow) && !bow.NockGrabbable.IsBeingHeld)
+                {
+                    LoggerInstance.Msg($"arrow slipped from the hand {ds * 100:0.0} cm from the string with grip held - nocking it anyway");
+                    StartNock(c, bow, ds);
+                    return;
+                }
+                DropCarried(c, $"left the hand (grip {(grip ? "HELD - the hand lost it" : "released")}, " +
+                               $"{(ds < 10f ? $"{ds * 100:0} cm from the string" : "bow not ready")})");
                 return;
             }
-            if (Dbg && !c.PoseLogged && _frame - c.Frame >= 5)
+            if (!c.PoseLogged && _frame - c.Frame >= 5)
             {
                 c.PoseLogged = true;
-                LoggerInstance.Msg($"held on grab point '{Name(c.Hand.PosableGrabPoint)}' (GrabPoint '{Name(c.Hand.GrabPoint)}')");
+                if (!Alive(c.BackPoint)) c.BackPoint = c.Hand.PosableGrabPoint;
+                if (Dbg) LoggerInstance.Msg($"held on grab point '{Name(c.Hand.PosableGrabPoint)}' (GrabPoint '{Name(c.Hand.GrabPoint)}')");
             }
+            if (_gripSwitch.Value && c.PoseLogged) UpdateGripSwitch(c);
 
-            if (!Alive(bow) || !Alive(bow.BowHand) || bow.BowHand.Pointer == c.Hand.Pointer)
+            if (!bowReady)
             {
                 if (Dbg) LoggerInstance.Msg("bow left the other hand - removing the carried arrow");
                 c.Hand.ForceRelease(); Object.Destroy(c.Arrow.gameObject); SetCarry(null); return;
             }
             if (Alive(bow.Arrow) || !c.Hand.IsGripGrabActive) return;
-            var nock = bow.NockGrabbable;
-            if (!Alive(nock) || nock.IsBeingHeld) return;
-            float d = Dist(c.Hand.Palm.position, nock.transform.position);
+            if (bow.NockGrabbable.IsBeingHeld) return;
+            float d = StringDistance(bow, c.Hand);
             if (d > _nockRadius.Value) return;
+            StartNock(c, bow, d);
+        }
 
-            // Swap to the proven string path: the nocked arrow comes from OnStringGrabbed.
-            c.Hand.ForceRelease();
+        float StringDistance(HVRPhysicsBow bow, HVRHandGrabber hand)
+        {
+            var nock = bow.NockGrabbable;
+            return Alive(nock) ? Dist(hand.Palm.position, nock.transform.position) : float.MaxValue;
+        }
+
+        // Swap to the proven string path: the nocked arrow comes from OnStringGrabbed.
+        void StartNock(Carry c, HVRPhysicsBow bow, float dist)
+        {
+            if (c.Hand.IsGrabbing) c.Hand.ForceRelease();
             Object.Destroy(c.Arrow.gameObject);
             SetCarry(null);
             _pending = new PendingNock { Hand = c.Hand, Bow = bow };
-            if (Dbg) LoggerInstance.Msg($"nocking: carried arrow {d * 100:0.0} cm from the string");
+            if (Dbg) LoggerInstance.Msg($"nocking: carried arrow {dist * 100:0.0} cm from the string");
             UpdatePendingNock();
+        }
+
+        // ---- grip switch: A / X spins the arrow between the nocking grip and a dagger grip -------
+        // Swapping is done by SwapGrip (not the knife swapper's ChangeGrabPoint - see there). The arrow
+        // prefab has no dagger grip point, so one is cloned from the grip in use, moved along the
+        // shaft and turned so the shaft runs along the knuckle line (through the curled fingers,
+        // not through the palm) with the tip out past the little finger.
+        void UpdateGripSwitch(Carry c)
+        {
+            var ctrl = c.Hand.Controller;
+            if (!Alive(ctrl)) return;
+            bool primary = ctrl.PrimaryButtonState.Active;
+            bool pressed = primary && !c.PrimaryWasDown;
+            c.PrimaryWasDown = primary;
+
+            if (Dbg)
+            {
+                // Test aid: B / Y cycles the dagger orientation. In the dagger grip it applies at once.
+                bool secondary = ctrl.SecondaryButtonState.Active;
+                if (secondary && !c.SecondaryWasDown)
+                {
+                    int i = Array.IndexOf(DaggerModes, DaggerMode());
+                    _daggerMode.Value = DaggerModes[(i + 1) % DaggerModes.Length];
+                    LoggerInstance.Msg($"dagger orientation -> {_daggerMode.Value}");
+                    var old = c.DaggerPoint;
+                    c.DaggerPoint = null;
+                    if (c.Dagger)
+                    {
+                        var fresh = MakeDaggerPoint(c);
+                        if (Alive(fresh)) { c.DaggerPoint = fresh; SwapGrip(c, fresh); }
+                    }
+                    if (Alive(old) && (!Alive(c.DaggerPoint) || old.Pointer != c.DaggerPoint.Pointer)) Object.Destroy(old.gameObject);
+                }
+                c.SecondaryWasDown = secondary;
+            }
+            if (!pressed) return;
+
+            try
+            {
+                if (!Alive(c.BackPoint)) { LoggerInstance.Warning("grip switch: no grip point to start from"); return; }
+                if (!Alive(c.DaggerPoint)) c.DaggerPoint = MakeDaggerPoint(c);
+                if (!Alive(c.DaggerPoint)) return;
+                var target = c.Dagger ? c.BackPoint : c.DaggerPoint;
+                SwapGrip(c, target);
+                c.Dagger = !c.Dagger;
+                if (Dbg) LoggerInstance.Msg($"grip -> {(c.Dagger ? $"dagger ({DaggerMode()}, {_daggerFromNock.Value * 100:0} cm from the nock)" : "nocking")}");
+            }
+            catch (Exception e) { LoggerInstance.Warning($"grip switch failed: {e.GetType().Name}: {e.Message}"); }
+        }
+
+        // Move the hand onto another grip point without moving the hand.
+        // HVRHandGrabber.ChangeGrabPoint (the knife swapper's call) animates the object around ONE
+        // fixed axis (Quaternion.AngleAxis about GetVector(axis)) and then re-poses the hand. That lands
+        // only if the two grip points differ by a turn about that axis - true for a 180-degree flip,
+        // false for the knuckle-aligned dagger grip, where the hand got dragged far off to the side.
+        // Instead: let go, place the arrow so the target point sits exactly where the held point is
+        // (the hand pose is fixed relative to its point, so the hand needn't move), grab that point.
+        void SwapGrip(Carry c, HVRPosableGrabPoint target)
+        {
+            var hand = c.Hand;
+            var arrow = c.Arrow;
+            var held = hand.PosableGrabPoint;
+            if (!Alive(held)) held = c.Dagger ? c.DaggerPoint : c.BackPoint;
+            var ht = held.transform;
+            var tt = target.transform;
+            var at = arrow.transform;
+            var hp = ht.position;
+            var hr = ht.rotation;
+
+            c.GraceUntil = _frame + 30;                                 // don't treat the release as a drop
+            hand.ForceRelease();
+            // A' = H * inverse(D) * A: afterwards the target point's frame equals the held point's.
+            at.rotation = hr * Quaternion.Inverse(tt.rotation) * at.rotation;
+            var tp = tt.position;
+            var ap = at.position;
+            at.position = new Vector3(ap.x + hp.x - tp.x, ap.y + hp.y - tp.y, ap.z + hp.z - tp.z);
+            var rb = arrow.Rigidbody;
+            if (Alive(rb))
+            {
+                rb.position = at.position;
+                rb.rotation = at.rotation;
+                rb.linearVelocity = new Vector3(0f, 0f, 0f);
+                rb.angularVelocity = new Vector3(0f, 0f, 0f);
+            }
+            hand.Grab(arrow.Grabbable, Il2CppHurricaneVR.Framework.Shared.HVRGrabTrigger.Active, target);
+            if (Dbg)
+            {
+                var e = Dist(tt.position, hp);
+                LoggerInstance.Msg($"grip swap: target point {e * 100:0.0} cm from the old grip frame, grabbing={hand.IsGrabbing}");
+            }
+        }
+
+        string DaggerMode()
+        {
+            var v = (_daggerMode.Value ?? "").Trim();
+            foreach (var m in DaggerModes) if (string.Equals(m, v, StringComparison.OrdinalIgnoreCase)) return m;
+            return DaggerModes[0];
+        }
+
+        HVRPosableGrabPoint MakeDaggerPoint(Carry c)
+        {
+            var back = c.BackPoint;
+            var bt = back.transform;
+            var go = Object.Instantiate(back.gameObject, bt.parent);
+            go.name = "QuiverDaggerGrip";
+            // The grip point carries the hand poser's preview hand (RightHand_Gloves_LOD0 ...). It
+            // stays hidden on the prefab's own points but shows on a runtime clone as a ghost glove
+            // stuck to the arrow. The pose itself is data, so the meshes can go.
+            // Renderers alone weren't enough: a UI part of that preview (the wrist health display)
+            // still floated on the arrow. So every child of the clone is switched off, except the
+            // path down to its HVRHandPoser, whose pose data the grab needs.
+            foreach (var r in go.GetComponentsInChildren<Renderer>(true)) Object.Destroy(r);
+            var pg = go.GetComponent<HVRPosableGrabPoint>();
+            if (!Alive(pg)) { Object.Destroy(go); LoggerInstance.Warning("grip switch: cloned grip point has no HVRPosableGrabPoint"); return null; }
+            pg.Grabbable = c.Arrow.Grabbable;
+            var keep = new List<IntPtr>();
+            var poser = pg.HandPoser;
+            if (Alive(poser))
+            {
+                var t = poser.transform;
+                for (int guard = 0; guard < 16 && Alive(t) && t.Pointer != go.transform.Pointer; guard++, t = t.parent) keep.Add(t.Pointer);
+            }
+            int hidden = HideChildren(go.transform, keep);
+            if (Dbg) LoggerInstance.Msg($"dagger grip clone: hid {hidden} preview object(s), poser {(Alive(poser) ? $"'{poser.name}'" : "none")}");
+
+            // Direction nock -> tip: from the grip towards the middle of the shaft mesh ('Arrow01 (1)').
+            // The prefab also carries hand-pose preview meshes (RightHand_Gloves, RightHandFinalPalm...).
+            var from = bt.position;
+            Vector3 mid = from; float best = -1f;
+            foreach (var r in c.Arrow.GetComponentsInChildren<Renderer>(true))
+            {
+                var n = r.name.ToLowerInvariant();
+                if (n.Contains("hand") || n.Contains("palm") || n.Contains("wrist") || n.Contains("glove")) continue;
+                var s = r.bounds.size;
+                float len = MathF.Max(s.x, MathF.Max(s.y, s.z)) + (n.Contains("arrow") ? 10f : 0f);
+                if (len > best) { best = len; mid = r.bounds.center; }
+            }
+            float dx = mid.x - from.x, dy = mid.y - from.y, dz = mid.z - from.z;
+            float dl = MathF.Sqrt(dx * dx + dy * dy + dz * dz);
+            if (dl > 1e-3f)
+            {
+                float k = _daggerFromNock.Value / dl;
+                go.transform.position = new Vector3(from.x + dx * k, from.y + dy * k, from.z + dz * k);
+            }
+            go.transform.rotation = bt.rotation;
+            var mode = DaggerMode();
+            string how = mode;
+            if (mode.StartsWith("Knuckles"))
+            {
+                // Shaft along the knuckle line. The hand pose is fixed relative to the grip point it
+                // holds, so the knuckle line measured in the HELD point's frame is where it will be in
+                // the new point's frame too. R turns that line onto the arrow's tip direction:
+                // holding a point rotated by R from the back grip puts the tip along the knuckles.
+                var knuckles = KnuckleLineInHeldPoint(c.Hand, out var span);
+                if (knuckles is Vector3 kLocal && dl > 1e-3f)
+                {
+                    if (mode == "KnucklesReverse") kLocal = new Vector3(-kLocal.x, -kLocal.y, -kLocal.z);
+                    var tipLocal = bt.InverseTransformDirection(new Vector3(dx / dl, dy / dl, dz / dl));
+                    var r = Quaternion.FromToRotation(kLocal, tipLocal);
+                    go.transform.Rotate(r.eulerAngles, Space.Self);
+                    float cos = Math.Clamp(kLocal.x * tipLocal.x + kLocal.y * tipLocal.y + kLocal.z * tipLocal.z, -1f, 1f);
+                    how = $"{mode} (shaft was {MathF.Acos(cos) * 180f / MathF.PI:0} deg off the knuckle line, knuckle span {span * 100:0.0} cm)";
+                }
+                else
+                {
+                    go.transform.Rotate(new Vector3(1f, 0f, 0f), 180f, Space.Self);
+                    how = $"{mode} unavailable (no hand bones) - used FlipX";
+                }
+            }
+            else go.transform.Rotate(mode == "FlipY" ? new Vector3(0f, 1f, 0f) : new Vector3(1f, 0f, 0f), 180f, Space.Self);
+            if (Dbg) LoggerInstance.Msg($"dagger grip built: {dl * 100:0.0} cm grip->shaft middle, moved {_daggerFromNock.Value * 100:0} cm, {how}");
+            return pg;
+        }
+
+        static int HideChildren(Transform t, List<IntPtr> keep)
+        {
+            int n = 0;
+            for (int i = 0; i < t.childCount; i++)
+            {
+                var ch = t.GetChild(i);
+                if (keep.Contains(ch.Pointer)) n += HideChildren(ch, keep);
+                else if (ch.gameObject.activeSelf) { ch.gameObject.SetActive(false); n++; }
+            }
+            return n;
+        }
+
+        // Index-knuckle -> little-finger-knuckle direction, in the frame of the grip point the hand holds.
+        Vector3? KnuckleLineInHeldPoint(HVRHandGrabber hand, out float span)
+        {
+            span = 0f;
+            try
+            {
+                var held = hand.PosableGrabPoint;
+                var ph = hand._posableHand;
+                if (!Alive(ph)) ph = hand.GetComponentInChildren<HVRPosableHand>(true);
+                if (!Alive(held) || !Alive(ph)) return null;
+                var i = FingerBase(ph.Index);
+                var p = FingerBase(ph.Pinky);
+                if (i == null || p == null) return null;
+                float x = p.Value.x - i.Value.x, y = p.Value.y - i.Value.y, z = p.Value.z - i.Value.z;
+                span = MathF.Sqrt(x * x + y * y + z * z);
+                if (span < 0.01f || span > 0.2f) return null;               // not a hand-sized reading
+                return held.transform.InverseTransformDirection(new Vector3(x / span, y / span, z / span));
+            }
+            catch { return null; }
+        }
+
+        static Vector3? FingerBase(HVRPosableFinger f)
+        {
+            if (f == null) return null;
+            if (Alive(f.Root)) return f.Root.position;
+            var bones = f.Bones;
+            if (bones != null && bones.Count > 0 && bones[0] != null && Alive(bones[0].Transform)) return bones[0].Transform.position;
+            return null;
         }
 
         void DropCarried(Carry c, string why)
@@ -390,7 +710,7 @@ namespace ArrowQuiver
                     if (_carry == null && _pending == null && Alive(hand) && Alive(d.Bow))
                     {
                         _dropped.RemoveAt(i--);
-                        SetCarry(new Carry { Arrow = d.Arrow, Hand = hand, Bow = d.Bow, Loader = d.Loader, Grabbed = true, Frame = _frame, PoseLogged = true });
+                        SetCarry(new Carry { Arrow = d.Arrow, Hand = hand, Bow = d.Bow, Loader = d.Loader, Grabbed = true, Frame = _frame });
                         if (Dbg) LoggerInstance.Msg($"dropped quiver arrow picked up by {Side(hand)} hand");
                     }
                     continue;

@@ -33,7 +33,85 @@ Log results (19 draws, 13 nocks, 6 stabs, 0 warnings):
   scene as a safety net. Head fallback uses `Camera.main` instead of searching for the rig.
 - Debug logging was never a meaningful cost (~150 lines per session).
 
-### v0.3.0 (Sep 24 2026) — grip switch + robustness; deployed, untested
+### Versioning (Sep 24 2026)
+`GunmanContracts/` is a git repo (local identity `evgeeso <evhenii.soroka@gmail.com>`; the global
+git email is the work one, so never commit here without the local config). **`main` = release**:
+ArrowGrabAssist 1.1.1 + ArrowQuiver 0.2.0, tagged, DLLs in `release/`, and those are deployed to the
+game. **`feature/grip-switch` = ongoing work**, built to `feature/ArrowQuiver.dll` (not deployed).
+The v0.2.0 source was rebuilt by reversing the 0.3.0 edits. The rebuilt DLL came out at exactly
+27,136 bytes, the same as the tested v0.2.0 build.
+
+### v0.3.4 (feature branch) — draw crash root cause; deployed with ArrowGrabAssist 1.2.0
+0.3.3 test: **"generally it feels great, the hand switch position is right."** Remaining:
+- **Draw crash, root cause found:** 3 of 49 draws threw, **each 0.3–1.5 s after a dropped arrow**
+  (v0.2.0's single crash followed a drop too). The failing read in `HVRHandGrabber.OnGrabbed` is
+  `[hand+0x288]` = `<PosableGrabPoint>k__BackingField`. It is alive (it passes `op_Implicit`), but its
+  `Grabbable` is dead. A forced `TryGrab` lets the hand reuse that stale cache. Fix: the draw now
+  always passes an explicit point, `Grab(grabbable, Active, NockEndPoint(arrow))` (the grab point
+  closest to the arrow origin = the notch). It also orients the arrow into the hand instead of
+  pulling it in. Exceptions crossing from IL2CPP into managed code are expensive (stack-trace
+  build + log), so the crashes were likely also some of the reported hitches.
+- ❓ **Hands drifting with the left stick** ("at some point my hands started moving together with my
+  left stick; when I run forward the hands go ahead"). Not in the log; cause unknown. Hypotheses:
+  a held item (dagger arrow held tip-down, or the bow) colliding with the player's own body collider
+  while moving, or HVR hand state left behind by a release/re-grab. Needs: when it started (after a
+  grip switch? a drop?), whether it persists after a scene change, and whether the release build
+  (`main`) ever does it.
+- Hitches: steady perf max 2–5 ms per 30 s window = the arrow `Instantiate` on draw (the game
+  instantiates a second arrow on nock). If hitches remain after 0.3.4, reuse the carried arrow as the
+  nocked arrow (`bow.NockArrow(carried)` + `createdNok`) to halve the instantiations.
+
+### v0.3.3 (feature branch) — grip swap without the hand flying off
+0.3.2 test: **the knuckle alignment is correct**, but (1) **after a swap the hand flew far off to
+the right**, and (2) a dropped dagger arrow still showed the preview's **wrist health display**.
+- (1) Cause, from the disassembly of `<SwapGrabPoint>d__380::MoveNext`: `ChangeGrabPoint` removes the
+  joint, rotates the object with `Quaternion.AngleAxis(angle, GetVector(axis))` around **one fixed
+  axis**, then `PoseHand`s. That only lands when the two grip points differ by a turn about that axis
+  (the 180° flip did, the knuckle-aligned `FromToRotation` doesn't), so the hand ended up dragged to
+  wherever the grip point expected it. **★ Rule: `ChangeGrabPoint` only works between points related
+  by a rotation about a principal axis.** Fix: `SwapGrip` sets the arrow to
+  `A' = H · D⁻¹ · A` (target point D lands exactly on the held point's frame H, so the hand pose
+  doesn't move), then `HVRHandGrabber.Grab(grabbable, HVRGrabTrigger.Active, point)`. That overload
+  force-releases, calls `OrientGrabbable` and completes the grab via `ExecuteNextUpdate`, so the carry
+  has a 30-frame grace (`GraceUntil`) before a missing grab counts as a drop.
+- (2) The health display is UI (CanvasRenderer, not a `Renderer`), so destroying renderers missed it.
+  Every child of the clone is now deactivated except the path to its `HVRHandPoser`.
+- Evhenii also couldn't press **Settings on the in-game phone**. Parked. Neither mod does anything
+  while no bow is in hand (the screenshot shows the bow on the floor), so it's probably unrelated.
+  To rule it out: set `Enabled = false` for both mods and retry.
+
+### v0.3.2 (feature branch) — dagger grip along the knuckle line
+Evhenii: with the FlipX dagger grip the arrow **goes through the palm**. It should lie along the
+knuckle line (through the curled fingers), about 90° further round. No axis guessing this time:
+the hand model exposes `HVRHandGrabber._posableHand` → `HVRPosableHand.Index/Pinky` →
+`HVRPosableFinger.Root`. The index→little-finger direction is measured in the frame of the grip
+point currently held. The hand pose is fixed relative to its grip point, so that vector is the same
+in any grip point sharing the pose. The dagger point = back point rotated by
+`R = FromToRotation(knuckleLocal, tipLocal)`. Holding it puts the tip along the knuckle line.
+Config `DaggerOrientation` = `Knuckles` (tip past the little finger, default) | `KnucklesReverse` |
+`FlipX` | `FlipY`. B/Y cycles it live (debug). The log line `dagger grip built: … shaft was N deg
+off the knuckle line, knuckle span X cm` sanity-checks the measurement (span should be about 6–8 cm).
+❓ Test: does the shaft now run through the fingers? Is 25 cm from the nock the right spot?
+
+### v0.3.1 (feature branch) — fixes after testing 0.3.0
+0.3.0 test: the grip switch works (dagger grip with flip X built and toggled 4×; in Evhenii's
+screenshot the tip comes out of the little-finger side). Problems found:
+- **Ghost glove on a dropped dagger arrow** (screenshot): cloning the grip point also cloned the
+  hand poser's preview meshes (`RightHand_Gloves_LOD0`, …), which are hidden on the prefab's own
+  points but visible on the clone. → the clone's renderers are destroyed.
+- **"Grabbing got glitchier, gets stuck, less seamless."** 0.3.0 changed the draw path with
+  `Physics.IgnoreCollision` for arrow × every bow collider plus `bowHand.UpdateCollision`. Changing
+  PhysX ignore pairs on a jointed, held bow is the prime suspect. It also bought nothing: **all 5
+  drops in the session were "grip released"**, i.e. the player let go, never the hand losing the
+  arrow. `RepairGrabPoints` was also removed (never fired). → The draw path is back to 0.2.0's,
+  plus only the try/catch that removes the arrow if `TryGrab` throws. ❓ Retest whether it's
+  seamless again.
+- Still in: grip switch, slip-nock rescue, warm-up (it ran in 51 ms; perf max was still
+  14.7 / 26.8 ms in the first two 30 s windows, with debug `[inspect]` on the first draw).
+- Two hands on one arrow (screenshot 2): HVR allows a second hand on any grabbable. Not handled
+  specially, not obviously a bug. ❓ Ask.
+
+### v0.3.0 (Sep 24 2026) — grip switch + robustness
 - **§3.8 built.** A/X (edge on `Controller.PrimaryButtonState.Active`) calls
   `hand.ChangeGrabPoint(point, 0.15, axis)`, the knife swapper's call. The dagger grip is a runtime
   **clone of the grip point in use** (`hand.PosableGrabPoint`, taken 5 frames after the grab),
