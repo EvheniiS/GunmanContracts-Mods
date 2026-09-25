@@ -11,7 +11,7 @@ using MelonLoader;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(FireSelector.FireSelectorMod), "Fire Selector", "0.1.0", "Evgeeso")]
+[assembly: MelonInfo(typeof(FireSelector.FireSelectorMod), "Fire Selector", "1.0.0", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace FireSelector

@@ -1,0 +1,73 @@
+[size=5][b]Fire Selector[/b][/size]
+
+Automatic weapons get a [b]fire selector[/b]: switch between [b]full auto[/b], [b]3-round burst[/b] and
+[b]single shot[/b] without letting go of the gun.
+
+[size=4][b]How to use[/b][/size]
+Hold the gun normally. With your [b]other hand[/b] (on the foregrip or free), [b]hold X[/b] (left hand)
+or [b]A[/b] (right hand) for about a third of a second. Each hold moves one step:
+[b]Automatic → 3-round burst → Single → Automatic[/b].
+Your hand vibrates to tell you which mode you're in:
+[list]
+[*][b]1 short pulse[/b]: single shot
+[*][b]3 short pulses[/b]: 3-round burst
+[*][b]1 long buzz[/b]: automatic
+[/list]
+
+[size=4][b]How the modes fire[/b][/size]
+[list]
+[*][b]Single:[/b] one shot per trigger pull, as fast as the gun can cycle.
+[*][b]3-round burst:[/b] three shots at the gun's own automatic fire rate. The burst finishes even if
+you let go of the trigger, and stops early if the magazine runs dry.
+[*][b]Automatic:[/b] unchanged, fires until you let go.
+[/list]
+Each weapon type [b]remembers[/b] the mode you picked, also after restarting the game.
+
+[size=4][b]Your buttons keep working[/b][/size]
+[list]
+[*][b]The gun hand's A / X still drops the magazine instantly.[/b] The mod doesn't touch it.
+[*]In the game, a [b]quick tap[/b] of A / X with the hand on the foregrip also drops the magazine,
+or toggles the flashlight on guns with the light attachment. That still works: a tap does
+exactly what it did before, only when you [i]let go[/i] of the button instead of when you press
+it. A [b]hold[/b] switches the fire mode instead, so switching never costs you a magazine.
+[*]A hand holding something else (a knife, a magazine, the phone, an arrow) keeps its buttons.
+[*]Only guns that are automatic in the game get the selector. Pistols, shotguns and the bow are
+not affected. Enemy weapons are not affected.
+[/list]
+
+The three modes are already built into the game's VR framework (HurricaneVR). The game just
+never lets you switch, so this mod only switches the mode. Shooting itself is the game's own code.
+
+[size=4][b]Requirements[/b][/size]
+[url=https://github.com/LavaGang/MelonLoader/releases]MelonLoader 0.7.x[/url] (tested with 0.7.3)
+
+[size=4][b]Install[/b][/size]
+[list=1]
+[*]Install MelonLoader on [i]GunmanContracts.exe[/i] with the official installer.
+[*]Extract the zip into the game folder (the one with [i]GunmanContracts.exe[/i]).
+[b]FireSelector.dll[/b] ends up in [i]Mods[/i]. Or copy it there by hand.
+[*]Start the game. The first launch with MelonLoader takes a minute or two.
+[/list]
+
+[size=4][b]Settings (optional)[/b][/size]
+After the first launch, edit [i]UserData\MelonPreferences.cfg[/i], section [b][FireSelector][/b]:
+[code]
+Enabled       = true   the fire selector
+HoldSeconds   = 0.35   how long to hold A / X before the mode switches
+Haptics       = true   vibrate to show the new mode
+RememberModes = true   each weapon type keeps its mode, also after a restart
+SavedModes    = ""     the remembered modes (written by the mod)
+DebugLog      = false  log each gun and every switch to the MelonLoader console
+[/code]
+
+[size=4][b]Compatibility[/b][/size]
+Works alongside my other mods ([url=https://www.nexusmods.com/gunmancontractsstandalone/mods/22]Better Bow[/url],
+Knee Shot Stun). Better Bow's dagger grip also uses A / X, but only while that hand holds an
+arrow, so the two never clash.
+
+[size=4][b]Uninstall[/b][/size]
+Delete [i]Mods\FireSelector.dll[/i]. Your guns go back to their normal mode.
+
+[size=4][b]Source[/b][/size]
+[url=https://github.com/EvheniiS/GunmanContracts-Mods]GitHub[/url] (MIT). Made for game version 0.3.1.0 and
+MelonLoader 0.7.3.

@@ -1,0 +1,49 @@
+[size=5][b]Knee Shot Stun[/b][/size]
+
+Shoot an enemy in the leg and they [b]go down on one knee and stay there[/b], long enough to
+actually use it: close the distance, take a second target, or line up the finishing shot.
+
+[size=4][b]What it does[/b][/size]
+In the game, a leg shot drops an enemy to one knee for only about [b]0.65 seconds[/b] before they
+get back up. With this mod they stay on the knee [b]3 seconds longer[/b] (you can change it).
+[list]
+[*]Only the kneeling part is lengthened. The fall and the getting-up play at normal speed, so it
+looks like the game's own animation, not a freeze.
+[*]The enemy stays [b]stunned[/b] for the whole time on the knee, just like during the game's own
+short kneel, and until they are back on their feet.
+[*]Shooting a kneeling enemy in the leg again doesn't cut the stun short.
+[*]Kill them while they're down and they die with the game's [b]kneeling death[/b] animation, the
+same as during the original kneel.
+[/list]
+
+Nothing else about enemies, damage or scoring is changed.
+
+[size=4][b]Requirements[/b][/size]
+[url=https://github.com/LavaGang/MelonLoader/releases]MelonLoader 0.7.x[/url] (tested with 0.7.3)
+
+[size=4][b]Install[/b][/size]
+[list=1]
+[*]Install MelonLoader on [i]GunmanContracts.exe[/i] with the official installer.
+[*]Extract the zip into the game folder (the one with [i]GunmanContracts.exe[/i]).
+[b]KneeShotStun.dll[/b] ends up in [i]Mods[/i]. Or copy it there by hand.
+[*]Start the game. The first launch with MelonLoader takes a minute or two.
+[/list]
+
+[size=4][b]Settings (optional)[/b][/size]
+After the first launch, edit [i]UserData\MelonPreferences.cfg[/i], section [b][KneeShotStun][/b]:
+[code]
+Enabled           = true   leg-shot enemies stay down longer
+ExtraKneelSeconds = 3.0    seconds added to the kneel (the game's own kneel is about 0.65 s)
+DebugLog          = false  log each knee shot to the MelonLoader console
+[/code]
+
+[size=4][b]Compatibility[/b][/size]
+Works alongside my other mods ([url=https://www.nexusmods.com/gunmancontractsstandalone/mods/22]Better Bow[/url],
+Fire Selector) and should work with any mod that doesn't change the enemies' hit animations.
+
+[size=4][b]Uninstall[/b][/size]
+Delete [i]Mods\KneeShotStun.dll[/i].
+
+[size=4][b]Source[/b][/size]
+[url=https://github.com/EvheniiS/GunmanContracts-Mods]GitHub[/url] (MIT). Made for game version 0.3.1.0 and
+MelonLoader 0.7.3.

@@ -6,8 +6,8 @@
 | Mod | What it does | Status |
 |---|---|---|
 | [Better Bow](BetterBow/README.md) | Quiver, dagger grip, thrown-arrow aim assist, first-press string grab, one-arrow barrels, arrows breach doors | 1.1.0, released on [Nexus](https://www.nexusmods.com/gunmancontractsstandalone/mods/22) |
-| [Knee Shot Stun](KneeShotStun/KneeShotStun.cs) | Enemies shot in the leg stay down on one knee for longer | 0.1.0, in testing |
-| [Fire Selector](FireSelector/FireSelector.cs) | Hold A / X on the support hand to switch automatic guns between automatic, 3-round burst and single shot | 0.1.0, in testing |
+| [Knee Shot Stun](KneeShotStun/KneeShotStun.cs) | Enemies shot in the leg stay down on one knee for longer | 1.0.0, Nexus release prepared, waiting for the in-game test |
+| [Fire Selector](FireSelector/FireSelector.cs) | Hold A / X on the support hand to switch automatic guns between automatic, 3-round burst and single shot | 1.0.0, Nexus release prepared, waiting for the in-game test |
 
 Settings for each mod are in `UserData\MelonPreferences.cfg`, one section per mod.
 
