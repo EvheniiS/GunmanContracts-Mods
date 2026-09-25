@@ -12,7 +12,7 @@ using MelonLoader;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(BetterBow.BetterBowMod), "Better Bow", "1.1.0", "Evgeeso")]
+[assembly: MelonInfo(typeof(BetterBow.BetterBowMod), "Better Bow", "1.2.0", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace BetterBow
@@ -118,7 +118,7 @@ namespace BetterBow
         internal static MelonPreferences_Entry<bool> StringGrab, RetrySpawn, ExplosiveBarrels, BreachDoors,
             Quiver, HeadFallback, Haptics, GripSwitch, ThrowAssist, HandsKeepParentAfterPause, PhoneSettingsRescue, DebugLog;
         internal static MelonPreferences_Entry<float> StringGrabRadius, StringGrabBuffer, RetryWindow,
-            QuiverRadius, QuiverBuffer, NockRadius, SlipNockRadius, DropLifetime, DaggerFromNock, ThrowAssistSpeed, ThrowStabReach, ThrowStabBack;
+            QuiverRadius, QuiverBuffer, NockRadius, SlipNockRadius, DropLifetime, DaggerFromNock, ThrowAssistSpeed, ThrowStabReach, ThrowStabBack, FullDrawAt, ArrowSpeed;
         internal static MelonPreferences_Entry<bool> ThrowAssistAvoidVest;
         internal static MelonPreferences_Entry<string> DaggerTip;
 
@@ -131,6 +131,9 @@ namespace BetterBow
             StringGrabBuffer = c.CreateEntry("StringGrabBufferSeconds", 0.35f, description: "How long after pressing grip (while still holding it) the string grab can still happen.");
             RetrySpawn = c.CreateEntry("RetryArrowSpawn", true, description: "Spawn the arrow if the string was grabbed while the previous arrow was still being cleared.");
             RetryWindow = c.CreateEntry("RetryWindowSeconds", 0.5f, description: "How long after grabbing the string the arrow-spawn retry is allowed.");
+
+            FullDrawAt = c.CreateEntry("FullDrawAt", 0.9f, description: "Share of the game's full string pull that already shoots at full speed. 0.9 = the last 10% of the pull is no longer needed. 1.0 = the game's own behaviour. The game's speed rises with the square of the pull, so a short pull loses a lot: without this, 90% of the pull gives 81% speed.");
+            ArrowSpeed = c.CreateEntry("ArrowSpeedMultiplier", 1.0f, description: "Multiplies every bow shot's speed (0.5 to 2). 1.0 = the game's own full-draw speed of 50 m/s. Faster arrows drop less over distance.");
 
             ExplosiveBarrels = c.CreateEntry("ExplosiveArrowsDetonateBarrels", true, description: "One arrow hit detonates an explosive barrel (the game otherwise needs three).");
             BreachDoors = c.CreateEntry("ArrowsBreachDoors", true, description: "An arrow shot at a door's 'shoot here to burst open door' mark breaches it, like a gunshot.");
@@ -157,7 +160,7 @@ namespace BetterBow
             HandsKeepParentAfterPause = c.CreateEntry("HandsKeepParentAfterPause", true, description: "Safety net: if a pause leaves your hands attached to the controllers (they then drift away when you move with the stick), put them back.");
             PhoneSettingsRescue = c.CreateEntry("PhoneSettingsRescue", true, description: "Safety net: if the phone's Settings button gets stuck (its menu switch never finishes), open the menu and unstick it.");
 
-            DebugLog = c.CreateEntry("DebugLog", false, description: "Log grabs, draws, nocks, grip switches, throws and their hits, barrel hits, door breaches and pauses to the MelonLoader console.");
+            DebugLog = c.CreateEntry("DebugLog", false, description: "Log grabs, draws, nocks, shot speeds, grip switches, throws and their hits, barrel hits, door breaches and pauses to the MelonLoader console.");
         }
     }
 

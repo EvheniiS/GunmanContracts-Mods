@@ -60,6 +60,37 @@ namespace BetterBow
         }
     }
 
+    // ---- Draw power: full speed without the last few centimetres of pull ----------------------------
+    // HVRBowBase.ArrowShootCall sets Tension (= nock distance / StringLimit, 0..1) and
+    // _shootSpeed = SpeedCurve.Evaluate(Tension) * Speed, then calls ShootArrow, which only does
+    // arrow.velocity = direction * _shootSpeed. The compound bow prefab has StringLimit 0.40 m,
+    // ShootThreshold 0.20 m, Speed 50 and a SpeedCurve of keys (0,0 slope 0) -> (1,1 slope 2), which
+    // is exactly t^2: speed = 50 * tension^2, so 90% of the pull gives 81% speed and about 66% range.
+    // Recompute _shootSpeed here from the same Tension, rescaled so FullDrawAt counts as full draw.
+    [HarmonyLib.HarmonyPatch(typeof(HVRPhysicsBow), nameof(HVRPhysicsBow.ShootArrow))]
+    internal static class ShootArrowSpeedPatch
+    {
+        static void Prefix(HVRPhysicsBow __instance)
+        {
+            if (Settings.FullDrawAt == null || Settings.ArrowSpeed == null) return;
+            float fullAt = Math.Clamp(Settings.FullDrawAt.Value, 0.5f, 1f);
+            float mult = Math.Clamp(Settings.ArrowSpeed.Value, 0.5f, 2f);
+            if (fullAt >= 1f && mult == 1f) return;
+            try
+            {
+                var curve = __instance.SpeedCurve;
+                if (curve == null) return;
+                float tension = Math.Clamp(__instance.Tension, 0f, 1f);
+                float t = Math.Min(1f, tension / fullAt);
+                float before = __instance._shootSpeed;
+                float speed = curve.Evaluate(t) * __instance.Speed * mult;
+                __instance._shootSpeed = speed;
+                if (U.Dbg) Log.Msg($"arrow shot: pull {tension:P0} -> {t:P0}, speed {before:0.#} -> {speed:0.#} m/s");
+            }
+            catch (Exception e) { Log?.Warning($"arrow speed patch skipped: {e.Message}"); }
+        }
+    }
+
     // ---- Doors: arrows breach them like a gunshot ---------------------------------------------------
     // Door breaching is ANBGameLogic.TryKickDoor(pos, dir): gated by useVRDoorKick, it raycasts
     // doorKickDistance along dir on doorKickMask, and if the hit collider has an ANBDoorKicker it
