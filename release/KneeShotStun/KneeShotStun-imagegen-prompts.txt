@@ -1,0 +1,31 @@
+Generated with built-in image_gen. Headers cropped and resized to 1300x372.
+
+THUMBNAIL A
+
+Use case: compositing. Asset type: polished 16:9 Nexus Mods thumbnail for "Knee Shot Stun". Input 1 is gameplay screenshot EDIT TARGET. Input 2 is typography STYLE REFERENCE ONLY; do not copy its rifle or words.
+Use the actual supplied gameplay scene as the background, preserve the main kneeling enemy's identity, clothing, anatomy and exact pained kneeling posture with head bowed. Adjust framing to give readable typography on left and the kneeling person on right; show the bent knee clearly. No added wounds or blood; no invented weapons or props. Remove tiny white mouse cursor. Gently improve contrast and clarity, retain game screenshot aesthetic, industrial amber wall, teal barrels, dark teal floor.
+Text: small "GUNMAN CONTRACTS" above a large bold two-line title "KNEE SHOT" / "STUN". KNEE SHOT in worn warm ivory, STUN in golden amber. Match reference's heavy condensed italic uppercase typography, subtle distressed texture and dark shadow. Thin amber rule below. Under the rule, the exact tagline specified below, cream uppercase, medium size and very readable. Title and tagline at left, keep person and knee unobstructed at right. Gentle dark gradient behind text, 5% safe margins. No other text, badges, logos, clickbait arrows or borders.
+VARIANT A: Use first screenshot's white-shirted kneeling man as subject. Tagline exactly "THIS SHOULD HURT". Clean grounded composition, serious mod branding with dry humor.
+
+THUMBNAIL B
+
+Use case: compositing. Asset type: polished 16:9 Nexus Mods thumbnail for "Knee Shot Stun". Input 1 is gameplay screenshot EDIT TARGET. Input 2 is typography STYLE REFERENCE ONLY; do not copy its rifle or words.
+Use the actual supplied gameplay scene as the background, preserve the main kneeling enemy's identity, clothing, anatomy and exact pained kneeling posture with head bowed. Adjust framing to give readable typography on left and the kneeling person on right; show the bent knee clearly. No added wounds or blood; no invented weapons or props. Remove tiny white mouse cursor. Gently improve contrast and clarity, retain game screenshot aesthetic, industrial amber wall, teal barrels, dark teal floor.
+Text: small "GUNMAN CONTRACTS" above a large bold two-line title "KNEE SHOT" / "STUN". KNEE SHOT in worn warm ivory, STUN in golden amber. Match reference's heavy condensed italic uppercase typography, subtle distressed texture and dark shadow. Thin amber rule below. Under the rule, the exact tagline specified below, cream uppercase, medium size and very readable. Title and tagline at left, keep person and knee unobstructed at right. Gentle dark gradient behind text, 5% safe margins. No other text, badges, logos, clickbait arrows or borders.
+VARIANT B: Use first screenshot's blue-shirted kneeling man and visible bow at lower right as subjects. Keep the tilted camera's dynamic feel but make overlaid text level. Tagline exactly "GOT SHOT IN THE KNEE". A subtle Skyrim knee joke through wording alone, no fantasy costume or scenery.
+
+HEADER A
+
+Use case: compositing. Adapt supplied Knee Shot Stun thumbnail into a matching Nexus Mods HEADER BANNER. Target output 1300x372, panoramic 3.495:1 aspect ratio. Recompose for a short wide header, not a squashed thumbnail.
+Keep the same distressed heavy condensed italic type, warm ivory / amber / dark teal palette and authentic game screenshot aesthetic. Title on LEFT 60% in ONE LINE: "KNEE SHOT STUN", KNEE SHOT ivory and STUN amber. Small "GUNMAN CONTRACTS" above title, thin amber underline below. Under underline, tagline specified below in cream condensed uppercase. No other text.
+On right 40%, preserve reference's recognizable kneeling man and his pained bowed-head posture, head and bent knee BOTH visible together. Fit entire important pose to short format; modestly reduce subject scale as needed. Continuous industrial background, teal barrels, amber wall and floor markings. No new wounds, blood, props, characters, arrows or HUD elements. No logos or borders. Do not let text overlap the man.
+CROP SAFETY: keep all title, label, tagline, man's head and main bent knee within central 66% of image HEIGHT, leaving top and bottom 17% as expendable background if a final crop is needed. Generous left and right safe insets.
+Preserve white-shirted man. Tagline exactly "THIS SHOULD HURT".
+
+HEADER B
+
+Use case: compositing. Adapt supplied Knee Shot Stun thumbnail into a matching Nexus Mods HEADER BANNER. Target output 1300x372, panoramic 3.495:1 aspect ratio. Recompose for a short wide header, not a squashed thumbnail.
+Keep the same distressed heavy condensed italic type, warm ivory / amber / dark teal palette and authentic game screenshot aesthetic. Title on LEFT 60% in ONE LINE: "KNEE SHOT STUN", KNEE SHOT ivory and STUN amber. Small "GUNMAN CONTRACTS" above title, thin amber underline below. Under underline, tagline specified below in cream condensed uppercase. No other text.
+On right 40%, preserve reference's recognizable kneeling man and his pained bowed-head posture, head and bent knee BOTH visible together. Fit entire important pose to short format; modestly reduce subject scale as needed. Continuous industrial background, teal barrels, amber wall and floor markings. No new wounds, blood, props, characters, arrows or HUD elements. No logos or borders. Do not let text overlap the man.
+CROP SAFETY: keep all title, label, tagline, man's head and main bent knee within central 66% of image HEIGHT, leaving top and bottom 17% as expendable background if a final crop is needed. Generous left and right safe insets.
+Preserve blue-shirted man and subtle visible bow at far lower right. Tagline exactly "GOT SHOT IN THE KNEE".

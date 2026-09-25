@@ -32,20 +32,42 @@ exactly like a pistol shot (same range). Before, only guns could do it.
 Arrow counts, ammo and scoring are untouched: every arrow still goes through the game's own
 bow code.
 
-[size=4][b]Requirements[/b][/size]
-[url=https://github.com/LavaGang/MelonLoader/releases]MelonLoader 0.7.x[/url] (tested with 0.7.3)
-
 [size=4][b]Install[/b][/size]
-[list=1]
-[*]Install MelonLoader on [i]GunmanContracts.exe[/i] with the official installer.
-[*]Extract the zip into the game folder (the one with [i]GunmanContracts.exe[/i]).
-[b]BetterBow.dll[/b] ends up in [i]Mods[/i]. Or copy it there by hand.
-[*]If you used [b]Arrow Grab Assist[/b] or [b]Arrow Quiver[/b] before, delete those DLLs from
-[i]Mods[/i]. Better Bow contains both.
-[*]Start the game. The first launch with MelonLoader takes a minute or two.
+Takes about 5 minutes the first time. Steps 1 and 2 are needed only once, for all MelonLoader mods.
+
+[b]Where is my game folder?[/b] In Steam, right-click [i]Gunman Contracts - Stand Alone[/i] →
+[i]Manage[/i] → [i]Browse local files[/i]. It's the folder with [i]GunmanContracts.exe[/i] in it.
+
+[b]1. Install MelonLoader[/b] (the mod loader)
+Download the installer from [url=https://github.com/LavaGang/MelonLoader/releases]MelonLoader releases[/url],
+run it, pick [i]GunmanContracts.exe[/i] in your game folder, and install [b]version 0.7.3 or newer[/b].
+[b]Version 0.6 does not work[/b] with this game.
+
+[b]2. Start the game once[/b], then quit.
+A black console window opens next to the game: that's MelonLoader working. The first start takes
+a minute or two, later ones are normal.
+
+[b]3. Add the mod[/b]
+Open the downloaded zip. Inside is a folder called [b]Mods[/b]. Drag that [b]Mods[/b] folder into your
+game folder, and if Windows asks, choose to replace / merge.
+You should end up with: [i]Gunman Contracts - Stand Alone\Mods\BetterBow.dll[/i]
+[b]Updating from Arrow Grab Assist or Arrow Quiver?[/b] Delete those DLLs from [i]Mods[/i]: Better Bow
+contains both.
+
+[b]4. Check it works[/b]
+Start the game. The MelonLoader console lists [b]Better Bow v1.1.0[/b] among the loaded mods.
+
+[b]Not working?[/b]
+[list]
+[*][b]The mod isn't in the console list:[/b] check the file isn't at [i]Mods\Mods\BetterBow.dll[/i] (a folder
+too deep). Move it up so it sits directly in [i]Mods[/i].
+[*][b]No console window at all:[/b] MelonLoader isn't installed on this game. Repeat step 1 and make
+sure you picked [i]GunmanContracts.exe[/i].
+[*][b]Errors right at startup:[/b] you likely have MelonLoader 0.6. Install 0.7.3 or newer.
 [/list]
 
 [size=4][b]Settings (optional)[/b][/size]
+[spoiler]
 After the first launch, edit [i]UserData\MelonPreferences.cfg[/i], section [b][BetterBow][/b]:
 [code]
 StringGrabAssist               = true   the first-press string grab
@@ -68,8 +90,10 @@ HandsKeepParentAfterPause      = true   safety net for hands stuck after a pause
 PhoneSettingsRescue            = true   safety net for a stuck phone Settings button
 DebugLog                       = false  log everything to the MelonLoader console
 [/code]
+[/spoiler]
 
 [size=4][b]Changelog[/b][/size]
+[spoiler]
 [b]1.1.0[/b]
 [list]
 [*][b]New: throw assist[/b] for drawn arrows (see Features).
@@ -82,8 +106,15 @@ Up to get a downward tip, switch back to Down. The old DaggerOrientation line in
 file is no longer used and can be deleted.
 [/list]
 [b]1.0.0[/b]: first release (Arrow Grab Assist and Arrow Quiver combined).
+[/spoiler]
+
+[size=4][b]Compatibility[/b][/size]
+Works alongside my other Gunman Contracts mods, Fire Selector (fire modes for automatic weapons)
+and Knee Shot Stun (leg-shot enemies stay down longer). The dagger grip uses A / X only while that
+hand holds an arrow, so it never clashes with Fire Selector.
 
 [size=4][b]Uninstall[/b][/size]
 Delete [i]Mods\BetterBow.dll[/i].
 
-Tested on game version 0.3.1.0, MelonLoader 0.7.3, Quest 3 via Virtual Desktop.
+[size=4][b]Source[/b][/size]
+[url=https://github.com/EvheniiS/GunmanContracts-Mods]GitHub[/url] (MIT). Tested on game version 0.3.1.0, MelonLoader 0.7.3, Quest 3 via Virtual Desktop.

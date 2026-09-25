@@ -38,18 +38,40 @@ not affected. Enemy weapons are not affected.
 The three modes are already built into the game's VR framework (HurricaneVR). The game just
 never lets you switch, so this mod only switches the mode. Shooting itself is the game's own code.
 
-[size=4][b]Requirements[/b][/size]
-[url=https://github.com/LavaGang/MelonLoader/releases]MelonLoader 0.7.x[/url] (tested with 0.7.3)
-
 [size=4][b]Install[/b][/size]
-[list=1]
-[*]Install MelonLoader on [i]GunmanContracts.exe[/i] with the official installer.
-[*]Extract the zip into the game folder (the one with [i]GunmanContracts.exe[/i]).
-[b]FireSelector.dll[/b] ends up in [i]Mods[/i]. Or copy it there by hand.
-[*]Start the game. The first launch with MelonLoader takes a minute or two.
+Takes about 5 minutes the first time. Steps 1 and 2 are needed only once, for all MelonLoader mods.
+
+[b]Where is my game folder?[/b] In Steam, right-click [i]Gunman Contracts - Stand Alone[/i] →
+[i]Manage[/i] → [i]Browse local files[/i]. It's the folder with [i]GunmanContracts.exe[/i] in it.
+
+[b]1. Install MelonLoader[/b] (the mod loader)
+Download the installer from [url=https://github.com/LavaGang/MelonLoader/releases]MelonLoader releases[/url],
+run it, pick [i]GunmanContracts.exe[/i] in your game folder, and install [b]version 0.7.3 or newer[/b].
+[b]Version 0.6 does not work[/b] with this game.
+
+[b]2. Start the game once[/b], then quit.
+A black console window opens next to the game: that's MelonLoader working. The first start takes
+a minute or two, later ones are normal.
+
+[b]3. Add the mod[/b]
+Open the downloaded zip. Inside is a folder called [b]Mods[/b]. Drag that [b]Mods[/b] folder into your
+game folder, and if Windows asks, choose to replace / merge.
+You should end up with: [i]Gunman Contracts - Stand Alone\Mods\FireSelector.dll[/i]
+
+[b]4. Check it works[/b]
+Start the game. The MelonLoader console lists [b]Fire Selector v1.0.0[/b] among the loaded mods.
+
+[b]Not working?[/b]
+[list]
+[*][b]The mod isn't in the console list:[/b] check the file isn't at [i]Mods\Mods\FireSelector.dll[/i] (a folder
+too deep). Move it up so it sits directly in [i]Mods[/i].
+[*][b]No console window at all:[/b] MelonLoader isn't installed on this game. Repeat step 1 and make
+sure you picked [i]GunmanContracts.exe[/i].
+[*][b]Errors right at startup:[/b] you likely have MelonLoader 0.6. Install 0.7.3 or newer.
 [/list]
 
 [size=4][b]Settings (optional)[/b][/size]
+[spoiler]
 After the first launch, edit [i]UserData\MelonPreferences.cfg[/i], section [b][FireSelector][/b]:
 [code]
 Enabled       = true   the fire selector
@@ -59,6 +81,7 @@ RememberModes = true   each weapon type keeps its mode, also after a restart
 SavedModes    = ""     the remembered modes (written by the mod)
 DebugLog      = false  log each gun and every switch to the MelonLoader console
 [/code]
+[/spoiler]
 
 [size=4][b]Compatibility[/b][/size]
 Works alongside my other mods ([url=https://www.nexusmods.com/gunmancontractsstandalone/mods/22]Better Bow[/url],
