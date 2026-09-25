@@ -38,24 +38,5 @@ harmless enemy shots per wave, so the effect can be measured first.
 
 ## Physical dodge
 
-The idea: moving or crouching at the right moment should really make enemy shots miss, instead of
-the timers above deciding.
-
-How enemies shoot now:
-- `<fireWeaponExec>` takes a snapshot of `attackTarget.position` (or `lastKnownPosition` when the
-  enemy can't see you, i.e. blind fire) at trigger time.
-- It aims from `gunMuzzleFixed` with spread from `getShotErrorRate`, then calls
-  `ANBHVRGunBase.EnemyTriggerPulled(source, direction, spread)`.
-- The bullet is simulated (`ANBBulletManager`, `bulletSpeed` 350 m/s), so it takes 15-30 ms to
-  cover a room. Nobody can react to that.
-
-Plan:
-- A Harmony prefix on `EnemyTriggerPulled` re-aims the shot at where your hit target was
-  `AimLag` seconds ago (around 0.2 s, from a ring buffer of `PlayerHitTarget` positions), keeping
-  the game's spread.
-- Standing still gets you hit. Crouching, stepping or leaning as they fire makes them miss.
-- Optionally combine it with the hardcore settings above, so real movement replaces the free
-  passes.
-
-Open question: does `PlayerHitTarget` follow your head down when you crouch? Enemy Awareness Log
-0.4.0 logs hit-target height against head height to answer it.
+Built: [PhysicalDodge/](PhysicalDodge/PhysicalDodge.cs) (0.2.0: enemies aim where you were
+`AimLagSeconds` ago). The notes on how enemies shoot are in its source comments.
