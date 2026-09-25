@@ -40,6 +40,6 @@ Bow's (`release/BetterBow/*-prompt.txt`):
 
 ## Before uploading
 
-- [ ] Played in game: all three modes fire as described, a tap on the foregrip still drops the mag.
-- [ ] Tag the release: `git tag fireselector-v1.0.0` and push the tag.
+- [x] Played in game: all three modes fire as described, a tap on the foregrip still drops the mag.
+- [x] Tag the release: `git tag fireselector-v1.0.0` and push the tag.
 - [ ] README status → released, with the Nexus link.

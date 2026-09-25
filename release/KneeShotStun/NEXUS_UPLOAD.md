@@ -39,6 +39,6 @@ same way as Better Bow's (`release/BetterBow/*-prompt.txt`):
 
 ## Before uploading
 
-- [ ] Played in game: the kneel looks natural (not frozen) and the enemy doesn't shoot from the knee.
-- [ ] Tag the release: `git tag kneeshotstun-v1.0.0` and push the tag.
+- [x] Played in game: the kneel looks natural (not frozen) and the enemy doesn't shoot from the knee.
+- [x] Tag the release: `git tag kneeshotstun-v1.0.0` and push the tag.
 - [ ] README status → released, with the Nexus link.
