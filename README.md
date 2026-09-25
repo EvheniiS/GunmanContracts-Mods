@@ -10,6 +10,8 @@
 | [Heavy Melee](HeavyMelee/HeavyMelee.cs) | Guns and bows hit like heavy metal (stagger + damage), fists hit harder, and an enemy on the ground still takes hits, stays down, and can be knocked out | 1.0.0 release candidate (not released) |
 | [Physical Dodge](PhysicalDodge/PhysicalDodge.cs) | Step, lean or duck as an enemy fires and the shot goes where you were, so you can close in on them | 0.1.0, untested |
 | [Fire Selector](FireSelector/FireSelector.cs) | Hold A / X on the support hand to switch automatic guns between automatic, 3-round burst and single shot | 1.0.0, tested; Nexus upload pending |
+| [Enemy Awareness Fix](EnemyAwarenessFix/EnemyAwarenessFix.cs) | Enemies that lose sight of you go to where they last saw you and search there instead of walking to your exact position; wave enemies get a rough guess; flanking and turning use what the enemy knows; wave spawns no longer always use the nearest spawn point and keep a 10 m minimum distance | 0.1.3, in testing ("getting better") |
+| [Enemy Awareness Log](EnemyAwarenessLog/EnemyAwarenessLog.cs) | Diagnostic, changes nothing: logs spawns, where each enemy first sees you, whether unseen enemies track your live position, your shots and which sounds alert whom, door kicks, stuck enemies, and per-wave summaries | 0.3.0, dev tool |
 
 Settings for each mod are in `UserData\MelonPreferences.cfg`, one section per mod.
 
@@ -37,7 +39,7 @@ Or put your path in `<ModFolder>/GameDir.local.props` (git-ignored):
 
 ## Repository layout
 
-- `BetterBow/`, `KneeShotStun/`, `FireSelector/`, `HeavyMelee/`, `PhysicalDodge/`: one folder per mod, source and its own project.
+- `BetterBow/`, `KneeShotStun/`, `FireSelector/`, `HeavyMelee/`, `PhysicalDodge/`, `EnemyAwarenessFix/`, `EnemyAwarenessLog/`: one folder per mod, source and its own project.
 - `release/<Mod>/`: the prebuilt DLL of the last release and the Nexus Mods page text.
 - `il2cpp_tools/`: small Python tools for reading the game without Cpp2IL/Il2CppDumper:
   `il2.py` (global-metadata v31 + GameAssembly method/field map), `disx.py` (named disassembly),
