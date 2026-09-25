@@ -1,0 +1,44 @@
+# Better Bow
+
+Part of [Gunman Contracts Mods](../README.md). Fixes and expands the bow:
+
+- **Quiver.** Holster the bow on a shoulder, take it in one hand, reach back to that shoulder with
+  the other hand and press grip to draw an arrow. Bring it to the string to nock it.
+- **Dagger grip.** With a drawn arrow in hand, **A** (right) / **X** (left) flips it into a knife
+  grip along your knuckles (tip down by default) and back. A held arrow stabs.
+- **Throw assist.** Throw a drawn arrow and it gets the same aim assist as the game's throwing
+  knives: it homes in on the enemy you are looking at and deals its damage on impact.
+- **String grab on the first press.** Fixes having to press grip twice to get the next arrow when
+  shooting fast.
+- **Explosive barrels** detonate from one arrow instead of three.
+- **Doors** with a "shoot here to burst open door" mark open to an arrow, not just a gunshot.
+
+Every feature can be switched off in `UserData\MelonPreferences.cfg`, section `[BetterBow]`.
+Arrow counts, ammo and scoring go through the game's own bow code.
+
+## Install
+
+1. Install [MelonLoader 0.7.x](https://github.com/LavaGang/MelonLoader/releases) (tested with 0.7.3)
+   on `GunmanContracts.exe`. **0.6.x does not work** on this Unity 6 build.
+2. Put `BetterBow.dll` in the game's `Mods` folder (a prebuilt copy is in [`release/BetterBow/`](../release/BetterBow/)).
+3. If you used Arrow Grab Assist or Arrow Quiver before, delete those DLLs: Better Bow contains both.
+
+## How it works
+
+Everything was found by reading the game's IL2CPP binary; the notes are in the source comments.
+In short:
+
+| Feature | Cause in the game | What the mod does |
+|---|---|---|
+| Grip twice for an arrow | `HVRHandGrabber.CheckGrab` grabs only on the grip-press frame, and `CanHover` refuses new hover targets while grip is held | Buffers the press and completes it with `TryGrab` on the string |
+| No quiver | The only arrow source is `HVRArrowLoader.OnStringGrabbed` | `CreateArrow(false)` spawns an un-nocked arrow into the hand; nocking hands over to the game's own string grab |
+| Barrels need 3 arrows | `ANBBreakable.hit` scales bullet/explosion damage but not arrows (100 vs 250 health) | Raises arrow damage on explosive breakables to the barrel's health |
+| Arrows don't breach doors | `ANBGameLogic.TryKickDoor` is only called from gun code | Calls it from `HVRPhysicsBow.ShootArrow` with the same range and mask |
+| Thrown arrows get no aim assist | `ANBKnife.releaseKnife` needs a `ThrowScript` (`ANBAssistedThrowingObject`); the arrow prefab has none | Adds one tuned from a real throwing knife and runs the knife's three release steps |
+| Thrown arrows stick without damage | `stabEnemy` raycasts from the tip for an enemy hit zone; a ray never sees a collider it starts inside, and a slower arrival is often already inside | Starts that ray 1 cm in front of the first real hit zone along the arrow, skipping the arrow's own colliders |
+
+## Files
+
+`BetterBow.cs` (entry, settings, registry), `StringGrab.cs`, `ArrowPower.cs` (barrels, doors),
+`Quiver.cs` (quiver, dagger grip), `ThrowAssist.cs` (thrown arrows), `PauseHands.cs` (pause-menu
+safety nets). [`QUIVER_PLAN.md`](QUIVER_PLAN.md) is the development log of the quiver and dagger grip.

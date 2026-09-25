@@ -1,6 +1,6 @@
 # Quiver for Gunman Contracts — implementation plan
 
-> **For the next session:** read this file, then [../GUNMAN_CONTRACTS.md](../GUNMAN_CONTRACTS.md)
+> **For the next session:** read this file, then [../../GUNMAN_CONTRACTS.md](../../GUNMAN_CONTRACTS.md)
 > (root causes, offsets, tooling). Everything below was checked against the game binary on
 > Sep 24 2026 (game 0.3.1.0, MelonLoader 0.7.3). "✅ verified" = read in the code.
 > "❓ test" = must be confirmed in game before relying on it.
