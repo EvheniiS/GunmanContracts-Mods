@@ -7,7 +7,7 @@
 |---|---|---|
 | [Better Bow](BetterBow/README.md) | Quiver, dagger grip, thrown-arrow aim assist, first-press string grab, one-arrow barrels, arrows breach doors | 1.1.0, released on [Nexus](https://www.nexusmods.com/gunmancontractsstandalone/mods/22) |
 | [Knee Shot Stun](KneeShotStun/KneeShotStun.cs) | Enemies shot in the leg stay down on one knee for longer | 1.0.0, tested; Nexus upload pending |
-| [Heavy Melee](HeavyMelee/HeavyMelee.cs) | Guns and bows hit like heavy metal (stagger + damage), fists hit harder, and an enemy on the ground still takes hits, stays down, and can be knocked out | 0.1.0, in testing |
+| [Heavy Melee](HeavyMelee/HeavyMelee.cs) | Guns and bows hit like heavy metal (stagger + damage), fists hit harder, and an enemy on the ground still takes hits, stays down, and can be knocked out | 1.0.0 release candidate (not released) |
 | [Fire Selector](FireSelector/FireSelector.cs) | Hold A / X on the support hand to switch automatic guns between automatic, 3-round burst and single shot | 1.0.0, tested; Nexus upload pending |
 
 Settings for each mod are in `UserData\MelonPreferences.cfg`, one section per mod.
