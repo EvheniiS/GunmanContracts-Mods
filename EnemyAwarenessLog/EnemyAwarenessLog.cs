@@ -8,8 +8,9 @@ using Il2CppHurricaneVR.Framework.Weapons.Guns;
 using MelonLoader;
 using MelonLoader.Utils;
 using UnityEngine;
+using UnityEngine.AI;
 
-[assembly: MelonInfo(typeof(EnemyAwarenessLog.EnemyAwarenessLogMod), "Enemy Awareness Log", "0.3.0", "Evgeeso")]
+[assembly: MelonInfo(typeof(EnemyAwarenessLog.EnemyAwarenessLogMod), "Enemy Awareness Log", "0.4.0", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace EnemyAwarenessLog
@@ -30,6 +31,10 @@ namespace EnemyAwarenessLog
     //    Closest, re-sorts the spawn points by distance to the player and takes the first valid one.
     //    Each spawn is logged with its spawn point, and each enemy's first sight of the player with
     //    where it stood. Per-wave summaries group both.
+    //
+    // Also: which floor each enemy is on relative to you, who is still alive when a wave or scene
+    // ends, your stealth visibility (the game's ANBPlayerDetector: height, light, movement,
+    // gunfire), and how many enemy shots the game made harmless (see IDEAS.md).
     //
     // Output: the MelonLoader console and UserData\EnemyAwarenessLog\session-<time>.log.
     public class EnemyAwarenessLogMod : MelonMod
@@ -128,6 +133,9 @@ namespace EnemyAwarenessLog
             // stuck detection
             public Vector3 MoveRef;
             public float MoveT, StuckReportT = -99;
+            // last sample, for the "still alive" list (the objects may be gone by then)
+            public bool Sampled, SawYou;
+            public Vector3 LastPos;
             public int Uid;
             // "#<n>" = the enemy's Unity instance id; Enemy Awareness Fix prints the same, so lines
             // from both mods can be matched.
@@ -152,7 +160,7 @@ namespace EnemyAwarenessLog
         static bool haveWaveStartPos;
         static Vector3 waveStartPos;
         static float maxMoveFromStart, pathLen;
-        static Vector3 lastPlayerPos;
+        static Vector3 lastPlayerPos, lastPlayerFloor;
 
         internal static void Reset()
         {
@@ -161,6 +169,7 @@ namespace EnemyAwarenessLog
             spawnersLogged.Clear();
             waveSeen.Clear();
             encounterLogged = false;
+            Stealth.Reset();
             ResetWave("");
         }
 
@@ -172,6 +181,7 @@ namespace EnemyAwarenessLog
             contacts.Clear();
             epCount = epTracked = epSearched = epUnclear = timerRuns = 0;
             Sound.ResetCounters();
+            Stealth.ResetWave();
             timerRealSum = timerValSum = 0;
             haveWaveStartPos = false;
             maxMoveFromStart = pathLen = 0;
@@ -202,9 +212,36 @@ namespace EnemyAwarenessLog
             try { return ANBStaticGameManager.ANBmain?.PlayerHitTarget; } catch { return null; }
         }
 
-        static string P(Vector3 v) => $"({v.x:0.0}, {v.y:0.0}, {v.z:0.0})";
+        internal static string P(Vector3 v) => $"({v.x:0.0}, {v.y:0.0}, {v.z:0.0})";
 
         static float Flat(Vector3 a, Vector3 b) { a.y = 0; b.y = 0; return Vector3.Distance(a, b); }
+
+        static int floorFrame = -1;
+        static Vector3 floorPos;
+
+        // Your position at floor level (PlayerHitTarget is at chest height). Same method as Enemy
+        // Awareness Fix: sample the navmesh a metre lower, so it lands on your own floor.
+        internal static Vector3 Floor(Vector3 pp)
+        {
+            if (Time.frameCount == floorFrame) return floorPos;
+            floorFrame = Time.frameCount;
+            Vector3 low = pp + Vector3.down;
+            floorPos = low + Vector3.down * 0.3f;
+            try
+            {
+                if (NavMesh.SamplePosition(low, out NavMeshHit hit, 1.5f, NavMesh.AllAreas)) floorPos = hit.position;
+            }
+            catch (Exception ex) { EnemyAwarenessLogMod.Warn("floor sample", ex); }
+            return floorPos;
+        }
+
+        // Floors are about 3 m apart: more than 1.5 m of height between two feet positions is
+        // another floor. pos is at floor level (an enemy's feet, a spawn point, a door).
+        static string FloorNote(Vector3 pos, Vector3 pp)
+        {
+            float dy = pos.y - Floor(pp).y;
+            return Mathf.Abs(dy) <= 1.5f ? "" : dy > 0 ? ", FLOOR ABOVE you" : ", FLOOR BELOW you";
+        }
 
         static readonly string[] Compass = { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
 
@@ -227,7 +264,7 @@ namespace EnemyAwarenessLog
                 }
             }
             catch { }
-            return $"{d.magnitude:0.0} m {comp}{(rel.Length > 0 ? ", " + rel : "")}";
+            return $"{d.magnitude:0.0} m {comp}{(rel.Length > 0 ? ", " + rel : "")}{FloorNote(pos, player)}";
         }
 
         static string StateOf(ANBBasicNPC n)
@@ -425,6 +462,8 @@ namespace EnemyAwarenessLog
             if (!haveWaveStartPos) { waveStartPos = pp; lastPlayerPos = pp; haveWaveStartPos = true; }
             pathLen += Flat(pp, lastPlayerPos);
             lastPlayerPos = pp;
+            lastPlayerFloor = Floor(pp);
+            Stealth.Sample(pp, lastPlayerFloor);
             maxMoveFromStart = Mathf.Max(maxMoveFromStart, Flat(pp, waveStartPos));
 
             try
@@ -468,6 +507,9 @@ namespace EnemyAwarenessLog
             }
             if (t.Dead) t = Respawn(n);   // came back from the pool without a spawner hook
             if (!n.gameObject.activeInHierarchy) return;
+            t.Sampled = true;
+            t.LastPos = Body(n);
+            t.SawYou = n.targetInSight;
             CheckStuck(t, n, pp);
 
             string st = StateOf(n);
@@ -529,14 +571,16 @@ namespace EnemyAwarenessLog
                     {
                         Vector3 d = ag.destination;
                         nav += $", stopped {ag.isStopped}, hasPath {ag.hasPath}, path {ag.pathStatus}, remaining {ag.remainingDistance:0.0} m, " +
-                               $"stopping distance {ag.stoppingDistance:0.0} m, destination {Flat(d, body):0.0} m from it / {Flat(d, pp):0.0} m from you";
+                               $"stopping distance {ag.stoppingDistance:0.0} m, destination {Flat(d, body):0.0} m from it / {Flat(d, pp):0.0} m from you " +
+                               $"at height {d.y:0.0}";
                     }
                     else if (ag.isActiveAndEnabled) nav += ", NOT ON NAVMESH";
                 }
             }
             catch (Exception ex) { nav += $" (read failed: {ex.Message})"; }
             string cover = n.isCovering ? ", in cover" : "";
-            W($"STUCK? {t.Tag} hasn't moved for {now - t.MoveT:0} s ({StateOf(n)}{cover}), {Where(body, pp)} | {nav} | " +
+            W($"STUCK? {t.Tag} hasn't moved for {now - t.MoveT:0} s ({StateOf(n)}{cover}), at {P(body)}, you at floor height {Floor(pp).y:0.0}, " +
+              $"{Where(body, pp)} | {nav} | " +
               $"its last-known position is {Flat(n.lastKnownPosition, pp):0.0} m from you{Sound.DoorNote(n.Pointer)}");
         }
 
@@ -711,7 +755,34 @@ namespace EnemyAwarenessLog
             if (timerRuns > 0)
                 W($"  lost-target timer ran out {timerRuns}x: avg {timerRealSum / timerRuns:0.0} s game time from avg value {timerValSum / timerRuns:0.#}");
             Sound.SummaryLines();
+            Stealth.SummaryLine();
+            SurvivorLines();
             ResetWave(waveLabel);
+        }
+
+        static bool StillAlive(Track t)
+        {
+            if (!t.Sampled || t.Dead) return false;
+            try { if (t.Npc != null && !t.Npc.WasCollected) return !t.Npc.isDead && t.Npc.gameObject.activeInHierarchy; }
+            catch { }
+            return true;   // the scene is already gone: go by the last sample
+        }
+
+        // Who is still alive, where they last were, and whether they stood still - from the last
+        // sample, since at a scene change the enemies are already destroyed.
+        static void SurvivorLines()
+        {
+            var alive = Tracks.Values.Where(StillAlive).ToList();
+            if (alive.Count == 0) return;
+            float now = Time.time;
+            W($"  still alive ({alive.Count}), where they last were:");
+            foreach (var t in alive)
+            {
+                float dy = t.LastPos.y - lastPlayerFloor.y;
+                string floor = Mathf.Abs(dy) <= 1.5f ? "your floor" : dy > 0 ? "FLOOR ABOVE you" : "FLOOR BELOW you";
+                W($"    {t.Tag} {t.State} at {P(t.LastPos)}, {Flat(t.LastPos, lastPlayerPos):0.0} m from you, {floor}, " +
+                  $"{(t.SawYou ? "seeing you" : "not seeing you")}, hasn't moved 0.5 m for {now - t.MoveT:0} s{Sound.DoorNote(t.Ptr)}");
+            }
         }
     }
 
@@ -726,7 +797,7 @@ namespace EnemyAwarenessLog
 
         static string lastAction;
         static float lastActionT = -99;
-        static int gunShots, silencedShots, bowShots, arrowHits, doorKicks, shatters, enemyShots;
+        static int gunShots, silencedShots, bowShots, arrowHits, doorKicks, shatters, enemyShots, enemyShotsHarmless;
         static readonly Dictionary<string, int> alerts = new(), reactions = new();
 
         // Cause of the alert being processed: set by the prefix of whatever raised it (a shot, a
@@ -740,7 +811,7 @@ namespace EnemyAwarenessLog
 
         internal static void ResetCounters()
         {
-            gunShots = silencedShots = bowShots = arrowHits = doorKicks = shatters = enemyShots = 0;
+            gunShots = silencedShots = bowShots = arrowHits = doorKicks = shatters = enemyShots = enemyShotsHarmless = 0;
             alerts.Clear();
             reactions.Clear();
         }
@@ -750,9 +821,17 @@ namespace EnemyAwarenessLog
         static void SetCause(string c) { if (depth == 0) cause = c; }
         internal static void ClearCause() { if (depth == 0) cause = null; }
 
-        internal static void Gunshot(ANBHVRGunBase gun, float fromEnemy, bool silenced)
+        // An enemy bullet the game marks "cooldowned" (warning shot, first second of fire, or the
+        // grace after you hit someone) uses HitLayerMaskEnemyCooldowned - most likely it can't hit you.
+        internal static void Gunshot(ANBHVRGunBase gun, float fromEnemy, bool silenced, bool cooldowned)
         {
-            if (fromEnemy > 0) { enemyShots++; SetCause("enemy gunfire"); return; }
+            if (fromEnemy > 0)
+            {
+                enemyShots++;
+                if (cooldowned) enemyShotsHarmless++;
+                SetCause("enemy gunfire");
+                return;
+            }
             gunShots++;
             if (silenced) silencedShots++;
             string what = silenced ? "your silenced shot" : "your gunshot";
@@ -789,7 +868,9 @@ namespace EnemyAwarenessLog
                 who = npc != null ? $"enemy {Tracker.NpcTag(npc)}" : fromEnemy ? $"an enemy ('{Tracker.Name(origin)}')" : $"you? ('{Tracker.Name(origin)}')";
             }
             catch (Exception ex) { EnemyAwarenessLogMod.Warn("door opener", ex); }
-            lastDoor = $"'{Tracker.Name(door)}' opened by {who}{(kick ? ", KICKED" : "")}";
+            // Several doors share a name ('DoorModular'): the position says which one.
+            string dn = $"'{Tracker.Name(door)}' at {Tracker.P(door.transform.position)}";
+            lastDoor = $"{dn} opened by {who}{(kick ? ", KICKED" : "")}";
             lastDoorT = Time.time;
             try
             {
@@ -797,8 +878,8 @@ namespace EnemyAwarenessLog
                 if (npc != null)
                 {
                     float now = Time.time;
-                    if (!doorsByNpc.TryGetValue(npc.Pointer, out var d) || d.Name != Tracker.Name(door) || now - d.LastT > 10f)
-                        d = (Tracker.Name(door), 0, now, now);
+                    if (!doorsByNpc.TryGetValue(npc.Pointer, out var d) || d.Name != dn || now - d.LastT > 10f)
+                        d = (dn, 0, now, now);
                     doorsByNpc[npc.Pointer] = (d.Name, d.Count + 1, d.FirstT, now);
                 }
             }
@@ -816,7 +897,7 @@ namespace EnemyAwarenessLog
         internal static string DoorNote(IntPtr npc)
         {
             if (!doorsByNpc.TryGetValue(npc, out var d) || Time.time - d.LastT > 10f) return "";
-            return $" | has opened door '{d.Name}' {d.Count}x in the last {Time.time - d.FirstT:0} s";
+            return $" | has opened door {d.Name} {d.Count}x in the last {Time.time - d.FirstT:0} s";
         }
 
         internal static void DoorKick()
@@ -888,12 +969,75 @@ namespace EnemyAwarenessLog
         {
             if (!Any) return;
             W($"  your weapons: gunshots {gunShots} (silenced {silencedShots}), bow shots {bowShots}, arrows hitting the world {arrowHits}, " +
-              $"doors kicked/breached {doorKicks}, things shattered {shatters}; enemy gunshots {enemyShots}");
+              $"doors kicked/breached {doorKicks}, things shattered {shatters}; enemy gunshots {enemyShots} (marked harmless by the game: {enemyShotsHarmless})");
             if (alerts.Count > 0)
                 W("  enemies newly alerted, by cause: " + string.Join(", ", alerts
                     .Select(k => (k.Key, k.Value, R: reactions.TryGetValue(k.Key, out int r) ? r : 0))
                     .OrderByDescending(x => x.R)
                     .Select(x => $"{x.Key}: {x.R} (from {x.Value} alerts)")));
+        }
+    }
+
+    // The game's stealth model: ANBPlayerDetector recomputes ANBGameLogic.playerVisibility every
+    // frame from light on you, your height (head to feet), movement and recent gunfire (Expose).
+    // Enemies multiply their view distance and the speed they notice you by it. Logged when your
+    // stance changes, with the height of the point enemies aim at (PlayerHitTarget) next to your
+    // head's, to see whether that point follows you down when you crouch.
+    internal static class Stealth
+    {
+        static void W(string s) => EnemyAwarenessLogMod.W(s);
+
+        static bool configLogged;
+        static string stance;
+        static int n;
+        static float sum, min, max;
+
+        internal static void Reset()
+        {
+            configLogged = false;
+            stance = null;
+            ResetWave();
+        }
+
+        internal static void ResetWave() { n = 0; sum = 0; min = 1; max = 0; }
+
+        static string StanceOf(float h) => h >= 1.35f ? "standing" : h >= 0.95f ? "crouched" : "low";
+
+        internal static void Sample(Vector3 pp, Vector3 floor)
+        {
+            try
+            {
+                var gl = ANBStaticGameManager.ANBmain;
+                if (gl == null) return;
+                var d = gl.playerDetector;
+                if (!configLogged)
+                {
+                    configLogged = true;
+                    W(d == null
+                        ? "player detector: NONE in this scene - enemies see you the same crouched or standing, lit or dark"
+                        : $"player detector: height {d.minHeight:0.##}-{d.maxHeight:0.##} m (weight {d.heightInfluence:0.##}), " +
+                          $"movement up to {d.mobilityMaxSpeed:0.#} m/s (weight {d.mobilityInfluence:0.##}), light detection {d.useLightDetection} " +
+                          $"(curve {d.lightCurvePower:0.##}), visibility {d.visibilityMin:0.##}-{d.visibilityMax:0.##}, " +
+                          $"gunfire exposure {d.exposeTime:0.#} s x{d.exposureMultiplier:0.##}");
+                }
+                if (d == null) return;
+                float v = gl.playerVisibility;
+                n++; sum += v; min = Mathf.Min(min, v); max = Mathf.Max(max, v);
+                string st = StanceOf(d.height);
+                if (st == stance) return;
+                stance = st;
+                string head = "";
+                var cam = ANBStaticGameManager.MainCam;
+                if (cam != null) head = $", your head {cam.transform.position.y - floor.y:0.00} m";
+                W($"you: {st}, visibility {v:0.00} (height {d.height:0.00} m, light {d.illumination:0.00}, moving {d.mobility:0.00}, " +
+                  $"gunfire {d.exposed:0.00}) | enemies aim at {pp.y - floor.y:0.00} m above your floor{head}");
+            }
+            catch (Exception ex) { EnemyAwarenessLogMod.Warn("stealth", ex); }
+        }
+
+        internal static void SummaryLine()
+        {
+            if (n > 0) W($"  your visibility (1 = fully visible): avg {sum / n:0.00}, min {min:0.00}, max {max:0.00}");
         }
     }
 
@@ -985,12 +1129,24 @@ namespace EnemyAwarenessLog
     [HarmonyLib.HarmonyPatch(typeof(ANBGameLogic), nameof(ANBGameLogic.FireBullet))]
     internal static class FireBulletPatch
     {
-        static void Prefix(ANBHVRGunBase source, float FromEnemy, bool isSilenced)
+        static void Prefix(ANBHVRGunBase source, float FromEnemy, bool isSilenced, bool enemyBulletCooldowned)
         {
-            if (EnemyAwarenessLogMod.Enabled.Value) Sound.Gunshot(source, FromEnemy, isSilenced);
+            if (EnemyAwarenessLogMod.Enabled.Value) Sound.Gunshot(source, FromEnemy, isSilenced, enemyBulletCooldowned);
         }
 
         static void Postfix() => Sound.ClearCause();
+    }
+
+    // Your bullet (or stab / grab) hurting an enemy: every enemy's shots are harmless for a while.
+    [HarmonyLib.HarmonyPatch(typeof(ANBEncounterSystem), nameof(ANBEncounterSystem.startEnemyCooldown))]
+    internal static class EnemyCooldownPatch
+    {
+        static void Prefix(ANBEncounterSystem __instance)
+        {
+            if (!EnemyAwarenessLogMod.Enabled.Value) return;
+            float secs = __instance.EnemyCooldownTime;
+            Tracker.Alert("hitgrace", () => $"YOU HIT AN ENEMY: the game makes every enemy's shots harmless for {secs:0.#} s", 4f);
+        }
     }
 
     [HarmonyLib.HarmonyPatch(typeof(HVRPhysicsBow), nameof(HVRPhysicsBow.ShootArrow))]

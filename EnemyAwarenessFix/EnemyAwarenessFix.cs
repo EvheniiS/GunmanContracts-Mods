@@ -5,7 +5,7 @@ using MelonLoader;
 using UnityEngine;
 using UnityEngine.AI;
 
-[assembly: MelonInfo(typeof(EnemyAwarenessFix.EnemyAwarenessFixMod), "Enemy Awareness Fix", "0.1.3", "Evgeeso")]
+[assembly: MelonInfo(typeof(EnemyAwarenessFix.EnemyAwarenessFixMod), "Enemy Awareness Fix", "0.1.4", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace EnemyAwarenessFix
@@ -36,6 +36,10 @@ namespace EnemyAwarenessFix
     // - Flank / search / evade points and turning use the belief instead of your live position.
     // - Closest-order spawners pick randomly among the few nearest valid points, and their minimum
     //   spawn distance can be raised.
+    // - All of it knows about floors: your position is taken at floor level, an enemy only "hears"
+    //   you on your own floor, only counts as arrived at a point on the point's floor, and guess /
+    //   search points that snap to another floor are rejected. (0.1.3 measured flat distances, so
+    //   enemies on the landing above you heard you through the floor and thought they had arrived.)
     public class EnemyAwarenessFixMod : MelonMod
     {
         internal static MelonLogger.Instance Log;
@@ -51,7 +55,7 @@ namespace EnemyAwarenessFix
             Enabled = c.CreateEntry("Enabled", true, description: "Master switch.");
             FixAwareness = c.CreateEntry("FixAwareness", true, description: "Enemies that can't see you go to where they last saw you (or a rough guess) and search there, instead of walking to your exact position.");
             TrackAfterLosingSight = c.CreateEntry("TrackAfterLosingSight", 1.5f, description: "Seconds an enemy keeps following you after losing sight (it saw which way you went).");
-            SenseDistance = c.CreateEntry("SenseDistance", 3.0f, description: "Within this many metres an enemy always knows where you are (it hears you).");
+            SenseDistance = c.CreateEntry("SenseDistance", 3.0f, description: "Within this many metres on your own floor an enemy always knows where you are (it hears you).");
             GuessMin = c.CreateEntry("GuessMin", 3.0f, description: "Enemies that never saw you head for a random point at least this far from you...");
             GuessRadius = c.CreateEntry("GuessRadius", 8.0f, description: "...and at most this far.");
             ShareRadius = c.CreateEntry("ShareRadius", 25.0f, description: "When an enemy sees you, enemies within this many metres of it learn where you were. 0 = all enemies, -1 = no sharing.");
@@ -136,6 +140,38 @@ namespace EnemyAwarenessFix
 
         static bool Same(Component a, Component b) => a != null && b != null && a.Pointer == b.Pointer;
 
+        // Floors in the game's houses are about 3 m apart; points further apart in height than this
+        // are on different floors (or at opposite ends of a staircase).
+        const float SameFloor = 1.5f;
+
+        static int floorFrame = -1;
+        static Vector3 floorPos;
+
+        // Your position at floor level. PlayerHitTarget is at chest height; sampling the navmesh a
+        // metre lower lands on your own floor, not on the floor above or the basement below.
+        internal static Vector3 PlayerFloor(Vector3 pp)
+        {
+            if (Time.frameCount == floorFrame) return floorPos;
+            floorFrame = Time.frameCount;
+            Vector3 low = pp + Vector3.down;
+            floorPos = low + Vector3.down * 0.3f;
+            try
+            {
+                if (NavMesh.SamplePosition(low, out NavMeshHit hit, 1.5f, NavMesh.AllAreas)) floorPos = hit.position;
+            }
+            catch (Exception ex) { EnemyAwarenessFixMod.Warn("floor sample", ex); }
+            return floorPos;
+        }
+
+        static bool OnFloorOf(Vector3 a, Vector3 b) => Mathf.Abs(a.y - b.y) <= SameFloor;
+
+        // Within SenseDistance on your own floor an enemy hears you. Not through a floor.
+        static bool Senses(Vector3 np, Vector3 pf) =>
+            OnFloorOf(np, pf) && Flat(np, pf) <= EnemyAwarenessFixMod.SenseDistance.Value;
+
+        static string FloorNote(Vector3 np, Vector3 pf) =>
+            OnFloorOf(np, pf) ? "" : np.y > pf.y ? " (it is a floor above you)" : " (it is a floor below you)";
+
         // Where the enemy really is. ANBBasicNPC sits on a root object that stays where the enemy
         // spawned; the body moves with the NavMeshAgent's object (agentTransform). The game itself
         // measures distance to the player from visionBase (the eyes).
@@ -199,7 +235,7 @@ namespace EnemyAwarenessFix
             Transform player;
             try { player = ANBStaticGameManager.ANBmain?.PlayerHitTarget; } catch { return; }
             if (player == null) return;
-            Vector3 pp = player.position;
+            Vector3 pf = PlayerFloor(player.position);
 
             try
             {
@@ -210,14 +246,14 @@ namespace EnemyAwarenessFix
                     var n = list[i];
                     if (n == null || !n.isEnemy) continue;
                     var s = Track(n);
-                    try { Update(s, n, pp); }
+                    try { Update(s, n, pf); }
                     catch (Exception ex) { EnemyAwarenessFixMod.Warn("update", ex); }
                 }
             }
             catch (Exception ex) { EnemyAwarenessFixMod.Warn("enemy list", ex); }
         }
 
-        static void Update(Npc s, ANBBasicNPC n, Vector3 pp)
+        static void Update(Npc s, ANBBasicNPC n, Vector3 pf)
         {
             if (n.isDead) { if (!s.Dead) { s.Dead = true; Forget(s); } return; }
             if (s.Dead) { s.Dead = false; Forget(s); }                    // back from the pool
@@ -231,7 +267,7 @@ namespace EnemyAwarenessFix
             }
 
             Vector3 np = Body(n);
-            bool sensed = Vector3.Distance(np, pp) <= EnemyAwarenessFixMod.SenseDistance.Value;
+            bool sensed = Senses(np, pf);
             if (seen || sensed)
             {
                 if (s.InBelief) D($"{s.Tag} {(seen ? "sees" : "senses")} you again");
@@ -239,21 +275,21 @@ namespace EnemyAwarenessFix
                 s.InBelief = false;
                 s.K = Kind.Seen;
                 s.InfoT = now;
-                s.Anchor = s.Pos = pp;
+                s.Anchor = s.Pos = pf;
                 s.SearchStartT = s.ArrivedT = s.GaveUpT = -1;
                 s.SearchPoints = 0;
                 s.SearchDone = false;
-                if (seen) { haveSighting = true; sightingPos = pp; sightingFrom = np; sightingT = now; }
+                if (seen) { haveSighting = true; sightingPos = pf; sightingFrom = np; sightingT = now; }
                 return;
             }
             if (now - s.LastSeenT <= EnemyAwarenessFixMod.TrackAfterLosingSight.Value)
             {
-                s.Anchor = s.Pos = pp;                                     // still following your trail
+                s.Anchor = s.Pos = pf;                                     // still following your trail
                 s.InfoT = now;
                 return;
             }
 
-            if (!s.InBelief) EnterBelief(s, n, pp, now);
+            if (!s.InBelief) EnterBelief(s, n, pf, now);
             TryShared(s, np, now);
 
             // Searching: arrive, look around, move to the next point. "Arrived" also covers an enemy
@@ -263,7 +299,7 @@ namespace EnemyAwarenessFix
             float stop = 2f;
             var agent = n.agent;
             try { if (agent != null && agent.isActiveAndEnabled) stop = Mathf.Max(2f, agent.stoppingDistance + 1f); } catch { }
-            string arrived = Flat(np, s.Pos) <= stop ? "reached"
+            string arrived = OnFloorOf(np, s.Pos) && Flat(np, s.Pos) <= stop ? "reached"
                            : now - s.MoveT >= 3f && now - s.PosSetT >= 3f ? "stopped short of"
                            : s.SearchStartT < 0 && now - s.AnchorT > 30f ? "couldn't reach" : null;
             if (arrived != null)
@@ -272,7 +308,7 @@ namespace EnemyAwarenessFix
                 {
                     s.SearchStartT = now;
                     D($"{s.Tag} {arrived} {(s.K == Kind.Guess ? "its guess" : s.K == Kind.Shared ? "the shared sighting" : "where it lost you")} " +
-                      $"({Flat(np, s.Pos):0.0} m off), searching; you are {Flat(np, pp):0.0} m away");
+                      $"({Flat(np, s.Pos):0.0} m off), searching; you are {Flat(np, pf):0.0} m away{FloorNote(np, pf)}");
                 }
                 if (s.ArrivedT < 0) { s.ArrivedT = now; s.Dwell = UnityEngine.Random.Range(1.0f, 2.5f); }
                 if (now - s.ArrivedT >= s.Dwell) NextSearchPoint(s);
@@ -281,19 +317,19 @@ namespace EnemyAwarenessFix
 
             if (s.SearchStartT >= 0 && !s.SearchDone && now - s.SearchStartT > EnemyAwarenessFixMod.SearchSeconds.Value)
             {
-                if (!n.canLoseTarget) NewGuess(s, pp, now, "search over, wave enemy gets a new rough guess");
+                if (!n.canLoseTarget) NewGuess(s, pf, now, "search over, wave enemy gets a new rough guess");
                 else { s.SearchDone = true; s.GaveUpT = now; D($"{s.Tag} search over, may give up now"); }
             }
             // A "give up" that bounces straight back to attack (StartHunt does that without a
             // collective position) would loop; send it to a new guess instead.
             if (s.SearchDone && n.isAttacking && s.GaveUpT >= 0 && now - s.GaveUpT > 1.5f)
-                NewGuess(s, pp, now, "gave up but the game put it back into attack, new rough guess");
+                NewGuess(s, pf, now, "gave up but the game put it back into attack, new rough guess");
 
             if (n.isAttacking) n.lastKnownPosition = s.Pos;
             if (s.Ghost != null) s.Ghost.position = n.isHunting ? s.Anchor : s.Pos;
         }
 
-        static void EnterBelief(Npc s, ANBBasicNPC n, Vector3 pp, float now)
+        static void EnterBelief(Npc s, ANBBasicNPC n, Vector3 pf, float now)
         {
             s.InBelief = true;
             s.SearchStartT = s.ArrivedT = s.GaveUpT = -1;
@@ -304,25 +340,25 @@ namespace EnemyAwarenessFix
             {
                 s.Pos = s.Anchor;
                 s.PosSetT = s.AnchorT = s.MoveT = now;
-                D($"{s.Tag} lost sight of you, holding {Flat(s.Anchor, pp):0.0} m from where you are now");
+                D($"{s.Tag} lost sight of you, holding {Flat(s.Anchor, pf):0.0} m from where you are now");
             }
             else if (!TryShared(s, Body(n), now))
-                NewGuess(s, pp, now, "never saw you, rough guess");
+                NewGuess(s, pf, now, "never saw you, rough guess");
         }
 
-        static void NewGuess(Npc s, Vector3 pp, float now, string why)
+        static void NewGuess(Npc s, Vector3 pf, float now, string why)
         {
             float lo = Mathf.Max(0f, EnemyAwarenessFixMod.GuessMin.Value);
             float hi = Mathf.Max(lo + 0.1f, EnemyAwarenessFixMod.GuessRadius.Value);
-            Vector3 g = pp;
+            Vector3 g = pf;
             bool ok = false;
             for (int i = 0; i < 10 && !ok; i++)
             {
                 Vector2 dir = UnityEngine.Random.insideUnitCircle.normalized;
                 float r = UnityEngine.Random.Range(lo, hi) * (i < 6 ? 1f : 0.5f);   // later tries closer to you
-                ok = Reachable(s.N, pp + new Vector3(dir.x, 0, dir.y) * r, out g);
+                ok = Reachable(s.N, pf + new Vector3(dir.x, 0, dir.y) * r, out g);
             }
-            if (!ok) { g = pp; why += " (no reachable point near you, heading for your area)"; }
+            if (!ok) { g = pf; why += " (no reachable point near you, heading for your area)"; }
             s.K = Kind.Guess;
             s.InfoT = now;
             s.Anchor = s.Pos = g;
@@ -330,7 +366,7 @@ namespace EnemyAwarenessFix
             s.SearchStartT = s.ArrivedT = s.GaveUpT = -1;
             s.SearchPoints = 0;
             s.SearchDone = false;
-            D($"{s.Tag} {why}: {Flat(g, pp):0.0} m from you");
+            D($"{s.Tag} {why}: {Flat(g, pf):0.0} m from you");
         }
 
         static bool TryShared(Npc s, Vector3 npcPos, float now)
@@ -382,12 +418,13 @@ namespace EnemyAwarenessFix
 
         static readonly NavMeshPath path = new NavMeshPath();
 
-        // A navmesh point near p that this enemy can walk to (a complete path from where it stands).
-        // SamplePosition alone can land on a shelf, the upper floor or a closed-off patch.
+        // A navmesh point near p (given at floor level), on p's floor, that this enemy can walk to (a
+        // complete path from where it stands). SamplePosition alone can land on a shelf, the floor
+        // above or below, or a closed-off patch.
         static bool Reachable(ANBBasicNPC n, Vector3 p, out Vector3 result)
         {
             result = p;
-            if (!Sample(p, out result)) return false;
+            if (!Sample(p, out result) || !OnFloorOf(result, p)) return false;
             try
             {
                 if (!Sample(Body(n), out Vector3 from)) return true;   // can't judge: accept
@@ -426,10 +463,10 @@ namespace EnemyAwarenessFix
             if (player == null || !Same(n.attackTarget, player)) return true;
             var s = Get(n) ?? Track(n);
             float now = Time.time;
-            Vector3 pp = player.position;
-            if (Vector3.Distance(Body(n), pp) <= EnemyAwarenessFixMod.SenseDistance.Value) return true;
+            Vector3 pf = PlayerFloor(player.position);
+            if (Senses(Body(n), pf)) return true;
             if (now - s.LastSeenT <= EnemyAwarenessFixMod.TrackAfterLosingSight.Value) return true;
-            if (!s.InBelief) EnterBelief(s, n, pp, now);
+            if (!s.InBelief) EnterBelief(s, n, pf, now);
             n.lastKnownPosition = s.Pos;
             return false;
         }
