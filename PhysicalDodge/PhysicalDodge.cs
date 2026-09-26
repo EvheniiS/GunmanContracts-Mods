@@ -8,7 +8,7 @@ using MelonLoader;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(PhysicalDodge.PhysicalDodgeMod), "Physical Dodge", "0.3.0", "Evgeeso")]
+[assembly: MelonInfo(typeof(PhysicalDodge.PhysicalDodgeMod), "Physical Dodge", "0.4.0", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace PhysicalDodge
@@ -20,22 +20,27 @@ namespace PhysicalDodge
     // calls ANBHVRGunBase.EnemyTriggerPulled(source, direction, spread), which only stores the three in
     // tmpEnemyBulletSource / tmpEnemyBulletdirection / tmpEnemyBulletspread. Every bullet then goes
     // through FireBulletNew, whose enemy branch (EnemyGun) re-reads them, adds the game's spread
-    // (ApplyRandomAngle) and calls ANBGameLogic.FireBullet with the final direction. So a prefix on
-    // FireBulletNew re-aims each bullet of a burst separately, and the game's own spread still applies.
+    // (ApplyRandomAngle(dir, enemyBulletSpreadAddition + tmpEnemyBulletspread), or ShotRadius per shotgun
+    // pellet) and calls ANBGameLogic.FireBullet. So a prefix on FireBulletNew sees each bullet separately.
+    // The bullet is harmless (flies through you) when UsedByNPC.InCooldown || nonLethalFire ||
+    // !weaponFiredOnce: the game's free misses.
     //
     // How a bullet hurts you: ANBGameLogic.BulletImpact calls HurtPlayer only when the collider it hit
     // sits on PlayerHitTarget (a 30 cm sphere at your head), PlayerHitTargetHips or PlayerHitTargetLegs.
-    // The mod tests the final bullet line against those three colliders to tell you whether moving
-    // saved you.
     //
-    // 0.1.0 opened a 0.3 s dodge window on a sudden change of movement, with a cooldown after it. The
-    // test log showed every shot in a window missed, but only 7 of 28 shots at you fell in one: steady
-    // movement didn't count, and ordinary movement used up the windows.
+    // The mod draws the game's spread itself (the game's own ApplyRandomAngle), applies it to both the
+    // game's aim and the lagged aim, and tells the game to add no spread for that bullet. So it knows
+    // exactly whether the shot would have hit and whether it now misses. A shot that would have hit and
+    // now misses is a DODGE: its line is pushed out until it clears your body by DodgeMargin, so a dodge
+    // never turns into a hit. (0.3.0 judged a razor-thin miss a dodge, then the bullet clipped you.)
+    //
+    // 0.1.0 opened a 0.3 s dodge window on a sudden change of movement, with a cooldown after it: only 7 of
+    // 28 shots at you fell in a window. 0.2.0 switched to the aim lag.
     public class PhysicalDodgeMod : MelonMod
     {
         internal static MelonLogger.Instance Log;
         internal static MelonPreferences_Entry<bool> Enabled, StickMovementDodges, RushDodges, Haptics, SlowMotion, DebugLog;
-        internal static MelonPreferences_Entry<float> AimLagSeconds, SlowMotionSeconds, SlowMotionCooldown;
+        internal static MelonPreferences_Entry<float> AimLagSeconds, DodgeMargin, SlowMotionSeconds, SlowMotionCooldown;
         internal static MelonPreferences_Entry<int> SlowMotionStrength;
 
         public override void OnInitializeMelon()
@@ -46,12 +51,13 @@ namespace PhysicalDodge
             AimLagSeconds = c.CreateEntry("AimLagSeconds", 0.2f, description: "How far behind you enemies aim, in seconds. Higher = easier to dodge. 0 = the game's normal aim.");
             StickMovementDodges = c.CreateEntry("StickMovementDodges", false, description: "Off (default): only your real body movement counts - steps, leans, ducks. On = moving with the stick counts too.");
             RushDodges = c.CreateEntry("RushDodges", true, description: "Moving straight at (or away from) the shooter also makes them miss. Off = only sideways and up/down movement does, as in real life.");
-            Haptics = c.CreateEntry("Haptics", true, description: "A short buzz on both controllers when a shot that would have hit you goes past because you moved.");
-            SlowMotion = c.CreateEntry("SlowMotion", true, description: "A brief slow motion when a shot that would have hit you goes past because you moved. Uses the game's own slow motion (the one when the last enemy dies).");
+            DodgeMargin = c.CreateEntry("DodgeMargin", 0.1f, description: "A dodged bullet passes at least this far (m) outside your body, so it can't clip you.");
+            Haptics = c.CreateEntry("Haptics", true, description: "A short buzz on both controllers when you dodge a shot.");
+            SlowMotion = c.CreateEntry("SlowMotion", true, description: "A brief slow motion when you dodge a shot. Uses the game's own slow motion (the one when the last enemy dies).");
             SlowMotionSeconds = c.CreateEntry("SlowMotionSeconds", 1.0f, description: "How long the dodge slow motion lasts, in real seconds.");
             SlowMotionStrength = c.CreateEntry("SlowMotionStrength", 2, description: "1 = light, 2 = medium (the game's last-enemy slow motion), 3 = strongest.");
-            SlowMotionCooldown = c.CreateEntry("SlowMotionCooldown", 3.0f, description: "Real seconds from one dodge slow motion to the next, so a burst of dodges doesn't chain into one long slow motion.");
-            DebugLog = c.CreateEntry("DebugLog", true, description: "Log every shot at you (dodged, hit, or harmless anyway) and a summary every 30 s, for tuning.");
+            SlowMotionCooldown = c.CreateEntry("SlowMotionCooldown", 1.5f, description: "Real seconds from the start of one dodge slow motion to the next.");
+            DebugLog = c.CreateEntry("DebugLog", true, description: "Log every shot at you (dodged, hit, or harmless anyway), tagged with the wave, and a summary per wave.");
             LoggerInstance.Msg($"loaded - enemies aim {AimLagSeconds.Value:0.##} s behind you.");
         }
 
@@ -71,13 +77,12 @@ namespace PhysicalDodge
         }
     }
 
-    // One bullet, from the FireBulletNew prefix through FireBullet to the postfix.
+    // One bullet, between the FireBulletNew prefix and postfix: the game's values to put back.
     internal class Shot
     {
-        public Vector3 GameDirection, OurDirection, Origin;
-        public float Distance, Moved, Across;
-        public bool Resolved;
-        public string Shooter = "";
+        public Vector3 Direction;
+        public float Spread, ShotRadius;
+        public bool Shotgun;
     }
 
     internal static class Dodge
@@ -99,27 +104,29 @@ namespace PhysicalDodge
         static Collider[] cols = new Collider[3];
         static readonly string[] ColNames = { "head", "hips", "legs" };
 
-        internal static Shot Current;          // the bullet being fired right now
-        static Shot last;                      // the last shot at you, for the hurt line
-        static double lastAt;
+        static double lastShotAt = -99;
+        static float lastMoved;
 
-        // 30 s summary.
-        static double summaryAt;
-        static int sAtYou, sDodged, sHit, sHarmless, sMissAnyway;
+        // Waves: the spawner that spawned last (Harmony postfix on spawnNPC), and its waveSurvived counter.
+        internal static ANBNpcSpawner Spawner;
+        static string wave = "";
+        static int sAtYou, sDodged, sHit, sHarmless, sMissAnyway, sHurt, sSlow;
         static float sMovedDodged;
 
         internal static void Reset(string scene)
         {
+            WaveSummary("scene change");
             Samples.Clear();
             lastParent = null;
             cols = new Collider[3];
-            Current = last = null;
-            summaryAt = Now + 30;
+            Spawner = null;
+            wave = "";
             if (Debug) W($"scene '{scene}'");
         }
 
         internal static void Update()
         {
+            CheckWave();
             var cam = ANBStaticGameManager.MainCam;
             if (!PhysicalDodgeMod.Alive(cam)) return;
 
@@ -139,8 +146,6 @@ namespace PhysicalDodge
 
             Samples.Add(new Sample { T = now, World = world, Body = body });
             while (Samples.Count > 2 && now - Samples[0].T > 1.0) Samples.RemoveAt(0);
-
-            if (now >= summaryAt) Summary();
         }
 
         // How far your head moved in the last 'lag' seconds (now minus then).
@@ -157,17 +162,38 @@ namespace PhysicalDodge
             return true;
         }
 
+        // ---- waves ----------------------------------------------------------------------------------
+
+        static void CheckWave()
+        {
+            string w = "";
+            try { if (PhysicalDodgeMod.Alive(Spawner)) w = $"wave {Spawner.waveSurvived + 1}"; } catch { }
+            if (w.Length == 0 || w == wave) return;
+            WaveSummary($"{w} starts");
+            wave = w;
+        }
+
+        static string Tag => wave.Length > 0 ? $"[{wave}] " : "";
+
+        static void WaveSummary(string why)
+        {
+            if (Debug && sAtYou > 0)
+                W($"{Tag}SUMMARY ({why}): {sAtYou} shot(s) at you - dodged {sDodged}" +
+                  (sDodged > 0 ? $" (you moved {sMovedDodged / sDodged:0.00} m on average, slow motion {sSlow}x)" : "") +
+                  $", hit {sHit} (hurt {sHurt}x), harmless anyway {sHarmless}, missed anyway {sMissAnyway}");
+            sAtYou = sDodged = sHit = sHarmless = sMissAnyway = sHurt = sSlow = 0; sMovedDodged = 0;
+        }
+
         // ---- enemy bullets ------------------------------------------------------------------------
 
         internal static Shot BeforeEnemyBullet(ANBHVRGunBase gun)
         {
             if (!PhysicalDodgeMod.Enabled.Value || !gun.EnemyGun) return null;
-            float lag = PhysicalDodgeMod.AimLagSeconds.Value;
             var src = gun.tmpEnemyBulletSource;
             var game = ANBStaticGameManager.ANBmain;
             var cam = ANBStaticGameManager.MainCam;
             if (!PhysicalDodgeMod.Alive(src) || !PhysicalDodgeMod.Alive(game) || !PhysicalDodgeMod.Alive(cam)) return null;
-            if (!Colliders(game, cam)) return null;
+            if (!Colliders(game)) return null;
 
             Vector3 origin = src.position;
             Vector3 f = gun.tmpEnemyBulletdirection;
@@ -175,83 +201,90 @@ namespace PhysicalDodge
             f.Normalize();
             if (!AtYou(origin, f)) return null;
 
-            // The point on the game's line nearest your head: the game's own aim, including its aim error.
             Vector3 you = cam.transform.position;
-            float t = Vector3.Dot(you - origin, f);
+            float t = Vector3.Dot(you - origin, f);           // distance along the line to your head
             if (t <= 0.2f) return null;
-            var shot = new Shot { GameDirection = f, OurDirection = f, Origin = origin, Distance = t };
-            if (Debug) shot.Shooter = Shooter(gun, origin, you);
-            if (lag > 0 && Moved(lag, out Vector3 moved))
-            {
-                // Aim where you were: the aim point moves back by your movement. Only the part across the
-                // line changes where the bullet goes; with RushDodges, movement along the line (straight at
-                // or away from them) throws the aim off by the same distance, sideways.
-                Vector3 back = -moved;
-                Vector3 across = back - Vector3.Dot(back, f) * f;
-                float size = PhysicalDodgeMod.RushDodges.Value ? back.magnitude : across.magnitude;
-                Vector3 dir = across.sqrMagnitude > 0.03f * 0.03f ? across.normalized : Sideways(f);
-                Vector3 aim = origin + f * t + dir * size;
-                shot.OurDirection = (aim - origin).normalized;
-                shot.Moved = moved.magnitude;
-                shot.Across = size;
-                gun.tmpEnemyBulletdirection = shot.OurDirection;
-            }
-            Current = shot;
-            return shot;
-        }
-
-        // FireBullet prefix: the final direction, with the game's spread in it.
-        internal static void FinalBullet(Vector3 direction, bool harmless)
-        {
-            var s = Current;
-            if (s == null || s.Resolved) return;
-            s.Resolved = true;
-            Vector3 d = direction.normalized;
-            // The same spread applied to the game's own aim tells whether it would have hit.
-            Vector3 gameD = Quaternion.FromToRotation(s.OurDirection, d) * s.GameDirection;
-            string hitNow = HitPart(s.Origin, d, s.Distance + 3f);
-            string hitGame = HitPart(s.Origin, gameD, s.Distance + 3f);
+            float range = t + 3f;
+            float lag = PhysicalDodgeMod.AimLagSeconds.Value;
+            Moved(lag, out Vector3 moved);
+            string shooter = Debug ? Shooter(gun, origin, you) : "";
             sAtYou++;
-            last = s; lastAt = Now;
+            lastShotAt = Now; lastMoved = moved.magnitude;
+
+            // The game's free miss: the bullet uses a layer mask that leaves you out. Nothing to do.
+            var npc = gun.UsedByNPC;
+            bool harmless = PhysicalDodgeMod.Alive(npc) && (npc.InCooldown || npc.nonLethalFire || !npc.weaponFiredOnce);
+            if (harmless)
+            {
+                sHarmless++;
+                Line(t, "harmless anyway (the game's free miss)", moved, 0, shooter);
+                return null;
+            }
+
+            // Where you were: the aim point moves back by your movement. Only the part across the line
+            // changes where the bullet goes; with RushDodges, movement along the line (straight at or away
+            // from them) throws the aim off by the same distance, sideways.
+            Vector3 back = -moved;
+            Vector3 across = back - Vector3.Dot(back, f) * f;
+            float size = lag > 0 ? (PhysicalDodgeMod.RushDodges.Value ? back.magnitude : across.magnitude) : 0;
+            Vector3 dir = across.sqrMagnitude > 0.03f * 0.03f ? across.normalized : Sideways(f);
+            Vector3 aimed = origin + f * t;
+
+            // The game's spread for this bullet, drawn once the way the game does it, applied to both lines.
+            bool shotgun = gun.isShotgun;
+            float spread = shotgun ? gun.ShotRadius : gun.enemyBulletSpreadAddition + gun.tmpEnemyBulletspread;
+            Vector3 lagged = (aimed + dir * size - origin).normalized;
+            Quaternion scatter = spread > 0 ? Quaternion.FromToRotation(lagged, game.ApplyRandomAngle(lagged, spread)) : Quaternion.identity;
+            string hitGame = HitPart(origin, scatter * f, range);
+            Vector3 final = scatter * lagged;
+            string hitNow = HitPart(origin, final, range);
 
             string what;
-            if (harmless) { sHarmless++; what = "harmless anyway (the game's free miss)"; }
-            else if (hitNow == null && hitGame != null)
+            if (hitGame != null && hitNow == null)
             {
-                sDodged++; sMovedDodged += s.Moved;
+                // A dodge: make sure it misses cleanly, by DodgeMargin all round.
+                for (float p = 0; p <= 0.6f; p += 0.05f)
+                {
+                    Vector3 d = scatter * (aimed + dir * (size + p) - origin).normalized;
+                    if (Clears(origin, d, range)) { final = d; break; }
+                }
+                sDodged++; sMovedDodged += moved.magnitude;
                 what = $"DODGED - would have hit your {hitGame}";
                 if (PhysicalDodgeMod.Haptics.Value) Buzz();
                 if (PhysicalDodgeMod.SlowMotion.Value) what += SlowDown();
             }
             else if (hitNow != null) { sHit++; what = $"hits your {hitNow}"; }
             else { sMissAnyway++; what = "misses anyway (the game's spread)"; }
+            Line(t, what, moved, size, shooter);
 
+            var shot = new Shot { Direction = gun.tmpEnemyBulletdirection, Spread = gun.tmpEnemyBulletspread, ShotRadius = gun.ShotRadius, Shotgun = shotgun };
+            gun.tmpEnemyBulletdirection = final;
+            // The spread is already in 'final', so the game must add none.
+            if (shotgun) gun.ShotRadius = 0;
+            else gun.tmpEnemyBulletspread = -gun.enemyBulletSpreadAddition;
+            return shot;
+        }
+
+        static void Line(float dist, string what, Vector3 moved, float thrown, string shooter)
+        {
             if (Debug)
-                W($"shot from {s.Distance:0.0} m: {what}; you moved {s.Moved:0.00} m in {PhysicalDodgeMod.AimLagSeconds.Value:0.##} s, " +
-                  $"aim thrown {s.Across:0.00} m off you{s.Shooter}");
+                W($"{Tag}shot from {dist:0.0} m: {what}; you moved {moved.magnitude:0.00} m in {PhysicalDodgeMod.AimLagSeconds.Value:0.##} s, " +
+                  $"aim thrown {thrown:0.00} m off you{shooter}");
         }
 
         internal static void AfterEnemyBullet(ANBHVRGunBase gun, Shot shot)
         {
-            Current = null;
-            gun.tmpEnemyBulletdirection = shot.GameDirection;
+            gun.tmpEnemyBulletdirection = shot.Direction;
+            gun.tmpEnemyBulletspread = shot.Spread;
+            if (shot.Shotgun) gun.ShotRadius = shot.ShotRadius;
         }
 
         internal static void PlayerHurt(string type, float dmg)
         {
+            sHurt++;
             if (!Debug) return;
-            bool recent = last != null && Now - lastAt < 0.5;
-            W($"you were hurt: {type} {dmg:0.#}{(recent ? $" (last shot: you had moved {last.Moved:0.00} m)" : "")}");
-        }
-
-        static void Summary()
-        {
-            summaryAt = Now + 30;
-            if (!Debug || sAtYou == 0) return;
-            W($"last 30 s: {sAtYou} shot(s) at you - dodged {sDodged}" +
-              (sDodged > 0 ? $" (you moved {sMovedDodged / sDodged:0.00} m on average)" : "") +
-              $", hit {sHit}, harmless anyway {sHarmless}, missed anyway {sMissAnyway}");
-            sAtYou = sDodged = sHit = sHarmless = sMissAnyway = 0; sMovedDodged = 0;
+            bool recent = Now - lastShotAt < 0.5;
+            W($"{Tag}you were hurt: {type} {dmg:0.#}{(recent ? $" (last shot: you had moved {lastMoved:0.00} m)" : "")}");
         }
 
         // The game's own timed slow motion (scriptedSlowmotionMin / VeryMed / Max -> scriptedSlowmotionExecute):
@@ -275,6 +308,7 @@ namespace PhysicalDodge
                 default: game.scriptedSlowmotionMax(secs); break;
             }
             slowAt = Now;
+            sSlow++;
             return $" -> SLOW MOTION {secs:0.#} s";
         }
 
@@ -343,8 +377,27 @@ namespace PhysicalDodge
             return best;
         }
 
+        // Nine parallel rays: the line itself and eight around it at DodgeMargin. None may touch any of
+        // your hit colliders.
+        static bool Clears(Vector3 origin, Vector3 d, float range)
+        {
+            Vector3 u = Vector3.Cross(d, Vector3.up);
+            if (u.sqrMagnitude < 1e-4f) u = Vector3.Cross(d, Vector3.forward);
+            u.Normalize();
+            Vector3 w = Vector3.Cross(d, u);
+            float m = PhysicalDodgeMod.DodgeMargin.Value;
+            for (int i = 0; i < 9; i++)
+            {
+                Vector3 off = i == 0 ? Vector3.zero : (Mathf.Cos(i * Mathf.PI / 4) * u + Mathf.Sin(i * Mathf.PI / 4) * w) * m;
+                var ray = new Ray(origin + off, d);
+                foreach (var c in cols)
+                    if (c != null && c.Raycast(ray, out RaycastHit _, range)) return false;
+            }
+            return true;
+        }
+
         // The colliders BulletImpact treats as you (on the three hit-target transforms themselves).
-        static bool Colliders(ANBGameLogic game, Camera cam)
+        static bool Colliders(ANBGameLogic game)
         {
             bool any = false;
             var ts = new[] { game.PlayerHitTarget, game.PlayerHitTargetHips, game.PlayerHitTargetLegs };
@@ -378,17 +431,12 @@ namespace PhysicalDodge
         }
     }
 
-    // FireBullet(source, bulletSource, direction, range, force, damage, FromEnemy, NotUsed, isSilenced,
-    // enemyBulletCooldowned, flame, reduced): read only. direction already has the game's spread in it;
-    // enemyBulletCooldowned = the game's free miss (enemy cooldown, warning shot, first second of fire).
-    [HarmonyLib.HarmonyPatch(typeof(ANBGameLogic), nameof(ANBGameLogic.FireBullet))]
-    internal static class FireBulletPatch
+    [HarmonyLib.HarmonyPatch(typeof(ANBNpcSpawner), nameof(ANBNpcSpawner.spawnNPC))]
+    internal static class SpawnPatch
     {
-        static void Prefix(Vector3 __2, bool __9)
+        static void Postfix(ANBNpcSpawner __instance)
         {
-            if (Dodge.Current == null) return;
-            try { Dodge.FinalBullet(__2, __9); }
-            catch (Exception e) { PhysicalDodgeMod.Log.Warning($"bullet check: {e.GetType().Name}: {e.Message}"); }
+            try { Dodge.Spawner = __instance; } catch { }
         }
     }
 

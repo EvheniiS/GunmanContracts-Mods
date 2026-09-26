@@ -5,7 +5,7 @@ using MelonLoader;
 using UnityEngine;
 using UnityEngine.AI;
 
-[assembly: MelonInfo(typeof(EnemyAwarenessFix.EnemyAwarenessFixMod), "Enemy Awareness Fix", "0.1.4", "Evgeeso")]
+[assembly: MelonInfo(typeof(EnemyAwarenessFix.EnemyAwarenessFixMod), "Enemy Awareness Fix", "0.1.5", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace EnemyAwarenessFix
@@ -29,7 +29,9 @@ namespace EnemyAwarenessFix
     //   TrackAfterLosingSight seconds (it saw which way you went), then the belief freezes.
     // - An enemy that never saw you (wave spawns start already attacking) gets a rough guess: a
     //   random point GuessMin..GuessRadius from you. Another enemy seeing you shares that sighting
-    //   with enemies within ShareRadius, scattered a little and at most every ShareInterval.
+    //   with enemies within ShareRadius, scattered a little and at most every ShareInterval, while
+    //   it is at most ShareMaxAge old (0.1.5: the last sighting of a wave was handed to the next
+    //   wave's spawns, so in the bomb waves they searched the old spot instead of coming to you).
     // - On reaching its belief without finding you, the enemy searches random points around it
     //   for SearchSeconds. Then wave enemies (canLoseTarget off) get a new rough guess, and other
     //   enemies are allowed to give up the game's usual way (hunt, then idle).
@@ -45,7 +47,7 @@ namespace EnemyAwarenessFix
         internal static MelonLogger.Instance Log;
         internal static MelonPreferences_Entry<bool> Enabled, DebugLog, FixAwareness, FixSpawns;
         internal static MelonPreferences_Entry<float> TrackAfterLosingSight, SenseDistance, GuessMin, GuessRadius,
-            ShareRadius, ShareInterval, ShareScatter, SearchSeconds, SearchRadius, MinSpawnDistance;
+            ShareRadius, ShareInterval, ShareMaxAge, ShareScatter, SearchSeconds, SearchRadius, MinSpawnDistance;
         internal static MelonPreferences_Entry<int> RandomSpawnAmongNearest;
 
         public override void OnInitializeMelon()
@@ -60,6 +62,7 @@ namespace EnemyAwarenessFix
             GuessRadius = c.CreateEntry("GuessRadius", 8.0f, description: "...and at most this far.");
             ShareRadius = c.CreateEntry("ShareRadius", 25.0f, description: "When an enemy sees you, enemies within this many metres of it learn where you were. 0 = all enemies, -1 = no sharing.");
             ShareInterval = c.CreateEntry("ShareInterval", 3.0f, description: "An enemy accepts a shared sighting at most this often (seconds).");
+            ShareMaxAge = c.CreateEntry("ShareMaxAge", 5.0f, description: "A sighting older than this (seconds) is not passed on. Without it, each new wave's first enemies went to where you were at the end of the last wave (14-60 s ago), which broke the bomb waves.");
             ShareScatter = c.CreateEntry("ShareScatter", 2.5f, description: "Shared sightings are scattered by up to this many metres per enemy, so they don't all run to one spot.");
             SearchSeconds = c.CreateEntry("SearchSeconds", 20.0f, description: "How long an enemy searches around the point where it lost you before giving up (story) or getting a new rough guess (waves).");
             SearchRadius = c.CreateEntry("SearchRadius", 6.0f, description: "Radius of the search around that point (grows to double as the search goes on).");
@@ -373,6 +376,7 @@ namespace EnemyAwarenessFix
         {
             float radius = EnemyAwarenessFixMod.ShareRadius.Value;
             if (!haveSighting || radius < 0 || sightingT <= s.InfoT) return false;
+            if (now - sightingT > EnemyAwarenessFixMod.ShareMaxAge.Value) return false;
             if (now - s.InfoT < EnemyAwarenessFixMod.ShareInterval.Value && s.K != Kind.None) return false;
             if (radius > 0 && Vector3.Distance(npcPos, sightingFrom) > radius) return false;
             Vector2 d = UnityEngine.Random.insideUnitCircle * EnemyAwarenessFixMod.ShareScatter.Value;
