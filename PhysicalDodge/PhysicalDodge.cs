@@ -8,7 +8,7 @@ using MelonLoader;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(PhysicalDodge.PhysicalDodgeMod), "Physical Dodge", "0.4.1", "Evgeeso")]
+[assembly: MelonInfo(typeof(PhysicalDodge.PhysicalDodgeMod), "Physical Dodge", "0.4.2", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace PhysicalDodge
@@ -219,12 +219,25 @@ namespace PhysicalDodge
             }
 
             // Where you were: the aim point moves back by your movement. Only the part across the line
-            // changes where the bullet goes; with RushDodges, movement along the line (straight at or away
-            // from them) throws the aim off by the same distance, sideways.
-            Vector3 back = -moved;
+            // changes where the bullet goes. With RushDodges, movement along the line (straight at or away
+            // from them) throws the aim off by the same distance, always HORIZONTALLY: 0.4.1 borrowed the
+            // direction of the small across part, which is mostly your head bobbing up and down while you
+            // walk, so about half the rushes pushed the shot down into your hips.
+            Vector3 back = lag > 0 ? -moved : Vector3.zero;
             Vector3 across = back - Vector3.Dot(back, f) * f;
-            float size = lag > 0 ? (PhysicalDodgeMod.RushDodges.Value ? back.magnitude : across.magnitude) : 0;
-            Vector3 dir = across.sqrMagnitude > 0.03f * 0.03f ? across.normalized : Sideways(f);
+            Vector3 shift = across;
+            if (PhysicalDodgeMod.RushDodges.Value)
+            {
+                Vector3 side = Vector3.Cross(Vector3.up, f);
+                if (side.sqrMagnitude < 1e-4f) side = Sideways(f);
+                side.Normalize();
+                float h = Vector3.Dot(across, side);
+                if (Mathf.Abs(h) < 0.02f) { if (UnityEngine.Random.value < 0.5f) side = -side; }
+                else if (h < 0) side = -side;                      // the same side you were already moving to
+                shift += side * Mathf.Abs(Vector3.Dot(back, f));
+            }
+            float size = shift.magnitude;
+            Vector3 dir = size > 1e-3f ? shift / size : Sideways(f);
             Vector3 aimed = origin + f * t;
 
             // The game's spread for this bullet, drawn once the way the game does it, applied to both lines.

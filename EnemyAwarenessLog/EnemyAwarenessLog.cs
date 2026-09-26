@@ -10,7 +10,7 @@ using MelonLoader.Utils;
 using UnityEngine;
 using UnityEngine.AI;
 
-[assembly: MelonInfo(typeof(EnemyAwarenessLog.EnemyAwarenessLogMod), "Enemy Awareness Log", "0.5.0", "Evgeeso")]
+[assembly: MelonInfo(typeof(EnemyAwarenessLog.EnemyAwarenessLogMod), "Enemy Awareness Log", "0.5.1", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace EnemyAwarenessLog
@@ -559,6 +559,7 @@ namespace EnemyAwarenessLog
             if (Vector3.Distance(body, t.MoveRef) > 0.5f) { t.MoveRef = body; t.MoveT = now; return; }
             bool busy = n.isAttacking || n.isHunting || n.isInvestigating;
             if (!busy || now - t.MoveT < 8f || now - t.StuckReportT < 20f) return;
+            if (Flat(body, pp) > 50f) return;                    // you're far away (dead, elevator): not a finding
             t.StuckReportT = now;
             string nav = "no agent";
             try
