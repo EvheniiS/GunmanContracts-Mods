@@ -43,7 +43,7 @@ namespace PhysicalDodge
             var c = MelonPreferences.CreateCategory("PhysicalDodge", "Physical Dodge");
             Enabled = c.CreateEntry("Enabled", true, description: "Enemies aim where you were a moment ago: stand still and you get hit, move and they miss.");
             AimLagSeconds = c.CreateEntry("AimLagSeconds", 0.2f, description: "How far behind you enemies aim, in seconds. Higher = easier to dodge. 0 = the game's normal aim.");
-            StickMovementDodges = c.CreateEntry("StickMovementDodges", true, description: "Moving with the stick counts too. Off = only your real body movement (steps, leans, ducks) counts.");
+            StickMovementDodges = c.CreateEntry("StickMovementDodges", false, description: "Off (default): only your real body movement counts - steps, leans, ducks. On = moving with the stick counts too.");
             RushDodges = c.CreateEntry("RushDodges", true, description: "Moving straight at (or away from) the shooter also makes them miss. Off = only sideways and up/down movement does, as in real life.");
             Haptics = c.CreateEntry("Haptics", true, description: "A short buzz on both controllers when a shot that would have hit you goes past because you moved.");
             DebugLog = c.CreateEntry("DebugLog", true, description: "Log every shot at you (dodged, hit, or harmless anyway) and a summary every 30 s, for tuning.");
