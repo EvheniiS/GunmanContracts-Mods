@@ -10,7 +10,7 @@ using MelonLoader.Utils;
 using UnityEngine;
 using UnityEngine.AI;
 
-[assembly: MelonInfo(typeof(EnemyAwarenessLog.EnemyAwarenessLogMod), "Enemy Awareness Log", "0.4.0", "Evgeeso")]
+[assembly: MelonInfo(typeof(EnemyAwarenessLog.EnemyAwarenessLogMod), "Enemy Awareness Log", "0.5.0", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace EnemyAwarenessLog
@@ -36,7 +36,10 @@ namespace EnemyAwarenessLog
     // ends, your stealth visibility (the game's ANBPlayerDetector: height, light, movement,
     // gunfire), and how many enemy shots the game made harmless (see IDEAS.md).
     //
-    // Output: the MelonLoader console and UserData\EnemyAwarenessLog\session-<time>.log.
+    // Output: UserData\EnemyAwarenessLog\session-<time>.log. The MelonLoader console gets only the
+    // scene and wave headers (to line up other mods' logs) and warnings. 0.5.0 keeps the file lean on
+    // purpose: non-events ("nobody reacted", arrows, stance flips, door opens) are counted in the wave
+    // summary instead of logged one by one.
     public class EnemyAwarenessLogMod : MelonMod
     {
         internal static MelonLogger.Instance Log;
@@ -77,7 +80,7 @@ namespace EnemyAwarenessLog
             Tracker.FlushChases("scene ended");
             Tracker.Summary("scene change");
             Tracker.Reset();
-            W($"---- scene '{sceneName}' ----");
+            W($"---- scene '{sceneName}' ----", true);
         }
 
         public override void OnUpdate()
@@ -87,10 +90,10 @@ namespace EnemyAwarenessLog
             Tracker.Sample();
         }
 
-        internal static void W(string s)
+        internal static void W(string s, bool console = false)
         {
             string line = $"[t={Time.time,7:0.0}] {s}";
-            Log.Msg(line);
+            if (console) Log.Msg(line);
             try { File?.WriteLine(line); } catch { }
         }
 
@@ -104,7 +107,7 @@ namespace EnemyAwarenessLog
 
     internal static class Tracker
     {
-        static void W(string s) => EnemyAwarenessLogMod.W(s);
+        static void W(string s, bool console = false) => EnemyAwarenessLogMod.W(s, console);
 
         internal class Track
         {
@@ -139,7 +142,7 @@ namespace EnemyAwarenessLog
             public int Uid;
             // "#<n>" = the enemy's Unity instance id; Enemy Awareness Fix prints the same, so lines
             // from both mods can be matched.
-            public string Tag => $"E{Id} #{Uid} ({Name})";
+            public string Tag => $"E{Id} #{Uid}";
         }
 
         static readonly Dictionary<IntPtr, Track> Tracks = new();
@@ -419,9 +422,7 @@ namespace EnemyAwarenessLog
                 t.SpawnPoint = used.name;
                 t.State = StateOf(npc);
                 spawnsByPoint[used.name] = spawnsByPoint.TryGetValue(used.name, out int c) ? c + 1 : 1;
-                W($"spawn {t.Tag} at '{used.name}', {Where(used.transform.position, pp)} " +
-                  $"[spawner '{s.name}', order {s.SpawnPointOrder}, wave {s.waveSurvived + 1}, starts as {t.State}, " +
-                  $"3D {Vector3.Distance(used.transform.position, pp):0.0} m, min allowed {(s.SpawnpointCheckPlayerdistance ? Mathf.Sqrt(s.minSpawnDistanceToPlayer).ToString("0.#") + " m" : "off")}]");
+                W($"spawn {t.Tag} at '{used.name}', {Where(used.transform.position, pp)}, {t.State}");
             }
             catch (Exception ex) { EnemyAwarenessLogMod.Warn("after spawn", ex); }
         }
@@ -443,7 +444,7 @@ namespace EnemyAwarenessLog
                     if (first && w == 0) { if (waveLabel.Length == 0) waveLabel = $"wave 1 ('{s.name}')"; continue; }
                     Summary($"wave {w} survived");
                     ResetWave($"wave {w + 1} ('{s.name}')");
-                    W($"==== wave {w + 1} ('{s.name}'): size {s.waveSize:0}, max at once {s.maxEnemiesAtOnce:0}, total {s.totalSpawns:0}");
+                    W($"==== wave {w + 1} ('{s.name}'): size {s.waveSize:0}, max at once {s.maxEnemiesAtOnce:0}, total {s.totalSpawns:0}", true);
                 }
                 catch (Exception ex) { EnemyAwarenessLogMod.Warn("wave check", ex); }
             }
@@ -537,8 +538,7 @@ namespace EnemyAwarenessLog
                     Vector3 ep = Body(n);
                     string where = Where(ep, pp);
                     AddContact(ep, where);
-                    W($"{t.Tag} FIRST SAW YOU from {P(ep)}, {where}, {Time.time - t.SpawnT:0.0} s after spawn" +
-                      $"{(t.SpawnPoint != null ? $" (spawned at '{t.SpawnPoint}')" : "")}");
+                    W($"{t.Tag} FIRST SAW YOU: {where}, {Time.time - t.SpawnT:0} s after spawn");
                 }
                 t.TimerT = -1;
             }
@@ -570,18 +570,16 @@ namespace EnemyAwarenessLog
                     if (ag.isActiveAndEnabled && ag.isOnNavMesh)
                     {
                         Vector3 d = ag.destination;
-                        nav += $", stopped {ag.isStopped}, hasPath {ag.hasPath}, path {ag.pathStatus}, remaining {ag.remainingDistance:0.0} m, " +
-                               $"stopping distance {ag.stoppingDistance:0.0} m, destination {Flat(d, body):0.0} m from it / {Flat(d, pp):0.0} m from you " +
-                               $"at height {d.y:0.0}";
+                        nav += $"{(ag.isStopped ? ", STOPPED" : "")}, path {ag.pathStatus}, remaining {ag.remainingDistance:0.0}/stop {ag.stoppingDistance:0.0} m, " +
+                               $"dest {Flat(d, body):0.0} m from it, {Flat(d, pp):0.0} m from you, y {d.y:0.0}";
                     }
                     else if (ag.isActiveAndEnabled) nav += ", NOT ON NAVMESH";
                 }
             }
             catch (Exception ex) { nav += $" (read failed: {ex.Message})"; }
             string cover = n.isCovering ? ", in cover" : "";
-            W($"STUCK? {t.Tag} hasn't moved for {now - t.MoveT:0} s ({StateOf(n)}{cover}), at {P(body)}, you at floor height {Floor(pp).y:0.0}, " +
-              $"{Where(body, pp)} | {nav} | " +
-              $"its last-known position is {Flat(n.lastKnownPosition, pp):0.0} m from you{Sound.DoorNote(n.Pointer)}");
+            W($"STUCK? {t.Tag} still {now - t.MoveT:0} s ({StateOf(n)}{cover}), {Where(body, pp)} | {nav} | " +
+              $"last-known {Flat(n.lastKnownPosition, pp):0.0} m from you{Sound.DoorNote(n.Pointer)}");
         }
 
         // Chases still open when the scene ends get their line too.
@@ -642,22 +640,22 @@ namespace EnemyAwarenessLog
             if (dur < 1f) return;   // a blink out of sight
 
             string verdict;
-            if (t.EpMovedSamples < 3) { verdict = "you didn't move 3 m from the reference point, can't tell"; epUnclear++; }
+            bool unclear = t.EpMovedSamples < 3;
+            if (unclear) { verdict = "unclear (you moved < 3 m)"; epUnclear++; }
             else
             {
                 float f = (float)t.EpTracked / t.EpMovedSamples;
-                if (f >= 0.6f) { verdict = $"LIVE-TRACKED you ({t.EpTracked}/{t.EpMovedSamples} checks within 1.5 m of you)"; epTracked++; }
-                else if (f <= 0.2f) { verdict = $"searched where it lost you ({t.EpTracked}/{t.EpMovedSamples} checks within 1.5 m of you)"; epSearched++; }
-                else { verdict = $"partly tracked you ({t.EpTracked}/{t.EpMovedSamples} checks within 1.5 m of you)"; epUnclear++; }
+                string k = $"{t.EpTracked}/{t.EpMovedSamples} near you";
+                if (f >= 0.6f) { verdict = $"LIVE-TRACKED ({k})"; epTracked++; }
+                else if (f <= 0.2f) { verdict = $"searched ({k})"; epSearched++; }
+                else { verdict = $"partly tracked ({k})"; epUnclear++; }
             }
             epCount++;
-            string dest = t.EpDestN > 0
-                ? $" | walking to: avg {t.EpDestPlayer / t.EpDestN:0.0} m from you, {t.EpDestRef / t.EpDestN:0.0} m from {(t.EpRefIsSighting ? "where it last saw you" : "where you were")}"
-                : "";
-            W($"{t.Tag} unseen chase {dur:0.0} s [{t.EpStates}], reference = {(t.EpRefIsSighting ? "where it last saw you" : "where you were (it never saw you)")}, " +
-              $"you moved up to {t.EpMaxMove:0.0} m from it -> {verdict} | it walked {t.EpTravel:0} m, stood still {t.EpStill:0} s" +
-              $"{(t.EpStill > 0.8f * dur ? " (STUCK?)" : "")} | last-known-position writes while unseen: {t.EpUnseenWrites}{dest}" +
-              $"{(t.EpFlank ? " | flanked" : "")} | end: {why}");
+            bool stuck = t.EpStill > 0.8f * dur;
+            if (unclear && !stuck) return;                     // counted in the summary; a line says nothing
+            string dest = t.EpDestN > 0 ? $", dest {t.EpDestPlayer / t.EpDestN:0.0} m from you / {t.EpDestRef / t.EpDestN:0.0} m from ref" : "";
+            W($"{t.Tag} unseen {dur:0} s [{t.EpStates}] {(t.EpRefIsSighting ? "after losing you" : "never saw you")}: {verdict}, you moved {t.EpMaxMove:0.0} m; " +
+              $"it walked {t.EpTravel:0} m, still {t.EpStill:0} s{(stuck ? " (STUCK?)" : "")}{dest}{(t.EpFlank ? ", flanked" : "")}; end {why}");
         }
 
         // Called from the markLastKnownTargetPosition prefix.
@@ -674,11 +672,11 @@ namespace EnemyAwarenessLog
             {
                 var t = Get(n);
                 string timer = t.TimerT >= 0
-                    ? $"after {Time.time - t.TimerT:0.0} s (+/- {EnemyAwarenessLogMod.SampleInterval.Value:0.##}) of game time from timer value {t.TimerVal:0.#}"
+                    ? $"after {Time.time - t.TimerT:0.0} s from {t.TimerVal:0.#}"
                     : "(timer start not seen)";
                 if (t.TimerT >= 0) { timerRuns++; timerRealSum += Time.time - t.TimerT; timerValSum += t.TimerVal; }
                 t.TimerT = -1;
-                W($"{t.Tag} LOST-TARGET timer ran out {timer} -> {(n.canLoseTarget ? "gives up the chase (hunt or idle)" : "canLoseTarget off: restarts the attack")}");
+                W($"{t.Tag} lost-target timer ran out {timer} -> {(n.canLoseTarget ? "gives up (hunt/idle)" : "restarts attack")}");
             }
             catch (Exception ex) { EnemyAwarenessLogMod.Warn("lose target", ex); }
         }
@@ -780,8 +778,8 @@ namespace EnemyAwarenessLog
             {
                 float dy = t.LastPos.y - lastPlayerFloor.y;
                 string floor = Mathf.Abs(dy) <= 1.5f ? "your floor" : dy > 0 ? "FLOOR ABOVE you" : "FLOOR BELOW you";
-                W($"    {t.Tag} {t.State} at {P(t.LastPos)}, {Flat(t.LastPos, lastPlayerPos):0.0} m from you, {floor}, " +
-                  $"{(t.SawYou ? "seeing you" : "not seeing you")}, hasn't moved 0.5 m for {now - t.MoveT:0} s{Sound.DoorNote(t.Ptr)}");
+                W($"    {t.Tag} {t.State}, {Flat(t.LastPos, lastPlayerPos):0.0} m from you, {floor}, " +
+                  $"{(t.SawYou ? "sees you" : "doesn't see you")}, still {now - t.MoveT:0} s{Sound.DoorNote(t.Ptr)}");
             }
         }
     }
@@ -798,6 +796,7 @@ namespace EnemyAwarenessLog
         static string lastAction;
         static float lastActionT = -99;
         static int gunShots, silencedShots, bowShots, arrowHits, doorKicks, shatters, enemyShots, enemyShotsHarmless;
+        internal static int hitGraces;
         static readonly Dictionary<string, int> alerts = new(), reactions = new();
 
         // Cause of the alert being processed: set by the prefix of whatever raised it (a shot, a
@@ -811,7 +810,7 @@ namespace EnemyAwarenessLog
 
         internal static void ResetCounters()
         {
-            gunShots = silencedShots = bowShots = arrowHits = doorKicks = shatters = enemyShots = enemyShotsHarmless = 0;
+            gunShots = silencedShots = bowShots = arrowHits = doorKicks = shatters = enemyShots = enemyShotsHarmless = hitGraces = 0;
             alerts.Clear();
             reactions.Clear();
         }
@@ -837,14 +836,13 @@ namespace EnemyAwarenessLog
             string what = silenced ? "your silenced shot" : "your gunshot";
             Action(what);
             SetCause(what);
-            W($"YOU FIRED '{Tracker.Name(gun)}'{(silenced ? " (silenced)" : "")}");
+            W($"you fired '{Tracker.Name(gun)}'{(silenced ? " (silenced)" : "")}");
         }
 
         internal static void BowShot()
         {
             bowShots++;
-            Action("your bow shot");
-            W("YOU SHOT AN ARROW");
+            Action("your bow shot");                          // counted only
         }
 
         internal static void ArrowHitWorld()
@@ -865,12 +863,12 @@ namespace EnemyAwarenessLog
             try
             {
                 var npc = origin != null ? origin.GetComponentInParent<ANBBasicNPC>() : null;
-                who = npc != null ? $"enemy {Tracker.NpcTag(npc)}" : fromEnemy ? $"an enemy ('{Tracker.Name(origin)}')" : $"you? ('{Tracker.Name(origin)}')";
+                who = npc != null ? Tracker.NpcTag(npc) : fromEnemy ? $"an enemy ('{Tracker.Name(origin)}')" : "you";
             }
             catch (Exception ex) { EnemyAwarenessLogMod.Warn("door opener", ex); }
             // Several doors share a name ('DoorModular'): the position says which one.
             string dn = $"'{Tracker.Name(door)}' at {Tracker.P(door.transform.position)}";
-            lastDoor = $"{dn} opened by {who}{(kick ? ", KICKED" : "")}";
+            lastDoor = $"{dn} by {who}";
             lastDoorT = Time.time;
             try
             {
@@ -884,11 +882,7 @@ namespace EnemyAwarenessLog
                 }
             }
             catch { }
-            if (kick || fromEnemy)
-            {
-                string line = lastDoor;
-                Tracker.Alert("door|" + line, () => $"door {line}", 10f);
-            }
+            // No line here: DoorKick logs the kick once; a loop shows as its "+N similar" count.
         }
 
         // Per enemy: the door it keeps opening (name, opens, first, last), for the STUCK? report.
@@ -905,7 +899,7 @@ namespace EnemyAwarenessLog
             doorKicks++;
             string by = Time.time - lastDoorT <= 3f ? lastDoor : "door (opener unknown)";
             SetCause($"door kick: {by}");
-            Tracker.Alert("kick|" + by, () => $"DOOR KICK ALERT: {by} - the game alerts every enemy to you", 10f);
+            Tracker.Alert("kick|" + by, () => $"door kick: {by} (alerts every enemy)", 10f);
         }
 
         internal static void Shatter(ANBBreakable b)
@@ -929,9 +923,9 @@ namespace EnemyAwarenessLog
             string c = cause ?? (Tracker.Name(origin) == "NPC" ? "enemy callout/scream" : "unattributed alert");
             // Summary key: the cause without the object name in brackets.
             curKey = System.Text.RegularExpressions.Regex.Replace(c, @" \('[^']*'\)$", "");
+            if (curKey.StartsWith("door kick")) curKey = curKey.EndsWith(" by you") ? "door kick by you" : "door kick by an enemy";
             alerts[curKey] = alerts.TryGetValue(curKey, out int a) ? a + 1 : 1;
-            curDesc = $"{c} [target '{Tracker.Name(target)}', origin '{Tracker.Name(origin)}', attack {attack}, " +
-                      $"radius {(radius > 0 ? radius.ToString("0.#") + " m" : "default")}, hear only {hearOnly}]";
+            curDesc = $"{c}{(radius > 0 ? $" ({radius:0.#} m)" : "")}";
         }
 
         internal static void Reacted(ANBBasicNPC n, string what)
@@ -942,7 +936,7 @@ namespace EnemyAwarenessLog
                 var p = n.Playertarget;
                 string d = p != null ? $" {Vector3.Distance(Tracker.Body(n), p.position):0} m from you" : "";
                 bool already = n.isAttacking || n.isHunting;
-                reacted.Add($"{Tracker.NpcTag(n)} {what}{d}{(already ? " (was already chasing)" : "")}");
+                reacted.Add($"{Tracker.NpcTag(n)} {what}{d}{(already ? " (already chasing)" : "")}");
             }
             catch (Exception ex) { EnemyAwarenessLogMod.Warn("reacted", ex); }
         }
@@ -955,12 +949,7 @@ namespace EnemyAwarenessLog
             {
                 int fresh = reacted.Count(r => !r.Contains("already"));
                 reactions[curKey] = (reactions.TryGetValue(curKey, out int c) ? c : 0) + fresh;
-                W($"HEARD {curDesc} -> {string.Join("; ", reacted)}");
-            }
-            else
-            {
-                string d = curDesc;
-                Tracker.Alert("quiet|" + curKey, () => $"sound, nobody reacted: {d}");
+                W($"HEARD {curDesc}: {string.Join("; ", reacted)}");
             }
             reacted.Clear();
         }
@@ -968,13 +957,14 @@ namespace EnemyAwarenessLog
         internal static void SummaryLines()
         {
             if (!Any) return;
-            W($"  your weapons: gunshots {gunShots} (silenced {silencedShots}), bow shots {bowShots}, arrows hitting the world {arrowHits}, " +
-              $"doors kicked/breached {doorKicks}, things shattered {shatters}; enemy gunshots {enemyShots} (marked harmless by the game: {enemyShotsHarmless})");
+            W($"  weapons: your gunshots {gunShots} (silenced {silencedShots}), bow {bowShots}, arrows into the world {arrowHits}, " +
+              $"door kicks {doorKicks}, shattered {shatters}; enemy gunshots {enemyShots} (harmless {enemyShotsHarmless}); your hits started the harmless window {hitGraces}x");
             if (alerts.Count > 0)
-                W("  enemies newly alerted, by cause: " + string.Join(", ", alerts
-                    .Select(k => (k.Key, k.Value, R: reactions.TryGetValue(k.Key, out int r) ? r : 0))
-                    .OrderByDescending(x => x.R)
-                    .Select(x => $"{x.Key}: {x.R} (from {x.Value} alerts)")));
+            {
+                var woke = alerts.Select(k => (k.Key, k.Value, R: reactions.TryGetValue(k.Key, out int r) ? r : 0)).Where(x => x.R > 0).OrderByDescending(x => x.R).ToList();
+                W($"  alerts: {alerts.Values.Sum()}, newly woke enemies: " +
+                  (woke.Count == 0 ? "none" : string.Join(", ", woke.Select(x => $"{x.Key} {x.R} (of {x.Value} alerts)"))));
+            }
         }
     }
 
@@ -988,18 +978,16 @@ namespace EnemyAwarenessLog
         static void W(string s) => EnemyAwarenessLogMod.W(s);
 
         static bool configLogged;
-        static string stance;
-        static int n;
+        static int n, nCrouch, nLow;
         static float sum, min, max;
 
         internal static void Reset()
         {
             configLogged = false;
-            stance = null;
             ResetWave();
         }
 
-        internal static void ResetWave() { n = 0; sum = 0; min = 1; max = 0; }
+        internal static void ResetWave() { n = nCrouch = nLow = 0; sum = 0; min = 1; max = 0; }
 
         static string StanceOf(float h) => h >= 1.35f ? "standing" : h >= 0.95f ? "crouched" : "low";
 
@@ -1021,23 +1009,19 @@ namespace EnemyAwarenessLog
                           $"gunfire exposure {d.exposeTime:0.#} s x{d.exposureMultiplier:0.##}");
                 }
                 if (d == null) return;
+                // No line per stance change any more (0.4.0 settled it: enemies aim at your head height in
+                // every stance). The summary gives visibility and the share of time crouched / low.
                 float v = gl.playerVisibility;
                 n++; sum += v; min = Mathf.Min(min, v); max = Mathf.Max(max, v);
                 string st = StanceOf(d.height);
-                if (st == stance) return;
-                stance = st;
-                string head = "";
-                var cam = ANBStaticGameManager.MainCam;
-                if (cam != null) head = $", your head {cam.transform.position.y - floor.y:0.00} m";
-                W($"you: {st}, visibility {v:0.00} (height {d.height:0.00} m, light {d.illumination:0.00}, moving {d.mobility:0.00}, " +
-                  $"gunfire {d.exposed:0.00}) | enemies aim at {pp.y - floor.y:0.00} m above your floor{head}");
+                if (st == "low") nLow++; else if (st == "crouched") nCrouch++;
             }
             catch (Exception ex) { EnemyAwarenessLogMod.Warn("stealth", ex); }
         }
 
         internal static void SummaryLine()
         {
-            if (n > 0) W($"  your visibility (1 = fully visible): avg {sum / n:0.00}, min {min:0.00}, max {max:0.00}");
+            if (n > 0) W($"  your visibility: avg {sum / n:0.00} (min {min:0.00}, max {max:0.00}); crouched {nCrouch * 100 / n}% of the time, low {nLow * 100 / n}%");
         }
     }
 
@@ -1077,7 +1061,7 @@ namespace EnemyAwarenessLog
         static void Prefix(ANBBasicNPC __instance, bool attack)
         {
             if (!EnemyAwarenessLogMod.Enabled.Value) return;
-            Tracker.Alert("alertWorld", () => $"{Tracker.NpcTag(__instance)} alerts the others (attack {attack})");
+            // Counted through AlertAllNPCs ("enemy callout/scream"); no line of its own.
         }
     }
 
@@ -1145,7 +1129,7 @@ namespace EnemyAwarenessLog
         {
             if (!EnemyAwarenessLogMod.Enabled.Value) return;
             float secs = __instance.EnemyCooldownTime;
-            Tracker.Alert("hitgrace", () => $"YOU HIT AN ENEMY: the game makes every enemy's shots harmless for {secs:0.#} s", 4f);
+            Sound.hitGraces++;
         }
     }
 

@@ -5,7 +5,7 @@ using MelonLoader;
 using UnityEngine;
 using UnityEngine.AI;
 
-[assembly: MelonInfo(typeof(EnemyAwarenessFix.EnemyAwarenessFixMod), "Enemy Awareness Fix", "0.1.5", "Evgeeso")]
+[assembly: MelonInfo(typeof(EnemyAwarenessFix.EnemyAwarenessFixMod), "Enemy Awareness Fix", "0.1.6", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace EnemyAwarenessFix
@@ -273,7 +273,7 @@ namespace EnemyAwarenessFix
             bool sensed = Senses(np, pf);
             if (seen || sensed)
             {
-                if (s.InBelief) D($"{s.Tag} {(seen ? "sees" : "senses")} you again");
+                if (s.InBelief) D($"{s.Tag} {(seen ? "sees" : "senses")} you");
                 s.LastSeenT = now;
                 s.InBelief = false;
                 s.K = Kind.Seen;
@@ -310,8 +310,8 @@ namespace EnemyAwarenessFix
                 if (s.SearchStartT < 0)
                 {
                     s.SearchStartT = now;
-                    D($"{s.Tag} {arrived} {(s.K == Kind.Guess ? "its guess" : s.K == Kind.Shared ? "the shared sighting" : "where it lost you")} " +
-                      $"({Flat(np, s.Pos):0.0} m off), searching; you are {Flat(np, pf):0.0} m away{FloorNote(np, pf)}");
+                    D($"{s.Tag} {arrived} {(s.K == Kind.Guess ? "its guess" : s.K == Kind.Shared ? "the sighting" : "where it lost you")} " +
+                      $"({Flat(np, s.Pos):0.0} m off), searching; you {Flat(np, pf):0.0} m away{FloorNote(np, pf)}");
                 }
                 if (s.ArrivedT < 0) { s.ArrivedT = now; s.Dwell = UnityEngine.Random.Range(1.0f, 2.5f); }
                 if (now - s.ArrivedT >= s.Dwell) NextSearchPoint(s);
@@ -320,13 +320,13 @@ namespace EnemyAwarenessFix
 
             if (s.SearchStartT >= 0 && !s.SearchDone && now - s.SearchStartT > EnemyAwarenessFixMod.SearchSeconds.Value)
             {
-                if (!n.canLoseTarget) NewGuess(s, pf, now, "search over, wave enemy gets a new rough guess");
-                else { s.SearchDone = true; s.GaveUpT = now; D($"{s.Tag} search over, may give up now"); }
+                if (!n.canLoseTarget) NewGuess(s, pf, now, "search over: new guess");
+                else { s.SearchDone = true; s.GaveUpT = now; D($"{s.Tag} search over, may give up"); }
             }
             // A "give up" that bounces straight back to attack (StartHunt does that without a
             // collective position) would loop; send it to a new guess instead.
             if (s.SearchDone && n.isAttacking && s.GaveUpT >= 0 && now - s.GaveUpT > 1.5f)
-                NewGuess(s, pf, now, "gave up but the game put it back into attack, new rough guess");
+                NewGuess(s, pf, now, "gave up, game restarted its attack: new guess");
 
             if (n.isAttacking) n.lastKnownPosition = s.Pos;
             if (s.Ghost != null) s.Ghost.position = n.isHunting ? s.Anchor : s.Pos;
@@ -343,10 +343,10 @@ namespace EnemyAwarenessFix
             {
                 s.Pos = s.Anchor;
                 s.PosSetT = s.AnchorT = s.MoveT = now;
-                D($"{s.Tag} lost sight of you, holding {Flat(s.Anchor, pf):0.0} m from where you are now");
+                D($"{s.Tag} lost you ({Flat(s.Anchor, pf):0.0} m off)");
             }
             else if (!TryShared(s, Body(n), now))
-                NewGuess(s, pf, now, "never saw you, rough guess");
+                NewGuess(s, pf, now, "never saw you: guess");
         }
 
         static void NewGuess(Npc s, Vector3 pf, float now, string why)
@@ -388,7 +388,7 @@ namespace EnemyAwarenessFix
             s.SearchStartT = s.ArrivedT = s.GaveUpT = -1;
             s.SearchPoints = 0;
             s.SearchDone = false;
-            D($"{s.Tag} told where you were {now - sightingT:0.0} s ago by another enemy");
+            D($"{s.Tag} told (sighting {now - sightingT:0.0} s old)");
             return true;
         }
 
