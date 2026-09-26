@@ -8,7 +8,7 @@ using MelonLoader;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(PhysicalDodge.PhysicalDodgeMod), "Physical Dodge", "0.2.0", "Evgeeso")]
+[assembly: MelonInfo(typeof(PhysicalDodge.PhysicalDodgeMod), "Physical Dodge", "0.3.0", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace PhysicalDodge
@@ -34,8 +34,9 @@ namespace PhysicalDodge
     public class PhysicalDodgeMod : MelonMod
     {
         internal static MelonLogger.Instance Log;
-        internal static MelonPreferences_Entry<bool> Enabled, StickMovementDodges, RushDodges, Haptics, DebugLog;
-        internal static MelonPreferences_Entry<float> AimLagSeconds;
+        internal static MelonPreferences_Entry<bool> Enabled, StickMovementDodges, RushDodges, Haptics, SlowMotion, DebugLog;
+        internal static MelonPreferences_Entry<float> AimLagSeconds, SlowMotionSeconds, SlowMotionCooldown;
+        internal static MelonPreferences_Entry<int> SlowMotionStrength;
 
         public override void OnInitializeMelon()
         {
@@ -46,6 +47,10 @@ namespace PhysicalDodge
             StickMovementDodges = c.CreateEntry("StickMovementDodges", false, description: "Off (default): only your real body movement counts - steps, leans, ducks. On = moving with the stick counts too.");
             RushDodges = c.CreateEntry("RushDodges", true, description: "Moving straight at (or away from) the shooter also makes them miss. Off = only sideways and up/down movement does, as in real life.");
             Haptics = c.CreateEntry("Haptics", true, description: "A short buzz on both controllers when a shot that would have hit you goes past because you moved.");
+            SlowMotion = c.CreateEntry("SlowMotion", true, description: "A brief slow motion when a shot that would have hit you goes past because you moved. Uses the game's own slow motion (the one when the last enemy dies).");
+            SlowMotionSeconds = c.CreateEntry("SlowMotionSeconds", 1.0f, description: "How long the dodge slow motion lasts, in real seconds.");
+            SlowMotionStrength = c.CreateEntry("SlowMotionStrength", 2, description: "1 = light, 2 = medium (the game's last-enemy slow motion), 3 = strongest.");
+            SlowMotionCooldown = c.CreateEntry("SlowMotionCooldown", 3.0f, description: "Real seconds from one dodge slow motion to the next, so a burst of dodges doesn't chain into one long slow motion.");
             DebugLog = c.CreateEntry("DebugLog", true, description: "Log every shot at you (dodged, hit, or harmless anyway) and a summary every 30 s, for tuning.");
             LoggerInstance.Msg($"loaded - enemies aim {AimLagSeconds.Value:0.##} s behind you.");
         }
@@ -72,6 +77,7 @@ namespace PhysicalDodge
         public Vector3 GameDirection, OurDirection, Origin;
         public float Distance, Moved, Across;
         public bool Resolved;
+        public string Shooter = "";
     }
 
     internal static class Dodge
@@ -174,6 +180,7 @@ namespace PhysicalDodge
             float t = Vector3.Dot(you - origin, f);
             if (t <= 0.2f) return null;
             var shot = new Shot { GameDirection = f, OurDirection = f, Origin = origin, Distance = t };
+            if (Debug) shot.Shooter = Shooter(gun, origin, you);
             if (lag > 0 && Moved(lag, out Vector3 moved))
             {
                 // Aim where you were: the aim point moves back by your movement. Only the part across the
@@ -214,13 +221,14 @@ namespace PhysicalDodge
                 sDodged++; sMovedDodged += s.Moved;
                 what = $"DODGED - would have hit your {hitGame}";
                 if (PhysicalDodgeMod.Haptics.Value) Buzz();
+                if (PhysicalDodgeMod.SlowMotion.Value) what += SlowDown();
             }
             else if (hitNow != null) { sHit++; what = $"hits your {hitNow}"; }
             else { sMissAnyway++; what = "misses anyway (the game's spread)"; }
 
             if (Debug)
                 W($"shot from {s.Distance:0.0} m: {what}; you moved {s.Moved:0.00} m in {PhysicalDodgeMod.AimLagSeconds.Value:0.##} s, " +
-                  $"aim thrown {s.Across:0.00} m off you");
+                  $"aim thrown {s.Across:0.00} m off you{s.Shooter}");
         }
 
         internal static void AfterEnemyBullet(ANBHVRGunBase gun, Shot shot)
@@ -244,6 +252,48 @@ namespace PhysicalDodge
               (sDodged > 0 ? $" (you moved {sMovedDodged / sDodged:0.00} m on average)" : "") +
               $", hit {sHit}, harmless anyway {sHarmless}, missed anyway {sMissAnyway}");
             sAtYou = sDodged = sHit = sHarmless = sMissAnyway = 0; sMovedDodged = 0;
+        }
+
+        // The game's own timed slow motion (scriptedSlowmotionMin / VeryMed / Max -> scriptedSlowmotionExecute):
+        // it saves the current slow-motion step, sets the new one (time scale, sound pitch, the slow-motion
+        // post effect), waits the time in REAL seconds and puts the saved step back. The wrappers do nothing
+        // while another scripted slow motion runs. Skipped while your own slow motion (right B) is on,
+        // because the game would restore "off" afterwards and end yours.
+        static double slowAt = -99;
+        static string SlowDown()
+        {
+            var game = ANBStaticGameManager.ANBmain;
+            if (!PhysicalDodgeMod.Alive(game) || game.Paused) return "";
+            if (Now - slowAt < PhysicalDodgeMod.SlowMotionCooldown.Value) return " (slow motion: cooldown)";
+            if (game.scriptedSlowmotionActive) return " (slow motion: already running)";
+            if (game.Slowmotion > 0) return " (slow motion: yours is on)";
+            float secs = Mathf.Clamp(PhysicalDodgeMod.SlowMotionSeconds.Value, 0.2f, 5f);
+            switch (PhysicalDodgeMod.SlowMotionStrength.Value)
+            {
+                case <= 1: game.scriptedSlowmotionMin(secs); break;
+                case 2: game.scriptedSlowmotionVeryMed(secs); break;
+                default: game.scriptedSlowmotionMax(secs); break;
+            }
+            slowAt = Now;
+            return $" -> SLOW MOTION {secs:0.#} s";
+        }
+
+        // Who fired, for the log: the enemy's id (same #number as Enemy Awareness Log), how far its gun is
+        // from its body (the NavMesh agent the game moves), its state, and whether it is in your view (the
+        // game's own isInView: renderer visible and not blocked).
+        static string Shooter(ANBHVRGunBase gun, Vector3 muzzle, Vector3 you)
+        {
+            try
+            {
+                var n = gun.UsedByNPC;
+                if (!PhysicalDodgeMod.Alive(n)) return " | shooter: no NPC on the gun";
+                var body = PhysicalDodgeMod.Alive(n.agentTransform) ? n.agentTransform : n.transform;
+                Vector3 b = body.position;
+                string state = n.isAttacking ? "attack" : n.isHunting ? "hunt" : "idle";
+                return $" | shooter #{Math.Abs(n.GetInstanceID()) % 100000} ({state}, {(n.targetInSight ? "sees you" : "does NOT see you")}, " +
+                       $"{(n.isInView ? "in your view" : "NOT in your view")}), body {Vector3.Distance(b, you):0.0} m from you, gun {Vector3.Distance(muzzle, b + Vector3.up * (muzzle.y - b.y)):0.0} m from its body";
+            }
+            catch (Exception e) { return $" | shooter: {e.GetType().Name}"; }
         }
 
         static void Buzz()
