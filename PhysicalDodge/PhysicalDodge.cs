@@ -8,7 +8,7 @@ using MelonLoader;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(PhysicalDodge.PhysicalDodgeMod), "Physical Dodge", "0.4.0", "Evgeeso")]
+[assembly: MelonInfo(typeof(PhysicalDodge.PhysicalDodgeMod), "Physical Dodge", "0.4.1", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace PhysicalDodge
@@ -57,7 +57,7 @@ namespace PhysicalDodge
             SlowMotionSeconds = c.CreateEntry("SlowMotionSeconds", 1.0f, description: "How long the dodge slow motion lasts, in real seconds.");
             SlowMotionStrength = c.CreateEntry("SlowMotionStrength", 2, description: "1 = light, 2 = medium (the game's last-enemy slow motion), 3 = strongest.");
             SlowMotionCooldown = c.CreateEntry("SlowMotionCooldown", 1.5f, description: "Real seconds from the start of one dodge slow motion to the next.");
-            DebugLog = c.CreateEntry("DebugLog", true, description: "Log every shot at you (dodged, hit, or harmless anyway), tagged with the wave, and a summary per wave.");
+            DebugLog = c.CreateEntry("DebugLog", true, description: "Log each dodge and hit (one short line each), a line when a wave starts, and a summary per wave.");
             LoggerInstance.Msg($"loaded - enemies aim {AimLagSeconds.Value:0.##} s behind you.");
         }
 
@@ -105,7 +105,6 @@ namespace PhysicalDodge
         static readonly string[] ColNames = { "head", "hips", "legs" };
 
         static double lastShotAt = -99;
-        static float lastMoved;
 
         // Waves: the spawner that spawned last (Harmony postfix on spawnNPC), and its waveSurvived counter.
         internal static ANBNpcSpawner Spawner;
@@ -169,18 +168,17 @@ namespace PhysicalDodge
             string w = "";
             try { if (PhysicalDodgeMod.Alive(Spawner)) w = $"wave {Spawner.waveSurvived + 1}"; } catch { }
             if (w.Length == 0 || w == wave) return;
-            WaveSummary($"{w} starts");
+            WaveSummary("wave over");
             wave = w;
+            if (Debug) W($"==== {wave} ====");
         }
-
-        static string Tag => wave.Length > 0 ? $"[{wave}] " : "";
 
         static void WaveSummary(string why)
         {
             if (Debug && sAtYou > 0)
-                W($"{Tag}SUMMARY ({why}): {sAtYou} shot(s) at you - dodged {sDodged}" +
-                  (sDodged > 0 ? $" (you moved {sMovedDodged / sDodged:0.00} m on average, slow motion {sSlow}x)" : "") +
-                  $", hit {sHit} (hurt {sHurt}x), harmless anyway {sHarmless}, missed anyway {sMissAnyway}");
+                W($"{(wave.Length > 0 ? wave : "no wave")} summary ({why}): {sAtYou} shots at you: dodged {sDodged}" +
+                  (sDodged > 0 ? $" (avg move {sMovedDodged / sDodged:0.00} m, slow-mo {sSlow}x)" : "") +
+                  $", hit {sHit} (hurt {sHurt}x), free miss {sHarmless}, spread miss {sMissAnyway}");
             sAtYou = sDodged = sHit = sHarmless = sMissAnyway = sHurt = sSlow = 0; sMovedDodged = 0;
         }
 
@@ -209,15 +207,14 @@ namespace PhysicalDodge
             Moved(lag, out Vector3 moved);
             string shooter = Debug ? Shooter(gun, origin, you) : "";
             sAtYou++;
-            lastShotAt = Now; lastMoved = moved.magnitude;
+            lastShotAt = Now;
 
             // The game's free miss: the bullet uses a layer mask that leaves you out. Nothing to do.
             var npc = gun.UsedByNPC;
             bool harmless = PhysicalDodgeMod.Alive(npc) && (npc.InCooldown || npc.nonLethalFire || !npc.weaponFiredOnce);
             if (harmless)
             {
-                sHarmless++;
-                Line(t, "harmless anyway (the game's free miss)", moved, 0, shooter);
+                sHarmless++;                                    // counted in the wave summary, no line
                 return null;
             }
 
@@ -239,7 +236,7 @@ namespace PhysicalDodge
             Vector3 final = scatter * lagged;
             string hitNow = HitPart(origin, final, range);
 
-            string what;
+            string what = null;
             if (hitGame != null && hitNow == null)
             {
                 // A dodge: make sure it misses cleanly, by DodgeMargin all round.
@@ -249,13 +246,13 @@ namespace PhysicalDodge
                     if (Clears(origin, d, range)) { final = d; break; }
                 }
                 sDodged++; sMovedDodged += moved.magnitude;
-                what = $"DODGED - would have hit your {hitGame}";
+                what = $"DODGED ({hitGame})";
                 if (PhysicalDodgeMod.Haptics.Value) Buzz();
                 if (PhysicalDodgeMod.SlowMotion.Value) what += SlowDown();
             }
-            else if (hitNow != null) { sHit++; what = $"hits your {hitNow}"; }
-            else { sMissAnyway++; what = "misses anyway (the game's spread)"; }
-            Line(t, what, moved, size, shooter);
+            else if (hitNow != null) { sHit++; what = $"HIT ({hitNow})"; }
+            else sMissAnyway++;                                 // counted in the wave summary, no line
+            if (what != null) Line(t, what, moved, shooter);
 
             var shot = new Shot { Direction = gun.tmpEnemyBulletdirection, Spread = gun.tmpEnemyBulletspread, ShotRadius = gun.ShotRadius, Shotgun = shotgun };
             gun.tmpEnemyBulletdirection = final;
@@ -265,11 +262,10 @@ namespace PhysicalDodge
             return shot;
         }
 
-        static void Line(float dist, string what, Vector3 moved, float thrown, string shooter)
+        // e.g. "DODGED (head) -> slow-mo, 4.5 m, moved 0.31 | #99136 attack, sees, in view, body 5.2, gun 0.6"
+        static void Line(float dist, string what, Vector3 moved, string shooter)
         {
-            if (Debug)
-                W($"{Tag}shot from {dist:0.0} m: {what}; you moved {moved.magnitude:0.00} m in {PhysicalDodgeMod.AimLagSeconds.Value:0.##} s, " +
-                  $"aim thrown {thrown:0.00} m off you{shooter}");
+            if (Debug) W($"{what}, {dist:0.0} m, moved {moved.magnitude:0.00}{shooter}");
         }
 
         internal static void AfterEnemyBullet(ANBHVRGunBase gun, Shot shot)
@@ -284,7 +280,7 @@ namespace PhysicalDodge
             sHurt++;
             if (!Debug) return;
             bool recent = Now - lastShotAt < 0.5;
-            W($"{Tag}you were hurt: {type} {dmg:0.#}{(recent ? $" (last shot: you had moved {lastMoved:0.00} m)" : "")}");
+            W($"hurt: {type} {dmg:0.#}{(recent ? "" : " (not from a logged shot)")}");
         }
 
         // The game's own timed slow motion (scriptedSlowmotionMin / VeryMed / Max -> scriptedSlowmotionExecute):
@@ -297,9 +293,9 @@ namespace PhysicalDodge
         {
             var game = ANBStaticGameManager.ANBmain;
             if (!PhysicalDodgeMod.Alive(game) || game.Paused) return "";
-            if (Now - slowAt < PhysicalDodgeMod.SlowMotionCooldown.Value) return " (slow motion: cooldown)";
-            if (game.scriptedSlowmotionActive) return " (slow motion: already running)";
-            if (game.Slowmotion > 0) return " (slow motion: yours is on)";
+            if (Now - slowAt < PhysicalDodgeMod.SlowMotionCooldown.Value) return " (slow-mo cooldown)";
+            if (game.scriptedSlowmotionActive) return " (slow-mo running)";
+            if (game.Slowmotion > 0) return " (your slow-mo on)";
             float secs = Mathf.Clamp(PhysicalDodgeMod.SlowMotionSeconds.Value, 0.2f, 5f);
             switch (PhysicalDodgeMod.SlowMotionStrength.Value)
             {
@@ -309,7 +305,7 @@ namespace PhysicalDodge
             }
             slowAt = Now;
             sSlow++;
-            return $" -> SLOW MOTION {secs:0.#} s";
+            return " -> slow-mo";
         }
 
         // Who fired, for the log: the enemy's id (same #number as Enemy Awareness Log), how far its gun is
@@ -320,14 +316,14 @@ namespace PhysicalDodge
             try
             {
                 var n = gun.UsedByNPC;
-                if (!PhysicalDodgeMod.Alive(n)) return " | shooter: no NPC on the gun";
+                if (!PhysicalDodgeMod.Alive(n)) return " | no NPC";
                 var body = PhysicalDodgeMod.Alive(n.agentTransform) ? n.agentTransform : n.transform;
                 Vector3 b = body.position;
                 string state = n.isAttacking ? "attack" : n.isHunting ? "hunt" : "idle";
-                return $" | shooter #{Math.Abs(n.GetInstanceID()) % 100000} ({state}, {(n.targetInSight ? "sees you" : "does NOT see you")}, " +
-                       $"{(n.isInView ? "in your view" : "NOT in your view")}), body {Vector3.Distance(b, you):0.0} m from you, gun {Vector3.Distance(muzzle, b + Vector3.up * (muzzle.y - b.y)):0.0} m from its body";
+                return $" | #{Math.Abs(n.GetInstanceID()) % 100000} {state}, {(n.targetInSight ? "sees" : "BLIND")}, {(n.isInView ? "in view" : "OUT of view")}, " +
+                       $"body {Vector3.Distance(b, you):0.0}, gun {Vector3.Distance(muzzle, b + Vector3.up * (muzzle.y - b.y)):0.0}";
             }
-            catch (Exception e) { return $" | shooter: {e.GetType().Name}"; }
+            catch (Exception e) { return $" | {e.GetType().Name}"; }
         }
 
         static void Buzz()
