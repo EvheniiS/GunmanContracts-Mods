@@ -13,6 +13,8 @@ Your hand vibrates to tell you which mode you're in:
 [*][b]3 short pulses[/b]: 3-round burst
 [*][b]1 long buzz[/b]: automatic
 [/list]
+[b]Don't want burst?[/b] Set [b]AllowBurst = false[/b] in the settings (see below). The hold then
+switches between [b]Automatic[/b] and [b]Single[/b] only, so you always know which mode you're in.
 
 [size=4][b]How the modes fire[/b][/size]
 [list]
@@ -59,7 +61,7 @@ game folder, and if Windows asks, choose to replace / merge.
 You should end up with: [i]Gunman Contracts - Stand Alone\Mods\FireSelector.dll[/i]
 
 [b]4. Check it works[/b]
-Start the game. The MelonLoader console lists [b]Fire Selector v1.0.0[/b] among the loaded mods.
+Start the game. The MelonLoader console lists [b]Fire Selector v1.1.0[/b] among the loaded mods.
 
 [b]Not working?[/b]
 [list]
@@ -75,6 +77,7 @@ sure you picked [i]GunmanContracts.exe[/i].
 After the first launch, edit [i]UserData\MelonPreferences.cfg[/i], section [b][FireSelector][/b]:
 [code]
 Enabled       = true   the fire selector
+AllowBurst    = true   include 3-round burst; false = only automatic and single
 HoldSeconds   = 0.35   how long to hold A / X before the mode switches
 Haptics       = true   vibrate to show the new mode
 RememberModes = true   each weapon type keeps its mode, also after a restart
