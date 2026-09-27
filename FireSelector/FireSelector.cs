@@ -11,7 +11,7 @@ using MelonLoader;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(FireSelector.FireSelectorMod), "Fire Selector", "1.0.0", "Evgeeso")]
+[assembly: MelonInfo(typeof(FireSelector.FireSelectorMod), "Fire Selector", "1.1.0", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace FireSelector
@@ -37,7 +37,7 @@ namespace FireSelector
     public class FireSelectorMod : MelonMod
     {
         internal static MelonLogger.Instance Log;
-        internal static MelonPreferences_Entry<bool> Enabled, Haptics, RememberModes, DebugLog;
+        internal static MelonPreferences_Entry<bool> Enabled, AllowBurst, Haptics, RememberModes, DebugLog;
         internal static MelonPreferences_Entry<float> HoldSeconds;
         internal static MelonPreferences_Entry<string> SavedModes;
 
@@ -75,6 +75,7 @@ namespace FireSelector
             Log = LoggerInstance;
             var c = MelonPreferences.CreateCategory("FireSelector", "Fire Selector");
             Enabled = c.CreateEntry("Enabled", true, description: "Hold A / X on the support hand to switch an automatic gun between automatic, 3-round burst and single shot.");
+            AllowBurst = c.CreateEntry("AllowBurst", true, description: "Include 3-round burst in the cycle. false = the selector only switches between automatic and single shot.");
             HoldSeconds = c.CreateEntry("HoldSeconds", 0.35f, description: "How long to hold A / X before the mode switches. A shorter press still toggles the flashlight on guns that have one.");
             Haptics = c.CreateEntry("Haptics", true, description: "Vibrate the support hand on a switch: 1 pulse = single, 3 pulses = burst, a long buzz = automatic.");
             RememberModes = c.CreateEntry("RememberModes", true, description: "Each gun type keeps the mode you picked, also after a restart.");
@@ -174,7 +175,7 @@ namespace FireSelector
         {
             var next = gun.FireType switch
             {
-                GunFireType.Automatic => GunFireType.ThreeRoundBurst,
+                GunFireType.Automatic => AllowBurst.Value ? GunFireType.ThreeRoundBurst : GunFireType.Single,
                 GunFireType.ThreeRoundBurst => GunFireType.Single,
                 _ => GunFireType.Automatic,
             };
@@ -202,7 +203,9 @@ namespace FireSelector
         {
             if (!Alive(gun)) return;
             var info = GunInfoOf(gun);
-            if (!info.Selectable || !Chosen.TryGetValue(info.Key, out var mode) || gun.FireType == mode) return;
+            if (!info.Selectable || !Chosen.TryGetValue(info.Key, out var mode)) return;
+            if (mode == GunFireType.ThreeRoundBurst && !AllowBurst.Value) mode = GunFireType.Automatic;   // burst remembered from before it was turned off
+            if (gun.FireType == mode) return;
             SetMode(gun, mode);
             if (DebugLog.Value) Log.Msg($"{info.Key}: back to {Name(mode)}");
         }
