@@ -16,7 +16,7 @@ of the others (see [Mod structure](#mod-structure)).
 | [Mod Settings](ModSettings/README.md) | In-VR settings board listing every mod's preferences, live-applied | 0.2.2, board tested and works |
 | [Enemy Awareness Log](EnemyAwarenessLog/EnemyAwarenessLog.cs) | Diagnostic, changes nothing: logs spawns, where each enemy first sees you, whether unseen enemies track your live position, your shots and which sounds alert whom, door kicks (and door loops), stuck enemies, which floor each enemy is on, who is still alive at the end, your stealth visibility, harmless enemy shots, and per-wave summaries | 0.5.2, dev tool |
 | [Grab Log](GrabLog/README.md) | Diagnostic: grip timing, prompt and hover changes, hand alignment, item distances, detection volumes, actual grab results, and pickup state after release/throw | 0.1.0, compiled; VR testing pending |
-| [Daredevil](Daredevil/README.md) | **The Daredevil package, the only build of these features:** textured billy clubs from The Range crowbar (blunt damage, homing throw, ricochets, knockouts, belt holsters that carry into contracts, F8 recall, arsenal panel entry with Weapon Framework) and radar sense (red enemy silhouettes through walls, louder steps, glowing dropped clubs). Requires Gloves, Throw Assist and Mod Settings. The standalone Billy Clubs and Radar Sense mods are legacy | 0.3.3, dev-only (not released, not on `main`) |
+| [Daredevil](Daredevil/README.md) | **The Daredevil package, the only build of these features:** textured billy clubs from The Range crowbar (blunt damage, homing throw, ricochets, knockouts, belt holsters that carry into contracts, F8 recall, arsenal panel entry with Weapon Framework) and radar sense (red enemy silhouettes through walls, louder steps, glowing dropped clubs). Requires Gloves, Throw Assist and Mod Settings. The standalone Billy Clubs and Radar Sense mods are legacy and removed from this repo | 0.3.3, tested well; not yet released on Nexus |
 | [Gloves](Gloves/README.md) | Recolours the player's gloves: dark red by default, any colour from the Mod Settings board, applied at once | 0.1.0, required by Daredevil |
 | [Weapon Framework](WeaponFramework/README.md) | Lets mods add their own weapons to the arsenal panel in The Range (page to it, press Retrieve, take it off the wall); used by Daredevil. Guide for adding your own weapon: [MODDING_GUIDE.md](WeaponFramework/MODDING_GUIDE.md) | 0.1.1, tested; release candidate in `release/WeaponFramework/` |
 
@@ -90,8 +90,8 @@ Or put your path in `<ModFolder>/GameDir.local.props` (git-ignored):
 
 ## Versions
 
-Two branches: `main` = what is released on Nexus, `dev` = unreleased work (Daredevil, Gloves and Weapon Framework
-live only on `dev` for now). Releases are marked with tags per mod (`betterbow-v1.1.0`, ...).
+Two branches: `main` = what is released on Nexus, `dev` = unreleased work. Releases are marked with tags per mod
+(`betterbow-v1.1.0`, ...).
 
 ## Licence
 
