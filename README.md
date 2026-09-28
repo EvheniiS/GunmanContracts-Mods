@@ -5,7 +5,7 @@
 
 | Mod | What it does | Status |
 |---|---|---|
-| [Better Bow](BetterBow/README.md) | Quiver, dagger grip, thrown-arrow aim assist, first-press string grab, one-arrow barrels, arrows breach doors | 1.1.0, released on [Nexus](https://www.nexusmods.com/gunmancontractsstandalone/mods/22) |
+| [Better Bow](BetterBow/README.md) | Quiver, dagger grip, thrown-arrow aim assist, first-press string grab, full draw power without a perfect pull, one-arrow barrels, arrows breach doors | 1.2.0, released on [Nexus](https://www.nexusmods.com/gunmancontractsstandalone/mods/22) |
 | [Knee Shot Stun](KneeShotStun/KneeShotStun.cs) | Enemies shot in the leg stay down on one knee for longer | 1.1.0 (`AllowBurst` toggle), release candidate; 1.0.0 released on Nexus |
 | [Heavy Melee](HeavyMelee/HeavyMelee.cs) | Guns and bows hit like heavy metal (stagger + damage), fists hit harder, and an enemy on the ground still takes hits, stays down, and can be knocked out | 1.0.0 release candidate (not released) |
 | [Physical Dodge](PhysicalDodge/PhysicalDodge.cs) | Enemies aim where you were a moment ago: stand still and you get hit; step, lean, duck or keep moving and their shots go past (a short buzz and a brief slow motion when one would have hit) | 0.4.2, in testing |
