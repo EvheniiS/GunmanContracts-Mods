@@ -28,7 +28,7 @@ Install these separately alongside Daredevil:
 [list]
 [*][url=https://github.com/EvheniiS/GunmanContracts-Mods][b]Gloves[/b][/url] — dark red gloves by default, with colour changes available in VR.
 [*][url=https://github.com/EvheniiS/GunmanContracts-Mods][b]Throw Assist[/b][/url] — assisted pistol throws with damage and stagger. Billy club throws are handled by Daredevil itself.
-[*][url=https://github.com/EvheniiS/GunmanContracts-Mods][b]Mod Settings[/b][/url] — the in-VR settings board for changing the clubs, radar sense, and companion mods.
+[*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28][b]Mod Settings[/b][/url] — the in-VR settings board for changing the clubs, radar sense, and companion mods.
 [/list]
 These are the companion mods expected by the Daredevil package. Daredevil still loads if one is missing and reports it in the log, but that companion's features will be absent.
 
@@ -42,10 +42,10 @@ For the full Daredevil experience, I highly recommend all three. [b]None is requ
 
 [size=4][b]Other optional companions[/b][/size]
 [list]
-[*][url=https://github.com/EvheniiS/GunmanContracts-Mods][b]Weapon Framework[/b][/url] — adds Billy Clubs to the arsenal panel in The Range. Page to them, press Retrieve, and take the pair from the wall. Without it, use F8 after visiting The Range.
+[*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/29][b]Weapon Framework[/b][/url] — adds Billy Clubs to the arsenal panel in The Range. Page to them, press Retrieve, and take the pair from the wall. Without it, use F8 after visiting The Range.
 [*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/26][b]Knee Shot Stun[/b][/url] — extends the kneeling reaction used by club leg hits and the Kneel throw reaction.
 [/list]
-GitHub links open the shared project repository.
+GitHub links open the shared project repository; Gloves and Throw Assist aren't on Nexus yet.
 
 [size=4][b]Install[/b][/size]
 Takes about 5 minutes the first time. Steps 1 and 2 are needed only once, for all MelonLoader mods.
@@ -83,11 +83,11 @@ sure you picked [i]GunmanContracts.exe[/i].
 [size=4][b]How to use[/b][/size]
 [list]
 [*]Visit The Range once after starting the game so the clubs can use its crowbar as their base.
-[*]Press F8 to spawn or recall your clubs, or retrieve them from the arsenal panel with [url=https://github.com/EvheniiS/GunmanContracts-Mods]Weapon Framework[/url].
+[*]Press F8 to spawn or recall your clubs, or retrieve them from the arsenal panel with [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/29]Weapon Framework[/url].
 [*]Draw from the club holsters on your belt. Release near a free holster to put a club away; holstered clubs carry across scene loads.
 [*]Enable the game's assisted-throw option for target-assisted throws. Throw toward an enemy, or aim down at the floor for a bouncing floor shot.
 [*]Use right B for focus and radar sense. Retrieve a lost club by following its yellow highlight or pressing F8.
-[*]Open [url=https://github.com/EvheniiS/GunmanContracts-Mods]Mod Settings[/url] and look for [b]Daredevil: Clubs[/b] and [b]Daredevil: Radar Sense[/b].
+[*]Open [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28]Mod Settings[/url] and look for [b]Daredevil: Clubs[/b] and [b]Daredevil: Radar Sense[/b].
 [/list]
 
 [size=4][b]Settings (optional)[/b][/size]

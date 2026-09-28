@@ -1,0 +1,88 @@
+[size=5][b]Throw Assist[/b][/size]
+
+Steers the game's own assisted throw with [b]real physics[/b] instead of dragging it, and switches on the
+[b]pistol assist the game ships turned off[/b], with real [b]thrown-pistol damage and stagger[/b].
+
+[size=4][b]What it does[/b][/size]
+[list]
+[*]The game's assisted throw picks the target (its own assisted-throw option must be on), but then drags the
+item to it with [i]MovePosition[/i] — zeroing its velocity and spin. This mod stops that drag and steers the
+item with real velocity instead, so it keeps its spin and its collisions along the way.
+[*][b]Pistols:[/b] every pistol ships with its throw assist switched off. This mod turns it on for throws
+faster than [i]MinAssistSpeed[/i]. A thrown pistol that lands on an enemy does real damage (torso x2, head x5,
+a head hit kills) and staggers them — the game's own thrown-pistol hit does neither.
+[*]Other items (knives, katanas, bottles, pans, the crowbar) can optionally be steered the same way
+([i]SteerOtherItems[/i], off by default, untested for knives landing point-first).
+[/list]
+
+[size=4][b]Billy Clubs[/b][/size]
+If [url=https://github.com/EvheniiS/GunmanContracts-Mods][b]Daredevil[/b][/url] is installed, its billy clubs
+fly their own ricochet/spin-style flight and this mod steps aside for them — the two never steer the same throw.
+
+Shooting, melee and everything else about the guns and knives themselves is the game's own code.
+
+[size=4][b]Install[/b][/size]
+Takes about 5 minutes the first time. Steps 1 and 2 are needed only once, for all MelonLoader mods.
+
+[b]Where is my game folder?[/b] In Steam, right-click [i]Gunman Contracts - Stand Alone[/i] →
+[i]Manage[/i] → [i]Browse local files[/i]. It's the folder with [i]GunmanContracts.exe[/i] in it.
+
+[b]1. Install MelonLoader[/b] (the mod loader)
+Download the installer from [url=https://github.com/LavaGang/MelonLoader/releases]MelonLoader releases[/url],
+run it, pick [i]GunmanContracts.exe[/i] in your game folder, and install [b]version 0.7.3 or newer[/b].
+[b]Version 0.6 does not work[/b] with this game.
+
+[b]2. Start the game once[/b], then quit.
+A black console window opens next to the game: that's MelonLoader working. The first start takes
+a minute or two, later ones are normal.
+
+[b]3. Add the mod[/b]
+Open the downloaded zip. Inside is a folder called [b]Mods[/b]. Drag that [b]Mods[/b] folder into your
+game folder, and if Windows asks, choose to replace / merge.
+You should end up with: [i]Gunman Contracts - Stand Alone\Mods\ThrowAssist.dll[/i]
+Turn on the game's own [b]Assisted Throw[/b] option in its settings, or this mod has nothing to steer.
+
+[b]4. Check it works[/b]
+Start the game. The MelonLoader console lists [b]Throw Assist v0.1.0[/b] among the loaded mods.
+
+[b]Not working?[/b]
+[list]
+[*][b]The mod isn't in the console list:[/b] check the file isn't at [i]Mods\Mods\ThrowAssist.dll[/i] (a folder
+too deep). Move it up so it sits directly in [i]Mods[/i].
+[*][b]No console window at all:[/b] MelonLoader isn't installed on this game. Repeat step 1 and make
+sure you picked [i]GunmanContracts.exe[/i].
+[*][b]Errors right at startup:[/b] you likely have MelonLoader 0.6. Install 0.7.3 or newer.
+[*][b]Thrown items don't home in:[/b] turn on the game's own Assisted Throw option; a soft toss below
+[i]MinAssistSpeed[/i] is left alone on purpose.
+[/list]
+
+[size=4][b]Settings (optional)[/b][/size]
+[spoiler]
+After the first launch, edit [i]UserData\MelonPreferences.cfg[/i], section [b][ThrowAssist][/b]:
+[code]
+PistolAssist       = true    Thrown pistols home in on enemies. The game ships its pistol assist switched off. Needs the game's own assisted throw option on.
+SteerOtherItems    = false   Knives, katanas, bottles, pans and the crowbar are steered by this mod too (real physics, spin kept) instead of the game's drag. Untested: knives may not land point first.
+MinAssistSpeed     = 6       An item thrown slower than this (m/s) gets no assist and just flies.
+MaxSpeed           = 18      An assisted item flies at your own throw speed, up to this (m/s).
+SearchDistance     = 15      How far the assist looks for a target (m). Pistols as shipped: 6.
+MaxFlyDistance     = 20      How far an assisted throw flies before it gives up (m). Pistols as shipped: 4.
+AimHead            = false   Assisted throws aim at the head. Off = the chest.
+PistolDamage       = true    A thrown pistol that hits an enemy does real damage (PistolThrowDamage). Off = the game's weak hit.
+PistolThrowDamage  = 3       Thrown pistol damage as a multiple of the game's melee damage (10). The game then doubles it on the torso and multiplies by 5 on the head: 3 = 60 to the body, a head hit kills.
+PistolStagger      = true    A thrown pistol that hits a standing enemy makes them stumble.
+DebugLog           = false   One line per assisted or tracked throw and per pistol hit.
+[/code]
+Or change these live in-VR with [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28][b]Mod Settings[/b][/url] (optional) — no restart, no text editor.
+[/spoiler]
+
+[size=4][b]Compatibility[/b][/size]
+Required by [url=https://github.com/EvheniiS/GunmanContracts-Mods][b]Daredevil[/b][/url] — this mod
+deliberately leaves any object named [i]BillyClub-*[/i] to Daredevil's own throw system. Heavy Melee only
+affects [i]held[/i] guns, so there's no overlap with this mod's thrown-pistol damage.
+
+[size=4][b]Uninstall[/b][/size]
+Delete [i]Mods\ThrowAssist.dll[/i]. Thrown items go back to the game's own drag-and-zero-velocity assist.
+
+[size=4][b]Source[/b][/size]
+[url=https://github.com/EvheniiS/GunmanContracts-Mods]GitHub[/url] (MIT). Made for game version 0.3.1.0,
+MelonLoader 0.7.3.

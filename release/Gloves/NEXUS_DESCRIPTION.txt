@@ -1,0 +1,65 @@
+[size=5][b]Gloves[/b][/size]
+
+Recolours the player's gloves to any colour, applied at once. [b]Default dark red[/b], the Daredevil look.
+
+[size=4][b]How to use[/b][/size]
+Set a colour in [i]UserData\MelonPreferences.cfg[/i] as [b]#RRGGBB[/b], or change it live on the
+[url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28][b]Mod Settings[/b][/url] board's colour
+picker — no restart. The change applies to every glove instantly: VR hands, their LODs, and the hand-poser
+previews.
+
+Only the gloves change; the sleeves are a separate material and are untouched.
+
+[size=4][b]Install[/b][/size]
+Takes about 5 minutes the first time. Steps 1 and 2 are needed only once, for all MelonLoader mods.
+
+[b]Where is my game folder?[/b] In Steam, right-click [i]Gunman Contracts - Stand Alone[/i] →
+[i]Manage[/i] → [i]Browse local files[/i]. It's the folder with [i]GunmanContracts.exe[/i] in it.
+
+[b]1. Install MelonLoader[/b] (the mod loader)
+Download the installer from [url=https://github.com/LavaGang/MelonLoader/releases]MelonLoader releases[/url],
+run it, pick [i]GunmanContracts.exe[/i] in your game folder, and install [b]version 0.7.3 or newer[/b].
+[b]Version 0.6 does not work[/b] with this game.
+
+[b]2. Start the game once[/b], then quit.
+A black console window opens next to the game: that's MelonLoader working. The first start takes
+a minute or two, later ones are normal.
+
+[b]3. Add the mod[/b]
+Open the downloaded zip. Inside is a folder called [b]Mods[/b]. Drag that [b]Mods[/b] folder into your
+game folder, and if Windows asks, choose to replace / merge.
+You should end up with: [i]Gunman Contracts - Stand Alone\Mods\Gloves.dll[/i]
+
+[b]4. Check it works[/b]
+Start the game. The MelonLoader console lists [b]Gloves v0.1.0[/b] among the loaded mods.
+
+[b]Not working?[/b]
+[list]
+[*][b]The mod isn't in the console list:[/b] check the file isn't at [i]Mods\Mods\Gloves.dll[/i] (a folder
+too deep). Move it up so it sits directly in [i]Mods[/i].
+[*][b]No console window at all:[/b] MelonLoader isn't installed on this game. Repeat step 1 and make
+sure you picked [i]GunmanContracts.exe[/i].
+[*][b]Errors right at startup:[/b] you likely have MelonLoader 0.6. Install 0.7.3 or newer.
+[/list]
+
+[size=4][b]Settings (optional)[/b][/size]
+[spoiler]
+After the first launch, edit [i]UserData\MelonPreferences.cfg[/i], section [b][Gloves][/b]:
+[code]
+Color   = #8A0F0F   Colour of the player's gloves as #RRGGBB, applied at once. #414141 is the game's own grey.
+                     It multiplies the game's grey leather texture, so the gloves look much darker than the colour itself.
+[/code]
+Or change it live in-VR with [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28][b]Mod Settings[/b][/url] (optional) — no restart, no text editor.
+[/spoiler]
+
+[size=4][b]Compatibility[/b][/size]
+Required by [url=https://github.com/EvheniiS/GunmanContracts-Mods][b]Daredevil[/b][/url] (billy clubs +
+radar sense), which used to tint the gloves itself before this was split out (Sep 28 2026: the old
+[BillyClubs] GloveColor setting is no longer read). Stands alone fine without Daredevil installed.
+
+[size=4][b]Uninstall[/b][/size]
+Delete [i]Mods\Gloves.dll[/i]. Gloves revert to the game's own grey next launch.
+
+[size=4][b]Source[/b][/size]
+[url=https://github.com/EvheniiS/GunmanContracts-Mods]GitHub[/url] (MIT). Made for game version 0.3.1.0,
+MelonLoader 0.7.3.

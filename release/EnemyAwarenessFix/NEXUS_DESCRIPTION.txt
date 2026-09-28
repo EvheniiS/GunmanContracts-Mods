@@ -1,0 +1,105 @@
+[size=5][b]Enemy Awareness Fix[/b][/size]
+
+Enemies that lose sight of you [b]search where they last saw you[/b] instead of walking straight to your
+exact position through walls. [b]Wave spawns don't always use the nearest spawn point[/b], and it's
+[b]floor-aware[/b] — no hearing you through a floor, no "arrived" on the wrong level.
+
+[size=4][b]What it does[/b][/size]
+[list]
+[*]The game's attack AI keeps its "last known position" updated to your live position for as long as it's
+attacking, so an enemy behind a wall or a floor still walks straight at you. This mod gives each enemy its
+own belief instead: seeing you (or being close enough to hear you) updates it live; after losing sight it
+keeps following for a couple of seconds (it saw which way you went), then the belief freezes where you were.
+[*]An enemy that never saw you (wave spawns start already attacking) gets a rough guess near you instead of
+your exact spot. Another enemy that spots you shares that sighting with nearby enemies — scattered a little,
+capped in age, so a new wave doesn't get handed a sighting from minutes ago.
+[*]On reaching its belief without finding you, an enemy searches the area for a while before giving up (story
+enemies) or getting a new rough guess (wave enemies), instead of standing there fully informed.
+[*]Flanking, searching, evading and turning all use the belief instead of your live position.
+[*]Wave spawners that always pick the nearest spawn point instead pick randomly among a few of the nearest,
+and keep a configurable minimum distance from you.
+[*][b]Floor-aware throughout:[/b] your position is taken at floor level, an enemy only "hears" you on its own
+floor, and guesses/searches that would land on another floor are rejected — so nobody on the landing above
+you thinks it just arrived where you're standing one storey down.
+[/list]
+
+Shooting, movement, pathing and everything else about the enemies is the game's own code — only what they
+believe about where you are changes.
+
+[size=4][b]Enemy Awareness Log (optional file)[/b][/size]
+A diagnostic companion, changes nothing by itself: logs spawns, where each enemy first sees you, whether
+unseen enemies track your live position, your shots and which sounds alert whom, door kicks (and door
+loops), stuck enemies, which floor each enemy is on, who's still alive at the end, your stealth visibility,
+harmless enemy shots, and a per-wave summary. Useful for seeing the fix's effect for yourself, or for
+reporting a specific enemy behaviour. Optional download, same Mods folder, works with or without the main mod.
+
+[size=4][b]Install[/b][/size]
+Takes about 5 minutes the first time. Steps 1 and 2 are needed only once, for all MelonLoader mods.
+
+[b]Where is my game folder?[/b] In Steam, right-click [i]Gunman Contracts - Stand Alone[/i] →
+[i]Manage[/i] → [i]Browse local files[/i]. It's the folder with [i]GunmanContracts.exe[/i] in it.
+
+[b]1. Install MelonLoader[/b] (the mod loader)
+Download the installer from [url=https://github.com/LavaGang/MelonLoader/releases]MelonLoader releases[/url],
+run it, pick [i]GunmanContracts.exe[/i] in your game folder, and install [b]version 0.7.3 or newer[/b].
+[b]Version 0.6 does not work[/b] with this game.
+
+[b]2. Start the game once[/b], then quit.
+A black console window opens next to the game: that's MelonLoader working. The first start takes
+a minute or two, later ones are normal.
+
+[b]3. Add the mod[/b]
+Open the downloaded zip. Inside is a folder called [b]Mods[/b]. Drag that [b]Mods[/b] folder into your
+game folder, and if Windows asks, choose to replace / merge.
+You should end up with: [i]Gunman Contracts - Stand Alone\Mods\EnemyAwarenessFix.dll[/i]
+Optionally also grab the [b]Enemy Awareness Log[/b] optional file the same way, for
+[i]Mods\EnemyAwarenessLog.dll[/i].
+
+[b]4. Check it works[/b]
+Start the game. The MelonLoader console lists [b]Enemy Awareness Fix v0.1.6[/b] among the loaded mods.
+
+[b]Not working?[/b]
+[list]
+[*][b]The mod isn't in the console list:[/b] check the file isn't at [i]Mods\Mods\EnemyAwarenessFix.dll[/i]
+(a folder too deep). Move it up so it sits directly in [i]Mods[/i].
+[*][b]No console window at all:[/b] MelonLoader isn't installed on this game. Repeat step 1 and make
+sure you picked [i]GunmanContracts.exe[/i].
+[*][b]Errors right at startup:[/b] you likely have MelonLoader 0.6. Install 0.7.3 or newer.
+[/list]
+
+[size=4][b]Settings (optional)[/b][/size]
+[spoiler]
+After the first launch, edit [i]UserData\MelonPreferences.cfg[/i], section [b][EnemyAwarenessFix][/b]:
+[code]
+Enabled                  = true    Master switch.
+FixAwareness             = true    Enemies that can't see you go to where they last saw you (or a rough guess) and search there, instead of walking to your exact position.
+TrackAfterLosingSight    = 1.5     Seconds an enemy keeps following you after losing sight (it saw which way you went).
+SenseDistance            = 3.0     Within this many metres on your own floor an enemy always knows where you are (it hears you).
+GuessMin                 = 3.0     Enemies that never saw you head for a random point at least this far from you...
+GuessRadius              = 8.0     ...and at most this far.
+ShareRadius              = 25.0    When an enemy sees you, enemies within this many metres of it learn where you were. 0 = all enemies, -1 = no sharing.
+ShareInterval            = 3.0     An enemy accepts a shared sighting at most this often (seconds).
+ShareMaxAge              = 5.0     A sighting older than this (seconds) is not passed on, so a new wave isn't handed a sighting from minutes ago.
+ShareScatter             = 2.5     Shared sightings are scattered by up to this many metres per enemy, so they don't all run to one spot.
+SearchSeconds            = 20.0    How long an enemy searches around the point where it lost you before giving up (story) or getting a new rough guess (waves).
+SearchRadius             = 6.0     Radius of the search around that point (grows to double as the search goes on).
+FixSpawns                = true    Wave spawners don't always use the nearest spawn point.
+RandomSpawnAmongNearest  = 3       Closest-order spawners pick randomly among this many nearest valid spawn points. 1 = game behaviour.
+MinSpawnDistance         = 10.0    Minimum spawn distance from you in metres, for spawners that check it (the wave spawner's own is 6). Only raises, never lowers. 0 = game value.
+DebugLog                 = false   Log each enemy's knowledge changes (lost sight, guesses, shared sightings, searches) and spawn picks.
+[/code]
+Or change these live in-VR with [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28][b]Mod Settings[/b][/url] (optional) — no restart, no text editor.
+[/spoiler]
+
+[size=4][b]Compatibility[/b][/size]
+Works alongside my other mods ([url=https://github.com/EvheniiS/GunmanContracts-Mods]Daredevil, Physical
+Dodge, Heavy Melee[/url], ...). It only changes what an enemy believes about your position and which spawn
+point it uses; another mod that also rewrites enemy target selection or spawn logic could interact with it.
+
+[size=4][b]Uninstall[/b][/size]
+Delete [i]Mods\EnemyAwarenessFix.dll[/i] (and [i]EnemyAwarenessLog.dll[/i] if installed). Enemies go back to
+tracking your exact live position and spawners go back to always using the nearest point.
+
+[size=4][b]Source[/b][/size]
+[url=https://github.com/EvheniiS/GunmanContracts-Mods]GitHub[/url] (MIT). Made for game version 0.3.1.0,
+MelonLoader 0.7.3.
