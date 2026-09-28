@@ -3,14 +3,13 @@
   <!-- Your own game path: put <GameDir> in GameDir.local.props (git-ignored), or pass -p:GameDir=... -->
   <Import Project="GameDir.local.props" Condition="Exists('GameDir.local.props')" />
 
-  <!-- The Daredevil package: Billy Clubs (clubs, holsters, gloves) + Radar Sense in ONE DLL, built from those two
-       folders' sources. Both drop their own MelonInfo under DAREDEVIL; Daredevil.cs names the package.
-       Needs Throw Assist (ThrowAssist/) installed alongside for thrown pistols. -->
+  <!-- The Daredevil package, ONE DLL and the only place this code is developed: BillyClubs/ (clubs, holsters, gloves,
+       arsenal entry) + RadarSense/ (see-through enemies, steps, club glow). The standalone Billy Clubs and Radar Sense
+       mods are legacy (Sep 28 2026). Needs Throw Assist (ThrowAssist/) for thrown pistols; Weapon Framework optional. -->
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <AssemblyName>Daredevil</AssemblyName>
     <RootNamespace>Daredevil</RootNamespace>
-    <DefineConstants>$(DefineConstants);DAREDEVIL</DefineConstants>
     <Nullable>disable</Nullable>
     <LangVersion>latest</LangVersion>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
@@ -35,14 +34,21 @@
     <Reference Include="UnityEngine.AnimationModule"><HintPath>$(InteropDir)\UnityEngine.AnimationModule.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="Il2CppRootMotion"><HintPath>$(InteropDir)\Il2CppRootMotion.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="Il2CppHurricaneVR.Framework"><HintPath>$(InteropDir)\Il2CppHurricaneVR.Framework.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2CppGD_Game"><HintPath>$(InteropDir)\Il2CppGD_Game.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+
+  <!-- Optional at run time (Arsenal.cs checks for it); the DLL ships separately as Mods/WeaponFramework.dll. -->
+  <ItemGroup>
+    <ProjectReference Include="../WeaponFramework/WeaponFramework.csproj" Private="false" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="../BillyClubs/*.cs" />
-    <Compile Include="../RadarSense/*.cs" />
+    <Compile Remove="Tests/**" />
     <!-- Same logical names as the Billy Clubs build: CustomVisual.cs loads them by name. -->
     <EmbeddedResource Include="../BlenderRefs/out/billy_club.obj" LogicalName="BillyClubs.Assets.billy_club.obj" />
     <EmbeddedResource Include="../BlenderRefs/out/textures/billy_club_*.png" LogicalName="BillyClubs.Assets.%(Filename)%(Extension)" />
+    <!-- Arsenal panel picture (Arsenal.cs), rendered from the same model. -->
+    <EmbeddedResource Include="../BlenderRefs/out/billy_clubs_icon.png" LogicalName="BillyClubs.Assets.billy_clubs_icon.png" Condition="Exists('../BlenderRefs/out/billy_clubs_icon.png')" />
   </ItemGroup>
 
 </Project>

@@ -37,7 +37,7 @@ The generated images are visual interpretations, not measured orthographic drawi
 
 ## Existing mod constraints
 
-The mod (`../BillyClubs/`) today draws the club from Unity cylinders (`BuildVisual`, `Part`, `MakeMaterial`), on top of
+The mod (`../Daredevil/BillyClubs/`) today draws the club from Unity cylinders (`BuildVisual`, `Part`, `MakeMaterial`), on top of
 the game crowbar's grip points and colliders. The new model will replace only the visual, through an **OBJ loader the
 mod doesn't have yet** (a separate integration task). These rules are what that loader will assume:
 

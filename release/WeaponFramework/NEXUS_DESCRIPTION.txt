@@ -1,0 +1,92 @@
+[size=5][b]Weapon Framework[/b][/size]
+
+[size=4][b]Early version / preview[/b][/size]
+This is an early version of Weapon Framework and the base requirement for upcoming weapon mods. [b]Billy Clubs are not included with this framework download.[/b] The artwork includes a small teaser for the upcoming Daredevil mod; the clubs themselves will be released separately with that mod.
+
+Lets other mods add their own weapons to [b]the arsenal panel in The Range[/b]: page to the weapon with + / -, press
+[b]Retrieve[/b], and the wall slot slides out with it, [b]ready to take off the wall[/b]. No keyboard keys, no debug tools.
+
+[size=4][b]For players[/b][/size]
+You only need this if a mod you use asks for it. It adds nothing by itself: with no weapon mod installed, the
+arsenal looks exactly like the game's own.
+
+With a compatible weapon mod installed:
+[list]
+[*]The Big Guns panel counts the extra weapons ([i]ARSENAL 007 / 007[/i]) and shows their name and picture.
+[*]Mod weapons are always owned and free: no credits, no buy button, no ammo counter.
+[*][b]Your save stays safe.[/b] The game remembers which arsenal slot you used last; the framework never lets it
+remember a mod slot. Remove the mods any time and the save still loads normally.
+[/list]
+
+[size=4][b]For mod authors[/b][/size]
+One call registers your weapon, and three callbacks tell you when the player retrieved it (with the wall position
+to hang it on), when the slot has finished sliding in, and when another weapon replaced it. The mod handles the
+panel entry, the wall slot and the save; your items stay your own code.
+
+A step-by-step guide (project setup, required vs. optional dependency, the two game quirks that make spawned
+items ungrabbable and how to avoid them, making the panel picture) and a complete ~120-line example mod are on
+[url=https://github.com/EvheniiS/GunmanContracts-Mods]GitHub[/url]: [i]WeaponFramework/MODDING_GUIDE.md[/i] and
+[i]WeaponFramework/Example/[/i].
+
+The game's own weapons, prices, unlocks and the pistol wall are untouched.
+
+[size=4][b]Install[/b][/size]
+Takes about 5 minutes the first time. Steps 1 and 2 are needed only once, for all MelonLoader mods.
+
+[b]Where is my game folder?[/b] In Steam, right-click [i]Gunman Contracts - Stand Alone[/i] →
+[i]Manage[/i] → [i]Browse local files[/i]. It's the folder with [i]GunmanContracts.exe[/i] in it.
+
+[b]1. Install MelonLoader[/b] (the mod loader)
+Download the installer from [url=https://github.com/LavaGang/MelonLoader/releases]MelonLoader releases[/url],
+run it, pick [i]GunmanContracts.exe[/i] in your game folder, and install [b]version 0.7.3 or newer[/b].
+[b]Version 0.6 does not work[/b] with this game.
+
+[b]2. Start the game once[/b], then quit.
+A black console window opens next to the game: that's MelonLoader working. The first start takes
+a minute or two, later ones are normal.
+
+[b]3. Add the mod[/b]
+Open the downloaded zip. Inside is a folder called [b]Mods[/b]. Drag that [b]Mods[/b] folder into your
+game folder, and if Windows asks, choose to replace / merge.
+You should end up with: [i]Gunman Contracts - Stand Alone\Mods\WeaponFramework.dll[/i]
+
+[b]4. Check it works[/b]
+Start the game. The MelonLoader console lists [b]Weapon Framework v0.1.1[/b] among the loaded mods. With a weapon
+mod installed, entering The Range logs [i]arsenal (load): 1 mod entry added after the game's 6[/i].
+
+[b]Not working?[/b]
+[list]
+[*][b]The mod isn't in the console list:[/b] check the file isn't at [i]Mods\Mods\WeaponFramework.dll[/i] (a folder
+too deep). Move it up so it sits directly in [i]Mods[/i].
+[*][b]No console window at all:[/b] MelonLoader isn't installed on this game. Repeat step 1 and make
+sure you picked [i]GunmanContracts.exe[/i].
+[*][b]Errors right at startup:[/b] you likely have MelonLoader 0.6. Install 0.7.3 or newer.
+[*][b]No extra weapon on the panel:[/b] the entries appear on the Big Guns wall (rifles, shotguns, bow), not the
+pistol wall, and only if a weapon mod that uses the framework is installed.
+[/list]
+
+[size=4][b]Settings (optional)[/b][/size]
+[spoiler]
+After the first launch, edit [i]UserData\MelonPreferences.cfg[/i], section [b][WeaponFramework][/b]:
+[code]
+DebugLog = false   Log how the arsenal entries are built, shown and saved.
+[/code]
+Or change it live in-VR with [url=https://github.com/EvheniiS/GunmanContracts-Mods][b]Mod Settings[/b][/url] (optional) — no restart, no text editor.
+[/spoiler]
+
+[size=4][b]Compatibility[/b][/size]
+Works alongside my other mods ([url=https://www.nexusmods.com/gunmancontractsstandalone/mods/22]Better Bow[/url],
+[url=https://www.nexusmods.com/gunmancontractsstandalone/mods/25]Fire Selector[/url],
+[url=https://www.nexusmods.com/gunmancontractsstandalone/mods/26]Knee Shot Stun[/url],
+[url=https://github.com/EvheniiS/GunmanContracts-Mods]Heavy Melee, Mod Settings, Daredevil[/url]). It only touches the
+Big Guns arsenal panel and the save of which slot you used last; another mod that also rewrites that panel's list
+could clash.
+
+[size=4][b]Uninstall[/b][/size]
+Delete [i]Mods\WeaponFramework.dll[/i]. The mod weapons disappear from the panel; your save is unaffected.
+Weapon mods that use it keep working without it if they support that (Daredevil does: its clubs still come from its
+spawn key).
+
+[size=4][b]Source[/b][/size]
+[url=https://github.com/EvheniiS/GunmanContracts-Mods]GitHub[/url] (MIT). Made for game version 0.3.1.0,
+MelonLoader 0.7.3.

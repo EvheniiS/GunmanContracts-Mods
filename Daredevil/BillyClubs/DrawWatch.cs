@@ -24,7 +24,7 @@ namespace BillyClubs
             foreach (var h in Hands)
             {
                 if (!Alive(h)) continue;
-                foreach (var s in Slots)
+                foreach (var s in WatchedSlots())
                 {
                     var k = s.Club;
                     if (k == null || !Alive(k.Go) || k.In != s) continue;
@@ -40,6 +40,12 @@ namespace BillyClubs
                     Log.Msg($"draw check: '{h.name}' {d:0.00} m from the {s.Name} club for {Time.time - since:0.0} s, not drawn - {GrabState(h, k)}");
                 }
             }
+        }
+
+        static IEnumerable<Slot> WatchedSlots()
+        {
+            foreach (var s in Slots) yield return s;
+            foreach (var s in WallSlots) yield return s;
         }
 
         static string GrabState(HVRHandGrabber h, Club k)

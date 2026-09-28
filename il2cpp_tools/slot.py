@@ -32,11 +32,6 @@ def lits(va, n=0x3000):
             if dd: out[ins.address] = dd
         if ins.mnemonic == 'int3': break
     return out
-if __name__ == '__main__':
-    for a in sys.argv[1:]:
-        va = name2addr[a][0] if a in name2addr else int(a, 16)
-        seen = {}
-        for k, v in lits(va).items(): print(hex(k), v)
 
 # ---- method specs (generic method instances, e.g. GetComponent<T>)
 _o = None
@@ -62,3 +57,11 @@ def decode(va):
         try: return 'method ' + methodspec(int(r[10:]))
         except Exception as e: return r
     return r
+
+
+# At the end, so the CLI uses the decode above (generic methods resolved); it used to run before it was defined.
+if __name__ == '__main__':
+    for a in sys.argv[1:]:
+        va = name2addr[a][0] if a in name2addr else int(a, 16)
+        seen = {}
+        for k, v in lits(va).items(): print(hex(k), v)

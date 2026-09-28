@@ -19,10 +19,30 @@ always knows where to find the same information.
   exactly as they ship (copy from the mod's `Cfg`/`Settings` class, don't retype from memory).
 - Compatibility names the other released mods by their actual conflicts (shared buttons, shared
   hooks), not just "works fine together" — say *why* if there's a shared input or system.
+- **Every named mod gets a real link, picked in this order: (1) its Nexus page if [README.md](../README.md)
+  or [GUNMAN_CONTRACTS.md](../GUNMAN_CONTRACTS.md) records one, (2) otherwise the GitHub repo link.**
+  Check both files before writing the Compatibility section — don't assume "released on Nexus" in
+  the README's status column means a link is recorded; verify it's actually on record before using
+  it. Current link table (update this whenever a mod gets a real Nexus page):
+  | Mod | Link |
+  |---|---|
+  | Better Bow | `https://www.nexusmods.com/gunmancontractsstandalone/mods/22` |
+  | Fire Selector | `https://www.nexusmods.com/gunmancontractsstandalone/mods/25` |
+  | Knee Shot Stun | `https://www.nexusmods.com/gunmancontractsstandalone/mods/26` |
+  | everything else (Heavy Melee, Mod Settings, Throw Assist, Daredevil, Gloves, Physical Dodge,
+    Weapon Framework, ...) | `https://github.com/EvheniiS/GunmanContracts-Mods` (no per-mod subfolder link is recorded anywhere, so link the repo root) |
 - Changelog is a spoiler, newest version first, only added once there's a second version; each
   entry is `[b]New:[/b]` / `[b]Fixed:[/b]` items, not prose paragraphs.
 - Version number appears in exactly one place outside the changelog: the "Check it works" line
   in Install. Don't also hardcode it in the tagline or Features.
+- Settings block closes with one line pointing at [url=https://github.com/EvheniiS/GunmanContracts-Mods]Mod Settings[/url]
+  ("optional, but the easiest way to change these live in-VR — no restart, no text editor").
+  Say so even if Mod Settings isn't installed by the reader; it's a separate optional mod, not a
+  requirement, unless the mod's own README says otherwise (e.g. Daredevil/Gloves/Throw Assist,
+  which DO require it — for those, list it under [b]Requirements[/b] in NEXUS_UPLOAD.md instead of
+  the description's Settings closer). **Swap the link to
+  `https://www.nexusmods.com/gunmancontractsstandalone/mods/<ID>` once Mod Settings itself is
+  uploaded** — per the link-table rule above, GitHub is only the fallback while it has no Nexus page.
 
 ---
 
@@ -74,6 +94,8 @@ After the first launch, edit [i]UserData\MelonPreferences.cfg[/i], section [b][{
 [code]
 {{EntryName}}   = {{default}}   {{one-line description, from the mod's own CreateEntry description}}
 [/code]
+Or change these live in-VR with [url=https://github.com/EvheniiS/GunmanContracts-Mods][b]Mod Settings[/b][/url] (optional) — no restart, no text editor.
+{{Swap that link to the Nexus mods/<ID> URL once Mod Settings is uploaded there.}}
 [/spoiler]
 
 {{Optional, once there's a second version — see Changelog rules above:}}
@@ -88,7 +110,11 @@ After the first launch, edit [i]UserData\MelonPreferences.cfg[/i], section [b][{
 [/spoiler]
 
 [size=4][b]Compatibility[/b][/size]
-{{Works alongside my other Gunman Contracts mods... name specific shared inputs/hooks if any.}}
+Works alongside my other mods ([url=https://www.nexusmods.com/gunmancontractsstandalone/mods/22]Better Bow[/url],
+[url=https://www.nexusmods.com/gunmancontractsstandalone/mods/25]Fire Selector[/url],
+[url=https://www.nexusmods.com/gunmancontractsstandalone/mods/26]Knee Shot Stun[/url],
+[url=https://github.com/EvheniiS/GunmanContracts-Mods]Heavy Melee, Mod Settings[/url],
+...). {{Pick the ones actually relevant to this mod, per the link table above; name specific shared inputs/hooks if any.}}
 
 [size=4][b]Uninstall[/b][/size]
 Delete [i]Mods\{{Mod}}.dll[/i]. {{Optional: what reverts, if not obvious.}}

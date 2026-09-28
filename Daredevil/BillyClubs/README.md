@@ -1,4 +1,12 @@
-# Billy Clubs 0.11.0
+# Billy Clubs (part of Daredevil)
+
+**Legacy as a standalone mod since Sep 28 2026:** this code ships only inside the Daredevil package (`../README.md`).
+The version notes below are history (last standalone number 0.12.0 = Daredevil 0.2.0).
+
+0.12.0: **on the arsenal panel** in The Range, through the new **Weapon Framework** mod (`WeaponFramework/`, optional):
+page to "Billy Clubs", press Retrieve, and the pair hangs on the wall slot, tip down (`Arsenal.cs`). The wall shows the
+clubs you don't carry: loose ones come back to it, new ones fill up to two; F8 also pulls clubs off the wall.
+`WallOffset` / `WallGap` place the pair. Untested in game.
 
 0.11.0: the pistol throw (assist + damage, 0.10.x) moved to its own mod, **Throw Assist** (`ThrowAssist/`), which the
 Daredevil package will require. Billy Clubs keeps its club flight; Throw Assist leaves `BillyClub-*` objects alone.

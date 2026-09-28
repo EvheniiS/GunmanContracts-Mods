@@ -1,4 +1,13 @@
-# Radar Sense 0.3.1
+# Radar Sense (part of Daredevil)
+
+**Sep 28 2026 (Daredevil 0.3.1+): clubs now come from Billy Clubs' own list** (`BillyClubsMod.CopyClubs`, same DLL,
+every 0.5 s) instead of searching every loaded `HVRGrabbable` every 2 s, which had raised the mod's own cost from
+0.125 to 0.23 ms/frame with 3 enemies. **Measured after the fix (13:21 session, 3 enemies, 3 clubs): 0.002-0.005
+ms/frame**, about 50x lower; frames 0.1% slow in a quiet minute. Glow on a newly spawned club confirmed. The settings board pages are now "Daredevil: Clubs" and "Daredevil: Radar
+Sense" (display names only; the cfg sections stay `[BillyClubs]` / `[RadarSense]`).
+
+**Legacy as a standalone mod since Sep 28 2026:** this code ships only inside the Daredevil package (`../README.md`).
+The version notes below are history (last standalone number 0.3.1).
 
 0.3.1: `ClubMinDistance` defaults to 2 m (tester's choice). 0.3.0 tested: club highlight works; hidden clubs glow fully,
 a club lying in the open only where something covers part of it.

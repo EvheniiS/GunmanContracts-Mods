@@ -5,5 +5,5 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
   </PropertyGroup>
-  <ItemGroup><Compile Include="../ClubObj.cs" Link="ClubObj.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../BillyClubs/ClubObj.cs" Link="ClubObj.cs" /></ItemGroup>
 </Project>
