@@ -42,7 +42,7 @@ namespace ModSettings
             OpenKey = c.CreateEntry("OpenKey", "M", description: "Keyboard: Ctrl + this key opens / closes the menu (Input System key name).");
             Distance = c.CreateEntry("PanelDistance", 0.4f, description: "How far in front of your eyes the menu opens, in metres.");
             Scale = c.CreateEntry("PanelScale", 1f, description: "Menu size (1 = 48 x 44 cm). Applies the next time it opens.");
-            DebugLog = c.CreateEntry("DebugLog", true, description: "Log opening/closing and which fingertips were found; write the phone's home-screen layout to UserData/ModSettings_phone.txt once.");
+            DebugLog = c.CreateEntry("DebugLog", false, description: "Log opening/closing and which fingertips were found; write the phone's home-screen layout to UserData/ModSettings_phone.txt once.");
             Log.Msg($"loaded - open with Ctrl+{OpenKey.Value}{(PhoneTile.Value ? " or the Mod Settings tile on the phone" : "")}");
         }
 

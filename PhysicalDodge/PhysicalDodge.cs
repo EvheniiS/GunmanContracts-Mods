@@ -57,7 +57,7 @@ namespace PhysicalDodge
             SlowMotionSeconds = c.CreateEntry("SlowMotionSeconds", 1.0f, description: "How long the dodge slow motion lasts, in real seconds.");
             SlowMotionStrength = c.CreateEntry("SlowMotionStrength", 2, description: "1 = light, 2 = medium (the game's last-enemy slow motion), 3 = strongest.");
             SlowMotionCooldown = c.CreateEntry("SlowMotionCooldown", 1.5f, description: "Real seconds from the start of one dodge slow motion to the next.");
-            DebugLog = c.CreateEntry("DebugLog", true, description: "Log each dodge and hit (one short line each), a line when a wave starts, and a summary per wave.");
+            DebugLog = c.CreateEntry("DebugLog", false, description: "Log each dodge and hit (one short line each), a line when a wave starts, and a summary per wave.");
             LoggerInstance.Msg($"loaded - enemies aim {AimLagSeconds.Value:0.##} s behind you.");
         }
 
