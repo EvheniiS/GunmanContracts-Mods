@@ -10,7 +10,7 @@ using MelonLoader.Utils;
 using UnityEngine;
 using UnityEngine.AI;
 
-[assembly: MelonInfo(typeof(EnemyAwarenessLog.EnemyAwarenessLogMod), "Enemy Awareness Log", "0.5.1", "Evgeeso")]
+[assembly: MelonInfo(typeof(EnemyAwarenessLog.EnemyAwarenessLogMod), "Enemy Awareness Log", "0.5.2", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace EnemyAwarenessLog
@@ -797,6 +797,7 @@ namespace EnemyAwarenessLog
         static string lastAction;
         static float lastActionT = -99;
         static int gunShots, silencedShots, bowShots, arrowHits, doorKicks, shatters, enemyShots, enemyShotsHarmless;
+        static int doorLoops, longestDoorStreak;
         internal static int hitGraces;
         static readonly Dictionary<string, int> alerts = new(), reactions = new();
 
@@ -812,6 +813,7 @@ namespace EnemyAwarenessLog
         internal static void ResetCounters()
         {
             gunShots = silencedShots = bowShots = arrowHits = doorKicks = shatters = enemyShots = enemyShotsHarmless = hitGraces = 0;
+            doorLoops = longestDoorStreak = 0;
             alerts.Clear();
             reactions.Clear();
         }
@@ -880,6 +882,14 @@ namespace EnemyAwarenessLog
                     if (!doorsByNpc.TryGetValue(npc.Pointer, out var d) || d.Name != dn || now - d.LastT > 10f)
                         d = (dn, 0, now, now);
                     doorsByNpc[npc.Pointer] = (d.Name, d.Count + 1, d.FirstT, now);
+                    // A door loop: the same enemy opening the same door again and again. Kicks alone can't
+                    // show it (the game alerts only now and then), so count the opens.
+                    if (d.Count + 1 > longestDoorStreak) longestDoorStreak = d.Count + 1;
+                    if (d.Count + 1 == 10)
+                    {
+                        doorLoops++;
+                        W($"DOOR LOOP: {who} opened {dn} 10x in {now - d.FirstT:0.0} s");
+                    }
                 }
             }
             catch { }
@@ -959,7 +969,7 @@ namespace EnemyAwarenessLog
         {
             if (!Any) return;
             W($"  weapons: your gunshots {gunShots} (silenced {silencedShots}), bow {bowShots}, arrows into the world {arrowHits}, " +
-              $"door kicks {doorKicks}, shattered {shatters}; enemy gunshots {enemyShots} (harmless {enemyShotsHarmless}); your hits started the harmless window {hitGraces}x");
+              $"door kicks {doorKicks}, shattered {shatters}; enemy gunshots {enemyShots} (harmless {enemyShotsHarmless}); your hits started the harmless window {hitGraces}x; door loops {doorLoops} (longest {longestDoorStreak} opens)");
             if (alerts.Count > 0)
             {
                 var woke = alerts.Select(k => (k.Key, k.Value, R: reactions.TryGetValue(k.Key, out int r) ? r : 0)).Where(x => x.R > 0).OrderByDescending(x => x.R).ToList();

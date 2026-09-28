@@ -1,0 +1,14 @@
+# Blender 5.2.2 LTS MTL File: 'billy_club.blend'
+# www.blender.org
+
+newmtl BC_GameAtlas
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd textures/billy_club_basecolor.png
+map_Ns textures/billy_club_roughness.png
+map_refl textures/billy_club_metallic.png
+map_Bump -bm 1.000000 textures/billy_club_normal.png
