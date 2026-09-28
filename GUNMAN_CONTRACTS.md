@@ -4,8 +4,24 @@ Research and development notes for the mods in this repo. `<game>` = the game's 
 (`...\steamapps\common\Gunman Contracts - Stand Alone`); each mod deploys as `<game>\Mods\<Mod>.dll`.
 **Better Bow on Nexus:** https://www.nexusmods.com/gunmancontractsstandalone/mods/22 · code in `BetterBow/`,
 release DLL + Nexus BBCode in `release/BetterBow/` (see Source control).
+**Fire Selector on Nexus:** https://www.nexusmods.com/gunmancontractsstandalone/mods/25 ·
+**Knee Shot Stun on Nexus:** https://www.nexusmods.com/gunmancontractsstandalone/mods/26
 Engine: **Unity 6000.0.41f1, IL2CPP** (metadata v31), built on the **HurricaneVR** framework.
 Developer string: `ANB_Seth`. Game logic lives in `HurricaneVR.Framework.dll` (classes prefixed `ANB*`).
+
+## ★★★ Daredevil is the ONE package; standalone Billy Clubs / Radar Sense are LEGACY (Sep 28 2026)
+
+His decision: stop maintaining two separate mods. **All club, glove, radar-sense and club-glow work happens in
+`Daredevil/`** (`Daredevil/BillyClubs/`, `Daredevil/RadarSense/`, one csproj, one version number, `Mods/Daredevil.dll`).
+The standalone `BillyClubs.csproj` / `RadarSense.csproj`, their `MelonInfo` and every `DAREDEVIL` switch are gone from
+`dev`; their last standalone code lives in git history (Billy Clubs 0.12.0, Radar Sense 0.3.1). Config sections stay
+`[BillyClubs]` / `[RadarSense]` so settings carry over. Older notes below that say "Billy Clubs x.y" describe what is
+now the Daredevil package. `Mods/BillyClubs.dll.disabled` and `RadarSense.dll.disabled` can be deleted any time.
+- **Same day, his follow-up: the gloves are their own mod, `Gloves/`** (`[Gloves] Color`, default `#8A0F0F`, live on
+  the Mod Settings board's colour palette via `OnEntryValueChanged`). **Daredevil 0.3.0 requires Gloves, Throw Assist
+  and Mod Settings** (soft: `Daredevil.cs` logs `required mods not installed: …`; it still runs), Weapon Framework
+  optional. Installed Sep 28 (game closed): Daredevil 0.3.0 `B6FCD83F…` (backup `feature/Daredevil-backup-before-0.3.0-*`),
+  Gloves 0.1.0 `86F27629…`. Old `[BillyClubs] GloveColor` is no longer read.
 
 ## ★★ Debug-log rule (Sep 27 2026)
 
@@ -30,6 +46,10 @@ that mod's `DebugLog = true`.** Turn it back off when the mod is done. Edit the 
   showed loading → black with working audio and menu hover, then started flat. Disabling the mod
   and MelonLoader didn't clearly fix it, but a **PC restart + reconnecting the Quest** fixed it
   with everything enabled. **Before blaming mods for a VD black screen, restart the PC and VD.**
+- **UnityExplorer REMOVED (Sep 28 2026)**: it kept getting in the way, and clubs now spawn from the arsenal panel via
+  Weapon Framework. Moved (not deleted) to `<game>\_removed\UnityExplorer\` (its Mods DLL + `sinai-dev-UnityExplorer`
+  folder, `UserLibs\UniverseLib.ML.IL2CPP.Interop.dll`, and its cfg section). Nothing else used UniverseLib; none of our
+  mods reference either, and no release zip contains them. To bring it back for debugging, move the files back.
 - Mods reference `Il2CppHurricaneVR.Framework` (e.g. `oneshot.dll` patches
   `ANBBasicNPC.TakeDamage` and `SteamLeaderboard.SubmitScore`).
 
@@ -645,7 +665,9 @@ KNOCKED OUT`, and `punch (game path), damage X -> Y`. **If a gun swing logs noth
 collision never reaches `collisionEnter` (layer / `IgnoreCollision` while held) — then the fallback is an
 overlap check from the gun side.
 
-## ★ Nexus release prep: Knee Shot Stun 1.0.0 + Fire Selector 1.0.0 (Sep 25 2026), TESTED, tagged, Nexus upload pending
+## ★ Nexus release prep: Knee Shot Stun 1.0.0 + Fire Selector 1.0.0 (Sep 25 2026), TESTED, tagged, released
+Knee Shot Stun: https://www.nexusmods.com/gunmancontractsstandalone/mods/26 ·
+Fire Selector: https://www.nexusmods.com/gunmancontractsstandalone/mods/25
 
 Both bumped 0.1.0 → **1.0.0** (first public version, like Better Bow), commit `f5ee82c`, pushed. The 1.0.0
 DLLs are deployed to `<game>\Mods` (sha256 matches `release/`), so the test build = the shipping build.
@@ -1229,6 +1251,13 @@ Quick field-usage search: grep the disassembly for `+ 0x<offset>]`.
   just before `fieldOffsetsCount`). **Run it first on any method: the literals and component types usually
   explain the branches before you read a single instruction.** `dumpt.py <Type>` = fields with offsets +
   methods with signatures and addresses.
+- **Sep 28 2026:** `slot.py`'s command line never resolved generic methods (its `__main__` ran before the MethodSpec
+  decoder was defined): fixed, it now prints `GetComponentInChildren<ANBGunwallSpot>` etc. **`disa.py <Class::Method>`**
+  = whole-method disassembly (to the next method start) with calls named and every metadata slot decoded inline.
+  **Asset side (UnityPy):** `monoscripts.pkl` (MonoScript pathID → class, from `globalgamemanagers.assets`; rebuild if
+  the game updates) classifies MonoBehaviours in IL2CPP scenes (no typetrees); **`prefab_tree.py <file> <pathID>`**
+  prints a hierarchy with component classes; **`gunwall_scan.py`** dumps the arsenal walls and spots per level.
+  Raw MonoBehaviour layout: GO pptr 12, enabled 4, script pptr 12, name string; **every bool is 4-byte aligned**.
 
 ### ★★ What a game update breaks, and the recovery order (Sep 27 2026)
 
@@ -1272,6 +1301,29 @@ length/centre/diameters/triangles/UVs/material/textures, then writes `out/billy_
 - Not built yet: the mod's runtime OBJ + PNG loader (mesh from OBJ, URP Lit material, metallic + (1 − roughness) packed
   into the metallic/smoothness map).
 
+## ★ Grab Log 0.1.0 + Grab Fix (Sep 28 2026): palm aim tested WORSE; 0.2.0 = finger + palm together, deployed, untested
+
+Grab Log (`GrabLog/`, observation only) writes `UserData\GrabLog\session-*.jsonl`; the `grip_cycle` lines
+(`GotObject`) and the final `summary` counts give the hit rate per session.
+- **Distance grab = a fan of 5 trigger capsules per hand** (`Main/Up/Down/Left/Right`, radius 0.17, height 4.14, along
+  hand +Z = the finger direction) in `HVRForceGrabber.GrabBags`. Local pickup = one 0.08 m trigger sphere.
+- **Palm forward is ~90° off the finger axis** (left +X / right −X), which is why the game feels finger-aimed.
+
+| Session | Mod | Grip presses | Grabs |
+|---|---|---|---|
+| 16:00 | vanilla | 69 | 42 (61%) |
+| 16:23 | vanilla (club distance grabs mostly) | 17 | 16 (94%) — not comparable |
+| 16:56 | Grab Fix 0.1.0, `AimMode=Palm` (fan moved to the palm) | 126 | 48 (38%) — misses in 3–5-retry bursts |
+
+- **Palm-only aim is worse, measured, not just unfamiliar.** The grip buffer and recent-release catch did work
+  (7 buffered distance grabs, one 17.9 cm club catch at timeScale 0.22).
+- **Grab Fix 0.2.0 (`GrabFix/`):** `GrabDirection = Both` (default) keeps the native finger fan and adds a palm-aimed
+  copy of each capsule, appended after the native bags in `GrabBags`. The goal is for a finger target to win, but only if
+  the game checks the bags in list order (not verified). `Finger` = native aim only. Palm-only removed. The local sphere is
+  re-centred between the native centre and the palm face and grown to cover both (min `NearGrabRadius` 0.12). The copies
+  are removed from `GrabBags` and destroyed when the mod is switched off. Grip is a deliberate button, so a wider zone can't
+  cause accidental grabs.
+
 ## Mod Settings 0.2.2 (Sep 28 2026): tile in the centre slot; installs when the game closes
 
 0.2.1 tested: tile in App_6 works, but it sits right above Game Options, and a stray press on Settings pauses the game,
@@ -1283,6 +1335,95 @@ after which the board doesn't respond until you leave the pause menu. He wants i
   after. Logged with DebugLog: `phone tile moved to …`.
 - Unverified: whether a mission ever turns those holders on (the Data Breach prompt seen so far is `Popups/BreachPopup`,
   which is `dataBreachAppButton`). The fallback costs nothing if they never do.
+
+## ★ Arsenal test 3 (14:23 log) → Daredevil 0.3.3 + Weapon Framework 0.1.1: fit when the slide-in ENDS — TESTED, "Perfect"
+
+0.3.2: Diagonal layout right, but the pair stood ~17 cm off the board. Log: laid out 25.878, "fitted" 26.171 = **0.3 s
+after Retrieve**: the slot pauses before sliding, so "still for 0.3 s" fired before the animation even started, and the
+ray hit the wall face around the board window ('Plane', 4.5 x 2.55 m) while the slot was still down in the wall.
+**Fix:** Weapon Framework 0.1.1 adds **`OnSettled`**, fired from an `ANBGunwall.endAnimation` postfix (the game's own
+"switch done"); Daredevil 0.3.3 fits then (5 s timer as fallback). A ray hit counts only 0-15 cm behind the gun position,
+else the board is assumed 2 cm behind it (`BoardBehind`); the pair is lifted 5 cm (`PairLift`) to the board's middle.
+The fit line lists every ray hit in cm (`[ray hits, cm behind: ...]`) for calibration. Installed Daredevil
+`FC55DD09…`, framework `7C8D58DA…` (backup `feature/backup-before-Daredevil-0.3.3-*`).
+
+## Arsenal test 2 (13:21 log) → Daredevil 0.3.2: pair laid out in the slot's frame, fitted to the board once still
+
+**0.3.1 result:** clubs grabbable (optimiser fix works: `took 2 club grabbable(s) out of the game's grabbable optimiser`,
+many wall grabs), but the X "sticks out of the board". Two causes in the log:
+- **"Along the wall" came from the line to the player's head**: he stood at an angle → `along (-0.74, 0, 0.68)` vs the
+  true wall axis `(-1, 0, 0.04)` of test 1 → the pair lay in a plane 43° off the board.
+- **Placed and raycast the moment Retrieve is pressed, while the slot is still sliding in** (mount y 0.87 vs 1.46 at rest):
+  the board hit ('Plane', "+23 cm") was measured against a moving slot.
+**0.3.2:** layout from the gun position's own axes (rigid with the wall: up = along the wall, forward = up, right = wall
+normal; sign-checked against the player); clubs spawn with it and slide in; once the slot has been still 0.3 s, a ray
+along the normal finds the board and centres the pair on its collider bounds if board-sized (log:
+`arsenal: pair fitted - board '<name>' N cm behind the gun position, W x H m, centred on it`). **His layout choice:**
+`WallLayout = Diagonal` (default: two parallel clubs, one above the other, `WallAngle` 45°, grip lower left),
+`Upright`, `Cross`; `WallSpacing` 0.1 m, `WallShift` right,up,out. Old `WallStyle`/`WallPosition`/`WallGap` removed from
+the cfg (backup `feature/MelonPreferences-before-0.3.2.cfg`). Installed `FC575A32…`.
+**Optional, parked:** the game's hologram "ghost" of a taken weapon on the board (the pistol shows one) — for the clubs
+it'd be a Rim Dissolve copy like the belt holster tubes.
+
+## ★★ First arsenal test (Sep 28 2026, 13:07 log) → Daredevil 0.3.1: the game's grabbable OPTIMISER was the "can't grab" bug all along
+
+**Worked:** panel `ARSENAL 007 / 007`, `BILLY CLUBS`, the X picture; Retrieve put a club on the slot (only one: the right
+belt holster already held one, and the wall fills up to two). **Wrong:** description drawn over the name; club hung
+upright at the gun position = too low (tip into the terminal) and ~8 cm in front of the board; **it couldn't be grabbed**.
+- **★★★ `GD_HVROptimiser` (`Il2CppGD_Game`) switches grabbables off.** On first use it collects every
+  `ANBHVRGrabbable` / `HVRGrabbable` / `HVRGrabbableBag` with **`FindObjectsByType(FindObjectsInactive.Include)`** and
+  **disables each one immediately** (`AddToGrabbablesList<T>` @0x180a37bc0); its `Update` then re-enables, round-robin,
+  only those within `_grabbableRange` **and in front of `_player`** (a forward-dot test). So:
+  - the club **template** (inactive holder, ~20 m away) is disabled forever → **every club copied from it mid-scene
+    starts with `HVRGrabbable.enabled = false`** and isn't in the list, so nothing turns it on. This is the old parked
+    "F8-spawned clubs can't be drawn for a minute" AND the wall club.
+  - clubs that existed when the list was built are in it → **switched off whenever they're behind you** = the belt club
+    that sometimes wouldn't draw (`draw check … enabled False`, then True 20 s later in this log).
+  - Found by xref of `Behaviour.set_enabled` (411 callers) filtered to methods that load a grabbable type.
+- **Fix (`Daredevil/BillyClubs/Optimiser.cs`):** every new club gets its grabbables enabled and removed from
+  `GD_HVROptimiser.instance._grabbables`; once a second the same for all clubs and the template (the list is filled
+  inside `Update`, not at a hookable call). Log: `took N club grabbable(s) out of the game's grabbable optimiser`.
+- **Placement:** `WallStyle = Cross` (default, an X like the panel picture) / `Upright`; a ray towards the wall finds the
+  board (log: `board '<collider>' ±N cm from the gun position`), `WallPosition` = along,up,out (default `0,0.12,0`).
+  The gun position's frame is turned (log: `mount up (1,0,0) fwd (0,1,0)`), so the layout is built from the line to the
+  player, not from the mount's axes. Draw checks now cover wall clubs too. Arsenal description left empty.
+- Installed 0.3.1 (`08722BA2…`, backup `feature/Daredevil-backup-before-0.3.1-*`); obsolete `GloveColor` / `WallOffset`
+  removed from the cfg (backup `feature/MelonPreferences-before-0.3.1.cfg`).
+- **Test:** Retrieve → the X on the board above the terminal → both clubs grab; belt club draws while looking ahead.
+
+## ★ Weapon Framework 0.1.0 + Billy Clubs 0.12.0 / Daredevil 0.2.0 (Sep 28 2026): clubs on the arsenal panel; deployed, untested
+
+His ask: get rid of F8/UnityExplorer spawning; pick Billy Clubs on the arsenal panel (the one with the crossbow),
+Retrieve, take them off the wall; as a framework any weapon mod can use. Mechanism + API: [WeaponFramework/README.md](WeaponFramework/README.md).
+- **★ The arsenal lists are EMPTY in the scene** (`level2` has two `ANBGunwall`: `WeaponSlot - Big Guns` / `Small Guns`).
+  **`ANBGameLogic.LoadAssetLoop` fills them at load** from `ANBDataCollection`: `allRifles` / `allShotguns` / `allOthers`
+  (bow + knives; knives skipped) each get `Instantiate(slotPrefab)` (all three share `WeaponSlot_Big`, sharedassets2
+  #15423) under `ANBGameLogic.WeaponFolder`, spot `SlotID = "Othersspot_"+WeaponName`, `WeaponPrefab`, pose from
+  `ANBWeaponType.gunWallPosition1/Rotation1`, then `gunWallLarge.Items.Add(slot)` + `ItemsID.Add(WeaponName)`.
+  3 rifles + 2 shotguns + bow = the "ARSENAL 006 / 006" in his screenshot. Ends with `LogLoadTime("Processed Completed Gunwall")`.
+- `WeaponSlot_Big` = `SmallGunStorage 1` (`ANBGunwallSpot` + `ANBFpsInteractionObject`) → `Demo`, **`gunstorage`
+  (`DemoHolster` + `HVRTagSocketFilter`) → `gunPos`**, `FPStrigger`. DemoHolster = the socket that throws on non-guns
+  (Billy Clubs 0.1 finding), so mod slots switch it off before waking and hang items on a mount at `gunPos`.
+- **Panel:** `printInfo` = `Items[currentSpot].GetComponentInChildren<ANBGunwallSpot>().WeaponPrefab.GetComponent<ANBWeaponType>()`
+  → `WeaponDisplayName`, `WeaponDescription`, **`WeaponIcon` = the big picture** (bow: `gunicon_other_CompoundBow`, 1364×635,
+  white shaded render, dark outline, transparent), price, `ammoType` icons. Owned check `checkPurchaseDataWeapon`: in
+  `purchasedContentWeapons` by `PurchaseID`, **or price 0 → auto `makePurchase`** (writes the id into the save).
+- **Retrieve** = `pickWeapon`: `Items[i]` → `mainSpot` + SetActive, previous → `secondarySpot`, anim `switch`;
+  `endAnimation` switches the previous slot OFF. **It saves the index**: `savedSpot` → `dc.saveSpotLarge/Small` →
+  `ANBSaveData.SavePurchases`. A mod index there would break the wall once the mod is removed → the framework swaps in
+  the last game index around every `SavePurchases`.
+- Billy Clubs `Arsenal.cs`: optional dependency (`MelonOptionalDependencies` + assembly check + NoInlining register),
+  two wall slots (`Slot.Wall`) under the mount, tip down, spread across the line to the player's head (the wall's axes
+  aren't known yet). Shows the clubs you don't carry: loose ones recalled, new ones up to two. F8 pulls wall clubs too.
+  Icon: `BlenderRefs/render_arsenal_icon.py` (headless Blender 5.2, Workbench clay + texture passes) →
+  `make_arsenal_icon.py` → `out/billy_clubs_icon.png`, embedded.
+- **Installed** Sep 28 12:09 (game closed): `Mods/Daredevil.dll` 0.2.0 (SHA256 `28DE192E…`, rebuilt after the package consolidation, backup
+  `feature/Daredevil-backup-before-0.2.0-20260928-120942/`) + `Mods/WeaponFramework.dll` (`08B2FE6A…`).
+- **Test:** The Range → log `arsenal (load): 1 mod entry added after the game's 6 (BillyClubs)` → Big Guns panel `+` to
+  **007 / 007 "BILLY CLUBS"** (picture, no ammo/modify buttons) → Retrieve → `'BillyClubs' retrieved - mount at …` +
+  `arsenal: 2 club(s) on the wall` → clubs hang on the slot → grab, belt → retrieve the bow, then clubs again (`0 new`)
+  → restart: the wall must start on a game weapon (log `save: wall index 6 is a mod entry - saved as N`).
+  **Most likely to need tuning: where the pair hangs** (`WallOffset` / `WallGap`; the log prints the mount axes).
 
 ## ★ Mod Settings 0.2.1 (Sep 28 2026): tile in the real empty slot; board rides on the rig
 

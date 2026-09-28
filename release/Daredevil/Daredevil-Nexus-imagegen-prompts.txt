@@ -1,0 +1,7 @@
+Generated using the built-in image_gen tool.
+
+THUMBNAIL
+Use case: compositing. Create a non-graphic Nexus Mods thumbnail title treatment, 16:9 landscape. Image 1 is a paused VR gameplay screenshot showing an empty industrial corridor with a pair of handheld training batons and abstract red radar silhouettes. Preserve that static scene with no action or injuries; remove "Playback paused". Images 2 and 3 are typography references. Add the exact title "DAREDEVIL" as one word in massive condensed italic letters across the dark upper area. DARE is golden game-yellow #FFB719 and DEVIL is red #E50914. Small ivory "GUNMAN CONTRACTS" above, and small ivory "BILLY CLUBS / RADAR SENSE" below with a fine yellow/red underline. Dramatic forward-slant lettering, subtle distressed print texture, strong legibility at thumbnail size. Keep the foreground objects and gloves recognizable. No Marvel label, no additional figures, no injury, no combat action, no additional objects. Full bleed polished game mod artwork.
+
+HEADER
+undefined

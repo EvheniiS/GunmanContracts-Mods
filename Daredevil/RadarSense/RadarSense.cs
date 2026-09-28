@@ -10,11 +10,6 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using Object = UnityEngine.Object;
 
-#if !DAREDEVIL // the Daredevil package (Daredevil/) builds this mod together with Billy Clubs under its own name
-[assembly: MelonInfo(typeof(RadarSense.RadarSenseMod), "Radar Sense", "0.3.1", "Evgeeso")]
-[assembly: MelonGame("ANB_Seth", "GunmanContracts")]
-#endif
-
 namespace RadarSense
 {
     // Daredevil's radar sense: while slow motion is on (your own right-B slow motion, and optionally the brief
@@ -38,8 +33,7 @@ namespace RadarSense
     // Moving = also keep enemies shown while their body moves faster than StepSpeed, as if you hear their steps;
     // All = every enemy in Range (what 0.1.1-0.1.2 did, ~+1% missed frames with 2-3 kept).
     //
-    // Clubs (0.3.0): Billy Clubs (grabbables named "BillyClub-*", found by a 2 s scan, so there is no dependency on that
-    // mod) get the same treatment with a MeshRenderer copy and their own colour, always depth test Greater, and only
+    // Clubs (0.3.0): Billy Clubs (read from BillyClubsMod.CopyClubs every 0.5 s; same DLL) get the same treatment with a MeshRenderer copy and their own colour, always depth test Greater, and only
     // when more than ClubMinDistance from your head (a held or holstered club would glow under your glove). The
     // materials live for the whole session, since clubs carry across scenes with their copies.
     //
@@ -48,26 +42,18 @@ namespace RadarSense
     // Shader: the game has no shader of its own for this, so the mod uses a built-in one found in the build's
     // shader list whose depth test is a material property: Hidden/Internal-Colored (_ZTest, _Cull, blend) or
     // UI/Default (unity_GUIZTestMode). Both are pipeline-agnostic passes, which URP draws as SRPDefaultUnlit.
+    // Part of the Daredevil package: Daredevil.cs calls Init / Scene / Tick from the one MelonMod.
     public class RadarSenseMod
-#if !DAREDEVIL
-        : MelonMod
-#endif
     {
         internal static MelonLogger.Instance Log;
         internal static MelonPreferences_Entry<bool> Enabled, WithDodgeSlowMotion, FocusRevealsAll, ClubHighlight, PerfLog, DebugLog;
         internal static MelonPreferences_Entry<string> ClubColor, LoudSteps, Reveal, ActiveWhen, Color, Style, ShaderName, SkipParts;
         internal static MelonPreferences_Entry<float> ClubMinDistance, Opacity, Range, StepSpeed, HearDistance, LoudRadius, StepVolume;
 
-#if !DAREDEVIL
-        public override void OnInitializeMelon() => Init(LoggerInstance);
-        public override void OnSceneWasInitialized(int buildIndex, string sceneName) => Scene();
-        public override void OnUpdate() => Tick();
-#endif
-
         internal static void Init(MelonLogger.Instance log)
         {
             Log = log;
-            var c = MelonPreferences.CreateCategory("RadarSense", "Radar Sense");
+            var c = MelonPreferences.CreateCategory("RadarSense", "Daredevil: Radar Sense");
             Enabled = c.CreateEntry("Enabled", true, description: "While slow motion is on, you see enemies through walls.");
             ActiveWhen = c.CreateEntry("ActiveWhen", "SlowMotion", description: "SlowMotion (the sense is on only while slow motion is) or Always (always on).");
             FocusRevealsAll = c.CreateEntry("FocusRevealsAll", true, description: "While your own slow motion (focus, right B) is on, every enemy in Range shows, even ones you haven't detected, whatever Reveal is set to.");
@@ -180,7 +166,7 @@ namespace RadarSense
             // 10 times a second is enough for on/off switching; every frame cost 0.26 ms with 21 tracked enemies.
             float now = Time.unscaledTime;
             if (now >= nextScan) { nextScan = now + 0.25f; Scan(); }
-            if (now >= nextClubScan) { nextClubScan = now + 2f; ScanClubs(); }
+            if (now >= nextClubScan) { nextClubScan = now + 0.5f; ScanClubs(); }
             if (now >= nextShow) { nextShow = now + 0.1f; ApplyMaterial(); Show(); ShowClubs(); }
         }
 
@@ -340,15 +326,16 @@ namespace RadarSense
 
         // ------------------------------------------------------------------ clubs
 
+        // Billy Clubs' own list (same DLL). 0.3.0 searched every loaded HVRGrabbable, assets included, every 2 s:
+        // the mod's cost went from 0.125 to 0.23 ms/frame with 3 enemies.
+        static readonly List<GameObject> clubList = new();
         static void ScanClubs()
         {
             if (!RadarSenseMod.ClubHighlight.Value) return;
-            foreach (var o in Resources.FindObjectsOfTypeAll(Il2CppType.Of<HVRGrabbable>()))
+            BillyClubs.BillyClubsMod.CopyClubs(clubList);
+            foreach (var go in clubList)
             {
-                var g = o.TryCast<HVRGrabbable>();
-                if (g == null) continue;
-                var go = g.gameObject;
-                if (!go.name.StartsWith("BillyClub-") || !go.scene.IsValid() || Clubs.ContainsKey(go.Pointer)) continue;
+                if (Clubs.ContainsKey(go.Pointer)) continue;
                 var m = new ClubMark { Root = go };
                 foreach (var r in go.GetComponentsInChildren<MeshRenderer>(true))
                 {

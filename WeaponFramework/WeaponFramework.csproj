@@ -5,8 +5,8 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <AssemblyName>BillyClubs</AssemblyName>
-    <RootNamespace>BillyClubs</RootNamespace>
+    <AssemblyName>WeaponFramework</AssemblyName>
+    <RootNamespace>WeaponFramework</RootNamespace>
     <Nullable>disable</Nullable>
     <LangVersion>latest</LangVersion>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
@@ -27,18 +27,12 @@
     <Reference Include="Il2Cppmscorlib"><HintPath>$(InteropDir)\Il2Cppmscorlib.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.CoreModule"><HintPath>$(InteropDir)\UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.PhysicsModule"><HintPath>$(InteropDir)\UnityEngine.PhysicsModule.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="UnityEngine.ImageConversionModule"><HintPath>$(InteropDir)\UnityEngine.ImageConversionModule.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="Unity.InputSystem"><HintPath>$(InteropDir)\Unity.InputSystem.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="UnityEngine.AnimationModule"><HintPath>$(InteropDir)\UnityEngine.AnimationModule.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="Il2CppRootMotion"><HintPath>$(InteropDir)\Il2CppRootMotion.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="Il2CppHurricaneVR.Framework"><HintPath>$(InteropDir)\Il2CppHurricaneVR.Framework.dll</HintPath><Private>false</Private></Reference>
   </ItemGroup>
 
-  <!-- Only authored export assets; never embed Blender files or extracted game references. -->
+  <!-- The example weapon mod has its own project. -->
   <ItemGroup>
-    <EmbeddedResource Include="../BlenderRefs/out/billy_club.obj" LogicalName="BillyClubs.Assets.billy_club.obj" />
-    <EmbeddedResource Include="../BlenderRefs/out/textures/billy_club_*.png" LogicalName="BillyClubs.Assets.%(Filename)%(Extension)" />
-    <Compile Remove="Tests/**/*.cs" />
+    <Compile Remove="Example/**" />
   </ItemGroup>
 
 </Project>

@@ -5,8 +5,8 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <AssemblyName>RadarSense</AssemblyName>
-    <RootNamespace>RadarSense</RootNamespace>
+    <AssemblyName>Gloves</AssemblyName>
+    <RootNamespace>Gloves</RootNamespace>
     <Nullable>disable</Nullable>
     <LangVersion>latest</LangVersion>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
@@ -26,8 +26,6 @@
     <Reference Include="Il2CppInterop.Common"><HintPath>$(MLDir)\Il2CppInterop.Common.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="Il2Cppmscorlib"><HintPath>$(InteropDir)\Il2Cppmscorlib.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.CoreModule"><HintPath>$(InteropDir)\UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="UnityEngine.AudioModule"><HintPath>$(InteropDir)\UnityEngine.AudioModule.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="Il2CppHurricaneVR.Framework"><HintPath>$(InteropDir)\Il2CppHurricaneVR.Framework.dll</HintPath><Private>false</Private></Reference>
   </ItemGroup>
 
 </Project>

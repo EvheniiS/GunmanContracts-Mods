@@ -9,11 +9,6 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using Object = UnityEngine.Object;
 
-#if !DAREDEVIL // the Daredevil package (Daredevil/) builds this mod together with Radar Sense under its own name
-[assembly: MelonInfo(typeof(BillyClubs.BillyClubsMod), "Billy Clubs", "0.11.0", "Evgeeso")]
-[assembly: MelonGame("ANB_Seth", "GunmanContracts")]
-#endif
-
 namespace BillyClubs
 {
     // A pair of Daredevil-style billy clubs, built from the game's own crowbar, with their own holsters.
@@ -40,7 +35,7 @@ namespace BillyClubs
     // - Throw assist: dontUse off, longer search and fly distances than the crowbar's 6 m / 4 m.
     public partial class BillyClubsMod : MelonMod
     {
-        internal static MelonPreferences_Entry<string> SpawnKey, BodyColor, GloveColor, SlotLeft, SlotRight, SavedSlots;
+        internal static MelonPreferences_Entry<string> SpawnKey, BodyColor, SlotLeft, SlotRight, SavedSlots;
         internal static MelonPreferences_Entry<float> Length, Radius, Mass, ThrowSpeed, MinSteerSpeed, ThrowSearch, ThrowMaxFly, SnapDistance;
         internal static MelonPreferences_Entry<bool> DebugLog, UseCustomModel;
         static MelonPreferences_Category Cat;
@@ -53,6 +48,13 @@ namespace BillyClubs
         static Vector3 TemplateAxis = Vector3.right; // club's long axis in its own space, towards the tip
         static Vector3 TemplateCenter;               // centre of the club in its own space
         static readonly List<Club> Clubs = new();
+
+        // Every live club (belt, wall, dropped). Radar Sense reads them here instead of searching the scene.
+        internal static void CopyClubs(List<GameObject> into)
+        {
+            into.Clear();
+            foreach (var k in Clubs) if (Alive(k.Go)) into.Add(k.Go);
+        }
 
         class Club
         {
@@ -82,6 +84,7 @@ namespace BillyClubs
             public bool Full;   // remembered across scenes; cleared only when the club is taken out
             public Club Club;
             public Ghost Ghost; // the visible holster tube
+            public bool Wall;   // a spot on the arsenal wall (Arsenal.cs), not a belt holster
         }
 
         static readonly Slot[] Slots = { new() { Name = "left" }, new() { Name = "right" } };
@@ -92,7 +95,7 @@ namespace BillyClubs
         static MelonLogger.Instance Log;
         static bool Dbg => DebugLog.Value;
 
-        // Implemented only in the Daredevil package build (Daredevil/Daredevil.cs), which runs Radar Sense from here.
+        // Implemented in Daredevil.cs, which runs Radar Sense from here.
         static partial void PackageInit();
         static partial void PackageScene();
         static partial void PackageUpdate();
@@ -101,13 +104,12 @@ namespace BillyClubs
         {
             PackageInit();
             Log = LoggerInstance;
-            var c = Cat = MelonPreferences.CreateCategory("BillyClubs", "Billy Clubs");
+            var c = Cat = MelonPreferences.CreateCategory("BillyClubs", "Daredevil: Clubs");
             SpawnKey = c.CreateEntry("SpawnKey", "F8", description: "Keyboard key that brings your clubs back into the club holsters (from wherever they are) and spawns new ones if you have fewer than two (Input System key name, e.g. F8, B, Numpad1). Visit The Range once per game start first: the clubs are copied from its crowbar.");
             Length = c.CreateEntry("Length", 0.6f, description: "Club length in metres (visual only; the grip and hit shape stay the crowbar's, about 0.6 m).");
             Radius = c.CreateEntry("Radius", 0.018f, description: "Primitive fallback radius in metres. The custom model uses its authored 34 mm grip diameter.");
             Mass = c.CreateEntry("Mass", 3f, description: "Club mass in kg (the crowbar is 8).");
             BodyColor = c.CreateEntry("BodyColor", "#5A080A", description: "Primitive fallback body colour as #RRGGBB. The custom model uses its baked burgundy texture.");
-            GloveColor = c.CreateEntry("GloveColor", "#8A0F0F", description: "Colour of the player's gloves as #RRGGBB (Daredevil dark red). It multiplies the game's grey leather texture, so the gloves look much darker than this; the game's own value is #414141. Empty or off = leave the gloves alone (restart the game to undo).");
             UseCustomModel = c.CreateEntry("UseCustomModel", true, description: "Use the bundled textured billy club model. Off uses the old cylinder visuals. Restart the game after changing this.");
             ThrowSpeed = c.CreateEntry("ThrowSpeed", 18f, description: "Top speed (m/s) of a club the mod steers (throw assist and ricochets). It flies at your throw speed, between MinSteerSpeed and this. Hand throws log 3-12 m/s; the crowbar's own assist used 20. Full damage needs only 3.5.");
             MinSteerSpeed = c.CreateEntry("MinSteerSpeed", 13f, description: "Slowest speed (m/s) of a steered club, so a soft throw or a ricochet off a wall still reaches its target.");
@@ -123,6 +125,7 @@ namespace BillyClubs
             InitDamagePrefs(c);
             InitHolsterPrefs(c);
             InitFollowPrefs(c);
+            InitArsenal(c);
             Slots[0].Pos = SlotLeft; Slots[1].Pos = SlotRight;
             var saved = SavedSlots.Value ?? "";
             Slots[0].Full = saved.Contains('L');
@@ -133,11 +136,14 @@ namespace BillyClubs
         public override void OnSceneWasInitialized(int buildIndex, string sceneName)
         {
             PackageScene();
-            TintGloves();
-            GloveRescanAt = Time.time + 5f;
             // Scenes may load additively: keep whatever is still alive, reset only what died with the old scene.
             for (int i = 0; i < Clubs.Count; i++) if (!Alive(Clubs[i].Go)) Clubs.RemoveAt(i--);
             foreach (var s in Slots)
+            {
+                if (!Alive(s.Anchor)) s.Anchor = null;
+                if (!Alive(s.Club?.Go)) s.Club = null;
+            }
+            foreach (var s in WallSlots)
             {
                 if (!Alive(s.Anchor)) s.Anchor = null;
                 if (!Alive(s.Club?.Go)) s.Club = null;
@@ -161,9 +167,10 @@ namespace BillyClubs
             if (KeyPressed()) FillHolsters(true);
             TuningKeys();
             WatchDraws();
+            WatchOptimiser();
+            WatchWallSettle();
             UpdateGhosts();
 
-            if (GloveRescanAt > 0 && Time.time >= GloveRescanAt) { GloveRescanAt = -1f; TintGloves(); }
             // The player rig can appear after the scene is initialized: look for the belt once a second.
             if (!Alive(Belt) && Time.time >= NextBeltSearch && Time.time - SceneStart < 30f)
             {
@@ -255,11 +262,12 @@ namespace BillyClubs
             {
                 foreach (var k in Clubs)
                 {
-                    if (k.In != null || !Alive(k.Go) || IsHandHeld(k)) continue;
+                    if ((k.In != null && !k.In.Wall) || !Alive(k.Go) || IsHandHeld(k)) continue;
                     var free = FreeSlot();
                     if (free == null) break;
                     try { if (IsHeld(k.Grab)) k.Grab.ForceRelease(); } catch { }
                     EndFlight(k, null, null); k.Held = false;
+                    if (k.In != null) { k.In.Club = null; k.In = null; }   // off the arsenal wall
                     Holster(k, free, false);
                     recalled++;
                 }
@@ -647,6 +655,7 @@ namespace BillyClubs
         {
             var go = Object.Instantiate(Template, pos, rot);
             go.name = name;
+            FreeFromOptimiser(go);   // copies of the template start with the grabbable switched off (Optimiser.cs)
             ApplyGrip(go);
             ApplyMiddleGrip(go);
             var k = new Club
