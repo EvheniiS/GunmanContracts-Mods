@@ -27,6 +27,10 @@ Tested: 55 of 55 fast draws on the first press.
 barrel has 250 health, so it took three. Knives, bullets and other objects are unchanged.
 [*][b]Doors:[/b] shooting an arrow at a door's "shoot here to burst open door" mark breaches it,
 exactly like a pistol shot (same range). Before, only guns could do it.
+[*][b]Full power without a perfect pull.[/b] The game's shot speed rises with the [i]square[/i] of
+how far you drew the string, so a slightly short pull loses a lot of range: 90% drawn is only 81%
+speed. Better Bow rescales the pull so 90% (adjustable) already counts as a full draw, and an
+optional multiplier can push shots faster still.
 [/list]
 
 Arrow counts, ammo and scoring are untouched: every arrow still goes through the game's own
@@ -55,7 +59,7 @@ You should end up with: [i]Gunman Contracts - Stand Alone\Mods\BetterBow.dll[/i]
 contains both.
 
 [b]4. Check it works[/b]
-Start the game. The MelonLoader console lists [b]Better Bow v1.1.0[/b] among the loaded mods.
+Start the game. The MelonLoader console lists [b]Better Bow v1.2.0[/b] among the loaded mods.
 
 [b]Not working?[/b]
 [list]
@@ -72,6 +76,8 @@ After the first launch, edit [i]UserData\MelonPreferences.cfg[/i], section [b][B
 [code]
 StringGrabAssist               = true   the first-press string grab
 StringGrabRadius               = 0.15   metres from hand to string
+FullDrawAt                     = 0.9    share of the pull that already counts as a full draw
+ArrowSpeedMultiplier           = 1.0    multiplies every shot's speed (0.5 to 2)
 ExplosiveArrowsDetonateBarrels = true   one arrow detonates an explosive barrel
 ArrowsBreachDoors              = true   arrows open "shoot here" doors
 Quiver                         = true   draw arrows from the bow's holster
@@ -94,6 +100,11 @@ DebugLog                       = false  log everything to the MelonLoader consol
 
 [size=4][b]Changelog[/b][/size]
 [spoiler]
+[b]1.2.0[/b]
+[list]
+[*][b]New: full draw power without the last bit of pull[/b] (see Features). On by default at 90%;
+set [i]FullDrawAt[/i] to 1.0 in the settings for the game's own behaviour.
+[/list]
 [b]1.1.0[/b]
 [list]
 [*][b]New: throw assist[/b] for drawn arrows (see Features).
