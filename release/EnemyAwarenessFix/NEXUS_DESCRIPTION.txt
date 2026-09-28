@@ -92,8 +92,11 @@ Or change these live in-VR with [url=https://www.nexusmods.com/gunmancontractsst
 [/spoiler]
 
 [size=4][b]Compatibility[/b][/size]
-Works alongside my other mods ([url=https://github.com/EvheniiS/GunmanContracts-Mods]Daredevil, Physical
-Dodge, Heavy Melee[/url], ...). It only changes what an enemy believes about your position and which spawn
+[b]Optional but highly recommended for [url=https://github.com/EvheniiS/GunmanContracts-Mods]Daredevil[/url][/b]:
+enemies searching where they last saw you, rather than walking straight to your live position, gives its
+radar sense and billy clubs more room to work with. Not required — Daredevil runs fine without it.
+Also works alongside my other mods ([url=https://github.com/EvheniiS/GunmanContracts-Mods]Physical Dodge,
+Heavy Melee[/url], ...). It only changes what an enemy believes about your position and which spawn
 point it uses; another mod that also rewrites enemy target selection or spawn logic could interact with it.
 
 [size=4][b]Uninstall[/b][/size]

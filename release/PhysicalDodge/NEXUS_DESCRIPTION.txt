@@ -81,8 +81,9 @@ Or change these live in-VR with [url=https://www.nexusmods.com/gunmancontractsst
 
 [size=4][b]Compatibility[/b][/size]
 [list]
-[*][url=https://github.com/EvheniiS/GunmanContracts-Mods]Daredevil[/url]'s radar sense can be set to follow this
-mod's dodge slow motion, so a dodge briefly shows enemies through walls too.
+[*][b]Optional but highly recommended for [url=https://github.com/EvheniiS/GunmanContracts-Mods]Daredevil[/url][/b]:
+its radar sense can be set to follow this mod's dodge slow motion, so a real dodge briefly shows enemies
+through walls too. Not required — Daredevil runs fine without it.
 [*]Other mods that change enemy aim, bullet spread, or the player hit colliders may interact with this one.
 [/list]
 
