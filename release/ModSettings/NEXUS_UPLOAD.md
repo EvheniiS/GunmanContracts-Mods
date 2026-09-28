@@ -1,6 +1,6 @@
 # Mod Settings: Nexus upload sheet
 
-**Status: release candidate (0.2.2), not released.**
+**Status: released, 0.2.2.** https://www.nexusmods.com/gunmancontractsstandalone/mods/28
 
 Game page: Gunman Contracts - Stand Alone (`nexusmods.com/gunmancontractsstandalone`) → Upload a mod.
 
@@ -47,23 +47,22 @@ number and a switch, and resetting a non-default setting.
 
 ## Downstream template change
 
-Went into `release/NEXUS_TEMPLATE.txt`: every future mod's Settings section links here
-(`[url=.../mods/{{ModSettingsID}}]Mod Settings[/url]`) as the optional live-editing alternative
-to hand-editing the cfg. **The `{{ModSettingsID}}` placeholder needs the real mod ID filled in
-across the template once this is actually uploaded** — grep `release/*/NEXUS_DESCRIPTION.txt` for
-`ModSettingsID` afterward (none yet reference it; this is the first upload).
+`release/NEXUS_TEMPLATE.txt`'s Settings-closer line and link table now point at
+`https://www.nexusmods.com/gunmancontractsstandalone/mods/28` directly. **Still open:** backfill
+that real link into the already-published mods' descriptions (Better Bow, Fire Selector, Knee
+Shot Stun predate the Mod Settings release and still link GitHub in their Settings closer) —
+optional, but keeps existing pages consistent with new ones.
 
-## Before uploading
+## Before uploading (done)
+
+- [x] Decide it feels solid enough to publish (README says "released").
+- [x] README status → released, with the Nexus link.
+- [ ] Tag: `git tag modsettings-v0.2.2` and push the tag.
+
+## Open items (not release blockers, worth doing eventually)
 
 - [ ] Play-test: open/close (tile and Ctrl+M), switch mods, step a number through all four
       button sizes, toggle a switch, cycle a choice and a colour, Reset, and confirm the change
       lands in `MelonPreferences.cfg` a second later.
 - [ ] Confirm the phone tile behaves correctly while a Data Breach holder occupies the middle
       slot (tile should move to the empty slot and return after).
-- [ ] Decide it feels solid enough to publish (README already says "board tested and works" —
-      confirm that's still current, not stale from an earlier version).
-- [ ] Tag: `git tag modsettings-v0.2.2` and push the tag.
-- [ ] README status → released, with the Nexus link.
-- [ ] Once uploaded, fill in the real `{{ModSettingsID}}` in `release/NEXUS_TEMPLATE.txt` and
-      backfill the Settings-closer line into already-published mods' descriptions (optional,
-      but keeps existing pages consistent with new ones).

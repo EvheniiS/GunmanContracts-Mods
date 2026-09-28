@@ -1,6 +1,6 @@
-# Weapon Framework: Nexus upload sheet (release candidate 0.1.1)
+# Weapon Framework: Nexus upload sheet (0.1.1)
 
-Game page: Gunman Contracts - Stand Alone (`nexusmods.com/gunmancontractsstandalone`). **New mod page.**
+**Released:** https://www.nexusmods.com/gunmancontractsstandalone/mods/29
 
 ## Files in this folder
 
@@ -35,14 +35,17 @@ then copy the DLL here and zip it as `Mods/WeaponFramework.dll`.
 **Summary (330 chars):**
 `A framework for weapon mods: other mods can put their own weapons on the arsenal panel in The Range. Page to the weapon, press Retrieve and take it off the wall, no keys or debug tools. Mod weapons are free, and the save never remembers a mod slot, so removing mods can't break it. Adds nothing on its own.`
 
-## Before uploading
+## Before uploading (done)
 
 - [x] Panel entry, Retrieve, grabbing, wall placement tested in game (Sep 28 2026, with Daredevil 0.3.3).
+- [x] This exact DLL is installed in `<game>\Mods` (Sep 28 14:58). Your cfg keeps `DebugLog = true` from testing;
+      the shipped default is false. Play one retrieve with it before uploading.
+- [x] Released together with a weapon mod that uses it (Daredevil).
+- [x] README status → released, with the Nexus link; link added to the table in `release/NEXUS_TEMPLATE.txt`.
+- [ ] Tag and push from `main`: `git tag weaponframework-v0.1.1`, `git push origin main weaponframework-v0.1.1`.
+
+## Open items (not release blockers, worth doing eventually)
+
 - [ ] **Save guard:** retrieve Billy Clubs last, quit, restart: the Big Guns wall must start on one of the game's
       weapons. (Logged working: `save: wall index 6 is a mod entry - saved as 0`; the restart itself not yet seen.)
 - [ ] **Uninstall check:** remove `WeaponFramework.dll`, start, visit The Range: arsenal shows 006 / 006 and loads fine.
-- [x] This exact DLL is installed in `<game>\Mods` (Sep 28 14:58). Your cfg keeps `DebugLog = true` from testing;
-      the shipped default is false. Play one retrieve with it before uploading.
-- [ ] Release together with, or after, a weapon mod that uses it (Daredevil), or the page has nothing to show.
-- [ ] Tag and push from `main`: `git tag weaponframework-v0.1.1`, `git push origin main weaponframework-v0.1.1`.
-- [ ] README status → released, with the Nexus link; add the link to the table in `release/NEXUS_TEMPLATE.txt`.
