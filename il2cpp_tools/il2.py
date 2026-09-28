@@ -62,8 +62,11 @@ def rd(va): return struct.unpack_from('<I', data, va2off(va))[0]
 def ri(va): return struct.unpack_from('<i', data, va2off(va))[0]
 
 CACHE = os.path.join(os.path.dirname(__file__), 'il2map.pkl')
-if os.path.exists(CACHE):
-    addr2name, name2addr, fieldoffs_ptr, types_ptr = pickle.load(open(CACHE, 'rb'))
+# Keyed on the game files so a game update rebuilds the map instead of returning old-build addresses.
+KEY = tuple((os.path.getsize(f), int(os.path.getmtime(f))) for f in (GA, MD))
+cached = pickle.load(open(CACHE, 'rb')) if os.path.exists(CACHE) else None
+if cached and len(cached) == 5 and cached[0] == KEY:
+    _, addr2name, name2addr, fieldoffs_ptr, types_ptr = cached
 else:
     import re
     addr2name = {}; name2addr = {}
@@ -108,7 +111,7 @@ else:
             # types are 4 pairs before: typesCount/types at o-32
             types_ptr = struct.unpack_from('<Q', data, o-32+8)[0]
             break
-    pickle.dump((addr2name, name2addr, fieldoffs_ptr, types_ptr), open(CACHE, 'wb'))
+    pickle.dump((KEY, addr2name, name2addr, fieldoffs_ptr, types_ptr), open(CACHE, 'wb'))
 
 sorted_addrs = sorted(addr2name)
 def nearest(va):
