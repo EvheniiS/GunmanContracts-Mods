@@ -6,9 +6,10 @@ using Il2CppInterop.Runtime;
 using MelonLoader;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.XR;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(ModSettings.ModSettingsMod), "Mod Settings", "0.2.2", "Evgeeso")]
+[assembly: MelonInfo(typeof(ModSettings.ModSettingsMod), "Mod Settings", "0.3.0", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace ModSettings
@@ -19,7 +20,7 @@ namespace ModSettings
     // mod: it does if the mod reads the value when it uses it.
     //
     // Open / close: the "Mod Settings" tile on the game's phone (middle row), or Ctrl+M. Press the buttons with either
-    // index fingertip.
+    // index fingertip. In flat mode (no headset) Ctrl+M opens the same menu on screen instead, used with the mouse.
     public class ModSettingsMod : MelonMod
     {
         internal static MelonLogger.Instance Log;
@@ -46,11 +47,24 @@ namespace ModSettings
             Log.Msg($"loaded - open with Ctrl+{OpenKey.Value}{(PhoneTile.Value ? " or the Mod Settings tile on the phone" : "")}");
         }
 
+        internal static string OpenKeyName => OpenKey.Value;
+
+        // Flat mode: no headset running, or the flat-mode controller is up and no VR hands exist.
+        static bool Flat
+        {
+            get
+            {
+                try { if (!XRSettings.isDeviceActive) return true; } catch { }
+                return Hands.Count == 0 && FlatMenu.HasController();
+            }
+        }
+
         internal static void Dbg(string msg) { if (DebugLog.Value) Log.Msg(msg); }
 
         public override void OnSceneWasInitialized(int buildIndex, string sceneName)
         {
             if (Panel.IsOpen) Panel.Close();
+            FlatMenu.Close();
             tips[0] = tips[1] = null;
             phoneDone = PhoneApp.Ready;
             sceneStart = nextSearch = Time.unscaledTime;
@@ -82,13 +96,20 @@ namespace ModSettings
                     if ((!Panel.Alive(tips[0]) || !Panel.Alive(tips[1])) && now >= nextTipSearch) { nextTipSearch = now + 1f; FindTips(); }
                     Panel.Update(head, tips, tipHands);
                 }
-                if (Panel.SaveAt > 0 && now >= Panel.SaveAt) Panel.SaveNow();
+                FlatMenu.Update();
+                if (Pages.SaveAt > 0 && now >= Pages.SaveAt) Pages.SaveNow();
             }
             catch (Exception e) { Log.Warning($"update: {e.GetType().Name}: {e.Message}"); }
         }
 
+        public override void OnGUI()
+        {
+            try { FlatMenu.Draw(); } catch (Exception e) { Log.Warning($"flat menu: {e.GetType().Name}: {e.Message}"); FlatMenu.Close(); }
+        }
+
         static void Toggle(Transform head, string how)
         {
+            if (FlatMenu.IsOpen || (Flat && how != "phone")) { FlatMenu.Toggle(how); return; }
             if (Panel.IsOpen) { Panel.Close(); Dbg($"closed: {how}"); return; }
             if (head == null) { Log.Warning("no camera - can't place the menu"); return; }
             FindTips();

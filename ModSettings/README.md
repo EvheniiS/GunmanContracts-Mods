@@ -1,6 +1,7 @@
-# Mod Settings 0.2.2
+# Mod Settings 0.3.0
 
-An in-VR settings board for every MelonLoader mod in Gunman Contracts. It reads all categories from
+An in-VR settings board for every MelonLoader mod in Gunman Contracts, with a mouse-driven on-screen version for
+flat mode. It reads all categories from
 `MelonPreferences`, so every mod that uses MelonPreferences (ours and others) gets a page without doing anything.
 
 ## Use
@@ -16,6 +17,14 @@ An in-VR settings board for every MelonLoader mod in Gunman Contracts. It reads 
   Choices written in the description (`TipFirst (...), Natural (...) or SpinEnd (...)`) and `#RRGGBB` colours cycle
   with `<` `>`. Other text (keys, paths, holster positions) is read-only here; edit it in the cfg.
 - Yellow name = not at its default. `*` = the description says it needs a game restart.
+
+### Flat mode (no headset)
+
+**Ctrl+M** opens the same menu in the middle of the screen; use it with the mouse (wheel scrolls). Same pages and
+buttons as the board: click a name for its description, `<` `>` for mods, `X` or Ctrl+M closes. While it's open the
+flat controller's cursor lock is released, so mouse look and firing stop and the cursor shows; walking still works and
+the game is not paused. Closing locks the cursor again (unless the game's own menu is open). Flat = no headset running
+(`XRSettings.isDeviceActive` false), or the flat controller is up and no VR hands exist.
 
 Every change is logged (`Category.Entry: old -> new`), applied to the entry at once (it fires the entry's
 `OnEntryValueChanged`) and saved to `UserData/MelonPreferences.cfg` a second later.

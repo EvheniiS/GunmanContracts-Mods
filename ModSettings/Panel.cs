@@ -31,28 +31,17 @@ namespace ModSettings
             public float FlashUntil;
         }
 
-        sealed class Page
-        {
-            public MelonPreferences_Category Cat;
-            public List<Setting> Settings = new();
-            public int Scroll;
-            public Setting Selected;
-        }
-
         sealed class Poker { public bool WasIn; public float LastPress; public Button Hover; }
 
         static GameObject root;
         static Shader flat;
         static TMP_FontAsset font;
         static readonly List<Button> buttons = new();
-        static readonly List<Page> pages = new();
-        static int page;
         static Button title, prevCat, nextCat, close, up, down, pageText, reset, status, desc;
         static readonly Button[] labels = new Button[Rows], values = new Button[Rows];
         static readonly Button[,] steps = new Button[Rows, 4];
         static readonly Poker[] pokers = { new(), new() };
         static float nextValueRefresh, statusUntil;
-        internal static float SaveAt = -1;
 
         static readonly Color Bg = new(0.07f, 0.07f, 0.08f), BtnCol = new(0.22f, 0.22f, 0.25f), LabelCol = new(0.13f, 0.13f, 0.15f),
             SelCol = new(0.32f, 0.08f, 0.08f), FlashCol = new(0.75f, 0.2f, 0.2f), OnCol = new(0.12f, 0.42f, 0.16f),
@@ -63,9 +52,7 @@ namespace ModSettings
         public static void Open(Transform head, float distance, float scale, float below)
         {
             if (!Alive(root) && !Build()) return;
-            LoadPages();
-            if (pages.Count == 0) { ModSettingsMod.Log.Warning("no mod settings to show"); return; }
-            page = Math.Clamp(page, 0, pages.Count - 1);
+            if (!Pages.Load()) return;
 
             // In front of the eyes, a little below them, facing the eyes (panel +Z points away from the player).
             var fwd = Vector3.ProjectOnPlane(head.forward, Vector3.up);
@@ -91,13 +78,7 @@ namespace ModSettings
                 root.transform.SetParent(null, false);
                 Object.DontDestroyOnLoad(root);
             }
-            if (SaveAt > 0) SaveNow();
-        }
-
-        public static void SaveNow()
-        {
-            SaveAt = -1;
-            try { MelonPreferences.Save(); } catch (Exception e) { ModSettingsMod.Log.Warning($"save failed: {e.Message}"); }
+            if (Pages.SaveAt > 0) Pages.SaveNow();
         }
 
         // tips[i] = fingertip of hand i (null if not found); hands[i] for haptics.
@@ -150,33 +131,12 @@ namespace ModSettings
 
         // ---- content ------------------------------------------------------------------------------
 
-        static void LoadPages()
-        {
-            var old = page < pages.Count ? pages[page].Cat?.Identifier : null;
-            var keep = new Dictionary<string, Page>();
-            foreach (var p in pages) keep[p.Cat.Identifier] = p;
-            pages.Clear();
-            foreach (var cat in MelonPreferences.Categories)
-            {
-                if (cat == null || cat.IsHidden) continue;
-                var pg = new Page { Cat = cat };
-                foreach (var e in cat.Entries)
-                    if (e != null && !e.IsHidden)
-                        try { pg.Settings.Add(new Setting(e)); } catch (Exception ex) { ModSettingsMod.Dbg($"skipped {cat.Identifier}.{e.Identifier}: {ex.Message}"); }
-                if (pg.Settings.Count == 0) continue;
-                if (keep.TryGetValue(cat.Identifier, out var was)) { pg.Scroll = was.Scroll; pg.Selected = pg.Settings.Find(s => s.Entry == was.Selected?.Entry); }
-                pages.Add(pg);
-            }
-            int i = pages.FindIndex(p => p.Cat.Identifier == old);
-            if (i >= 0) page = i;
-        }
-
         static void Refresh()
         {
-            var pg = pages[page];
+            var pg = Pages.Cur;
             int maxScroll = Math.Max(0, (pg.Settings.Count - 1) / Rows);
             pg.Scroll = Math.Clamp(pg.Scroll, 0, maxScroll);
-            title.Text.SetIfChanged($"{(string.IsNullOrEmpty(pg.Cat.DisplayName) ? pg.Cat.Identifier : pg.Cat.DisplayName)}  <size=70%>({page + 1}/{pages.Count})</size>");
+            title.Text.SetIfChanged($"{pg.Title}  <size=70%>({Pages.Current + 1}/{Pages.All.Count})</size>");
 
             for (int r = 0; r < Rows; r++)
             {
@@ -235,25 +195,16 @@ namespace ModSettings
 
         static void Step(int r, int dir)
         {
-            var pg = pages[page];
+            var pg = Pages.Cur;
             int idx = pg.Scroll * Rows + r;
             if (idx >= pg.Settings.Count) return;
-            var s = pg.Settings[idx];
-            string before = s.ValueText();
-            pg.Selected = s;
-            if (s.Change(dir))
-            {
-                SaveAt = Time.unscaledTime + 1f;
-                ModSettingsMod.Log.Msg($"{pg.Cat.Identifier}.{s.Entry.Identifier}: {before} -> {s.ValueText()}");
-                Status(s.Restart ? "restart to apply" : "applied");
-            }
-            else Status("limit");
+            Status(Pages.Change(pg.Settings[idx], dir));
             Refresh();
         }
 
         static void Select(int r)
         {
-            var pg = pages[page];
+            var pg = Pages.Cur;
             int idx = pg.Scroll * Rows + r;
             if (idx < pg.Settings.Count) pg.Selected = pg.Selected == pg.Settings[idx] ? null : pg.Settings[idx];
             Refresh();
@@ -283,9 +234,9 @@ namespace ModSettings
             SetColor(bg, Bg);
 
             float top = H / 2 - 0.035f;
-            prevCat = Make(new Vector2(-W / 2 + 0.03f, top), new Vector2(Btn, Btn), "<", 0.2f, BtnCol, () => { page = (page + pages.Count - 1) % pages.Count; Refresh(); });
+            prevCat = Make(new Vector2(-W / 2 + 0.03f, top), new Vector2(Btn, Btn), "<", 0.2f, BtnCol, () => { Pages.Turn(-1); Refresh(); });
             title = Make(new Vector2(-0.035f, top), new Vector2(0.3f, Btn), "", 0.2f, Bg, null, TextAlignmentOptions.Center, false);
-            nextCat = Make(new Vector2(0.155f, top), new Vector2(Btn, Btn), ">", 0.2f, BtnCol, () => { page = (page + 1) % pages.Count; Refresh(); });
+            nextCat = Make(new Vector2(0.155f, top), new Vector2(Btn, Btn), ">", 0.2f, BtnCol, () => { Pages.Turn(1); Refresh(); });
             close = Make(new Vector2(W / 2 - 0.03f, top), new Vector2(Btn, Btn), "X", 0.2f, OffCol, () => { Close(); ModSettingsMod.Dbg("closed: X"); });
 
             float[] stepX = { -0.02f, 0.025f, 0.155f, 0.2f };
@@ -304,19 +255,15 @@ namespace ModSettings
             }
 
             float nav = top - 0.05f - Rows * RowStep;
-            up = Make(new Vector2(-W / 2 + 0.045f, nav), new Vector2(0.06f, Btn), "Up", 0.16f, BtnCol, () => { pages[page].Scroll--; Refresh(); });
+            up = Make(new Vector2(-W / 2 + 0.045f, nav), new Vector2(0.06f, Btn), "Up", 0.16f, BtnCol, () => { Pages.Cur.Scroll--; Refresh(); });
             pageText = Make(new Vector2(-0.115f, nav), new Vector2(0.07f, Btn), "", 0.15f, Bg, null, TextAlignmentOptions.Center, false);
-            down = Make(new Vector2(-0.035f, nav), new Vector2(0.06f, Btn), "Down", 0.16f, BtnCol, () => { pages[page].Scroll++; Refresh(); });
+            down = Make(new Vector2(-0.035f, nav), new Vector2(0.06f, Btn), "Down", 0.16f, BtnCol, () => { Pages.Cur.Scroll++; Refresh(); });
             status = Make(new Vector2(0.065f, nav), new Vector2(0.11f, Btn), "", 0.13f, Bg, null, TextAlignmentOptions.Center, false);
             reset = Make(new Vector2(0.18f, nav), new Vector2(0.09f, Btn), "Reset", 0.16f, BtnCol, () =>
             {
-                var s = pages[page].Selected;
+                var s = Pages.Cur.Selected;
                 if (s == null) return;
-                string before = s.ValueText();
-                s.Entry.ResetToDefault();
-                SaveAt = Time.unscaledTime + 1f;
-                ModSettingsMod.Log.Msg($"{pages[page].Cat.Identifier}.{s.Entry.Identifier}: {before} -> {s.ValueText()} (default)");
-                Status("reset");
+                Status(Pages.Reset(s));
                 Refresh();
             });
 

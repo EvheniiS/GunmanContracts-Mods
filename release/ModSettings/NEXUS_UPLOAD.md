@@ -1,6 +1,50 @@
 # Mod Settings: Nexus upload sheet
 
-**Status: released, 0.2.2.** https://www.nexusmods.com/gunmancontractsstandalone/mods/28
+**Status: 0.2.2 released; 0.3.0 ready (see above).** https://www.nexusmods.com/gunmancontractsstandalone/mods/28
+
+## ★ Update to 0.3.0: flat-screen menu (users asked for it)
+
+**Status: release files ready, NOT uploaded.** Game page → Mod Settings → Manage → Files → Upload.
+
+| Field | Value |
+|---|---|
+| File | `ModSettings-0.3.0.zip` (contains `Mods/ModSettings.dll`) |
+| File name | `Mod Settings` |
+| Version | `0.3.0` |
+| Category | Main files; move 0.2.2 to Old files |
+| File description | `Extract into the game folder. Needs MelonLoader 0.7.x. Now also works in flat mode (Ctrl+M).` |
+
+`ModSettings.dll` 46,592 bytes, sha256 `9aacc571b00418de62dba979e7b9679e6642e2485b659d6338654d1ad46f5689`
+(= the DLL deployed in the game folder).
+
+Also set the **mod version** on the Details tab to `0.3.0`.
+
+**Description:** paste [`NEXUS_DESCRIPTION.txt`](NEXUS_DESCRIPTION.txt) again (BBCode). What changed: a flat-mode line in
+the intro, a *Flat mode (no headset)* section, a Ctrl+M focus tip under *Not working?*, and `v0.3.0` in the install check.
+
+**Summary (optional, 342 chars):**
+`A settings menu for every MelonLoader mod. Reads every category straight from MelonPreferences, so any mod using it gets a page automatically. In VR: press the Mod Settings tile on the phone (or Ctrl+M) and poke the board with your fingertip. Flat: Ctrl+M opens it on screen for the mouse. Changes numbers, switches, choices and colours live.`
+
+**Changelog (Manage → Changelogs, version `0.3.0`):**
+```
+Flat mode support: in the flat (non-VR) version, Ctrl+M opens the same settings menu on screen, used with the mouse (wheel scrolls). While it's open the cursor is free and mouse look / shooting pause; the game itself keeps running. VR is unchanged.
+```
+
+**Reply to the users who asked for it (optional):**
+```
+Added in 0.3.0: in the flat version press Ctrl+M and the menu opens on screen, clickable with the mouse. The game keeps running while it's open, so open it somewhere safe. Thanks for asking!
+```
+
+### Before uploading 0.3.0
+
+- [ ] Flat test: Ctrl+M in The Range → menu centred, cursor visible, look + fire blocked, WASD walks; change a value
+      (log line, cfg saved); close → mouse look works again. Also Ctrl+M in the main menu.
+- [ ] VR regression: phone tile and Ctrl+M still open the board.
+- [ ] Merge `dev` → `main` (or cherry-pick the Mod Settings commit), tag `modsettings-v0.3.0`, push.
+
+---
+
+## First release (0.2.2)
 
 Game page: Gunman Contracts - Stand Alone (`nexusmods.com/gunmancontractsstandalone`) → Upload a mod.
 

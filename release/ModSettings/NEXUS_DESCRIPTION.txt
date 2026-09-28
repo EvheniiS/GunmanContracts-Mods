@@ -2,6 +2,7 @@
 
 Mod Settings shows [b]MelonPreferences settings[/b] from your installed mods on an [b]in-VR board[/b].
 Open it from the [b]phone tile[/b] or with Ctrl+M, then touch the controls with your index finger.
+[b]Playing flat?[/b] Ctrl+M opens the same menu on screen, used with the mouse.
 
 [size=4][b]How to use[/b][/size]
 Take out the phone and press the Mod Settings tile in the middle row. Ctrl+M on the keyboard also
@@ -17,6 +18,12 @@ Choices and colours use [b]< / >[/b].
 [*]A yellow name means the value differs from its default. [b]*[/b] means the setting's description
 says it needs a game restart.
 [/list]
+
+[size=4][b]Flat mode (no headset)[/b][/size]
+Press [b]Ctrl+M[/b] and the menu opens in the middle of the screen. Click the buttons with the mouse;
+the mouse wheel scrolls. It has the same pages and buttons as the VR board. [b]X[/b] or Ctrl+M closes it.
+While it's open the cursor is free, so mouse look and shooting pause. You can still walk, and
+[b]the game is not paused[/b], so open it somewhere safe.
 
 [size=4][b]When changes apply[/b][/size]
 Changes are saved to [i]MelonPreferences.cfg[/i] about a second after you make them. Some mods use
@@ -48,7 +55,7 @@ game folder, and if Windows asks, choose to replace / merge.
 You should end up with: [i]Gunman Contracts - Stand Alone\Mods\ModSettings.dll[/i]
 
 [b]4. Check it works[/b]
-Start the game. The MelonLoader console lists [b]Mod Settings v0.2.2[/b] among the loaded mods.
+Start the game. The MelonLoader console lists [b]Mod Settings v0.3.0[/b] among the loaded mods.
 
 [b]Not working?[/b]
 [list]
@@ -60,6 +67,7 @@ sure you picked [i]GunmanContracts.exe[/i].
 [*][b]No tile on the phone:[/b] the middle-row slot is sometimes held by a mission item (e.g. a
 Data Breach holder); the tile moves to the next empty slot while that's active. Ctrl+M always
 works regardless.
+[*][b]Ctrl+M does nothing in flat mode:[/b] click the game window once so it has keyboard focus.
 [/list]
 
 [size=4][b]Settings (optional)[/b][/size]
