@@ -5,14 +5,17 @@
 
 | Mod | What it does | Status |
 |---|---|---|
-| [Better Bow](BetterBow/README.md) | Quiver, dagger grip, thrown-arrow aim assist, first-press string grab, one-arrow barrels, arrows breach doors | 1.1.0, released on [Nexus](https://www.nexusmods.com/gunmancontractsstandalone/mods/22) |
+| [Better Bow](BetterBow/README.md) | Quiver, dagger grip, thrown-arrow aim assist, first-press string grab, full draw power without a perfect pull, one-arrow barrels, arrows breach doors | 1.2.0, released on [Nexus](https://www.nexusmods.com/gunmancontractsstandalone/mods/22) |
 | [Knee Shot Stun](KneeShotStun/KneeShotStun.cs) | Enemies shot in the leg stay down on one knee for longer | 1.1.0 (`AllowBurst` toggle), release candidate; 1.0.0 released on Nexus |
 | [Heavy Melee](HeavyMelee/HeavyMelee.cs) | Guns and bows hit like heavy metal (stagger + damage), fists hit harder, and an enemy on the ground still takes hits, stays down, and can be knocked out | 1.0.0 release candidate (not released) |
 | [Physical Dodge](PhysicalDodge/PhysicalDodge.cs) | Enemies aim where you were a moment ago: stand still and you get hit; step, lean, duck or keep moving and their shots go past (a short buzz and a brief slow motion when one would have hit) | 0.4.2, in testing |
 | [Fire Selector](FireSelector/FireSelector.cs) | Hold A / X on the support hand to switch automatic guns between automatic, 3-round burst (optional) and single shot | 1.1.0 (`AllowBurst` toggle), release candidate; 1.0.0 released on Nexus |
 | [Enemy Awareness Fix](EnemyAwarenessFix/EnemyAwarenessFix.cs) | Enemies that lose sight of you go to where they last saw you and search there instead of walking to your exact position; wave enemies get a rough guess; flanking and turning use what the enemy knows; wave spawns no longer always use the nearest spawn point and keep a 10 m minimum distance; floor-aware (no hearing you through a floor, no "arrived" on the wrong floor) | 0.1.6, in testing ("getting better") |
-| [Billy Clubs](BillyClubs/README.md) | A pair of textured Daredevil-style billy clubs (copied from the crowbar in The Range) with blunt damage, a homing throw and two belt holsters that carry into contracts; F8 brings them back | 0.5.1, darker/coarser grip after successful 0.5.0 VR test; revised material awaiting test |
-| [Enemy Awareness Log](EnemyAwarenessLog/EnemyAwarenessLog.cs) | Diagnostic, changes nothing: logs spawns, where each enemy first sees you, whether unseen enemies track your live position, your shots and which sounds alert whom, door kicks, stuck enemies, which floor each enemy is on, who is still alive at the end, your stealth visibility, harmless enemy shots, and per-wave summaries | 0.5.1, dev tool |
+| [Billy Clubs](BillyClubs/README.md) | A pair of textured Daredevil-style billy clubs (copied from the crowbar in The Range) with blunt damage, a homing throw, ricochet and two belt holsters that carry into contracts; F8 brings them back | 0.11.0, release candidate |
+| [Radar Sense](RadarSense/README.md) | Daredevil radar sense: red enemy silhouettes through walls during slow motion or always | 0.3.1, in testing |
+| [Throw Assist](ThrowAssist/README.md) | Real-physics steering for the game's own throw assist, and thrown pistols | 0.1.0, release candidate, untested |
+| [Mod Settings](ModSettings/README.md) | In-VR settings board listing every mod's preferences, live-applied | 0.2.2, board tested and works |
+| [Enemy Awareness Log](EnemyAwarenessLog/EnemyAwarenessLog.cs) | Diagnostic, changes nothing: logs spawns, where each enemy first sees you, whether unseen enemies track your live position, your shots and which sounds alert whom, door kicks (and door loops), stuck enemies, which floor each enemy is on, who is still alive at the end, your stealth visibility, harmless enemy shots, and per-wave summaries | 0.5.2, dev tool |
 
 Settings for each mod are in `UserData\MelonPreferences.cfg`, one section per mod.
 
@@ -44,6 +47,8 @@ Or put your path in `<ModFolder>/GameDir.local.props` (git-ignored):
 
 - `BetterBow/`, `KneeShotStun/`, `FireSelector/`, `HeavyMelee/`, `PhysicalDodge/`, `EnemyAwarenessFix/`, `EnemyAwarenessLog/`: one folder per mod, source and its own project.
 - `release/<Mod>/`: the prebuilt DLL of the last release and the Nexus Mods page text.
+- `release/NEXUS_TEMPLATE.txt`: the shared skeleton behind every `NEXUS_DESCRIPTION.txt` (Install,
+  Settings, Compatibility, Uninstall, Source boilerplate) — start a new mod's page from it.
 - `il2cpp_tools/`: small Python tools for reading the game without Cpp2IL/Il2CppDumper:
   `il2.py` (global-metadata v31 + GameAssembly method/field map), `disx.py` (named disassembly),
   `xref.py` (direct callers), `scanoff.py` (which methods touch a field offset), `slot.py` (string literals and generic types a method uses), `dumpt.py` (fields/methods of a type), plus asset readers
