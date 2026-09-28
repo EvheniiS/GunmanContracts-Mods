@@ -88,7 +88,7 @@ namespace RadarSense
             LoudRadius = c.CreateEntry("LoudRadius", 3f, description: "Steps are at full volume within this distance (m) and fade with distance beyond it. Bigger = louder from far away.");
             StepVolume = c.CreateEntry("StepVolume", 1f, description: "Step volume, 0 to 1, times the game's sound effects volume.");
             PerfLog = c.CreateEntry("PerfLog", true, description: "Once a minute, log frame times split by sense off / on / on and keeping unseen enemies shown, plus the mod's own cost. For comparing the Reveal settings.");
-            DebugLog = c.CreateEntry("DebugLog", true, description: "Log which shader is used, each enemy's body parts once, and one line each time the sense turns on/off.");
+            DebugLog = c.CreateEntry("DebugLog", false, description: "Log which shader is used, each enemy's body parts once, and one line each time the sense turns on/off.");
             Log.Msg("loaded - slow motion shows enemies through walls.");
         }
 

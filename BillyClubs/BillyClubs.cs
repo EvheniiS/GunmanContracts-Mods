@@ -117,7 +117,7 @@ namespace BillyClubs
             SlotRight = c.CreateEntry("HolsterRight", "0.23,-0.12,-0.10", description: "Right club holster, same format.");
             SnapDistance = c.CreateEntry("HolsterSnapDistance", 0.4f, description: "Let go of a club within this many metres of a free club holster and it snaps in.");
             SavedSlots = c.CreateEntry("SavedHolsters", "", description: "Managed by the mod: which club holsters are full (L, R). Restored after every scene load.");
-            DebugLog = c.CreateEntry("DebugLog", true, description: "Log template building, spawns, holstering, grabs, throws and ricochets.");
+            DebugLog = c.CreateEntry("DebugLog", false, description: "Log template building, spawns, holstering, grabs, throws and ricochets.");
             InitThrowPrefs(c);
             InitMiddleGripPref(c);
             InitDamagePrefs(c);

@@ -53,7 +53,7 @@ namespace ThrowAssist
             PistolDamage = c.CreateEntry("PistolDamage", true, description: "A thrown pistol that hits an enemy does real damage (PistolThrowDamage). Off = the game's weak hit.");
             PistolThrowDamage = c.CreateEntry("PistolThrowDamage", 3f, description: "Thrown pistol damage as a multiple of the game's melee damage (10). The game then doubles it on the torso and multiplies by 5 on the head: 3 = 60 to the body, a head hit kills.");
             PistolStagger = c.CreateEntry("PistolStagger", true, description: "A thrown pistol that hits a standing enemy makes them stumble.");
-            DebugLog = c.CreateEntry("DebugLog", true, description: "One line per assisted or tracked throw and per pistol hit.");
+            DebugLog = c.CreateEntry("DebugLog", false, description: "One line per assisted or tracked throw and per pistol hit.");
             LoggerInstance.Msg("loaded");
         }
 
