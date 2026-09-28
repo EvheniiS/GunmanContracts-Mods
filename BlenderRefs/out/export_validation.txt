@@ -1,0 +1,18 @@
+Code executed successfully: PASS  mesh objects in 'Club': 1
+PASS  BC_Export: scale applied (is (1.0, 1.0, 1.0))
+PASS  length along X 60.0 cm (want 55-65)
+PASS  centred on the origin along X (centre +0.0 cm)
+PASS  max diameter 34.8 mm (max 40)
+PASS  club reaches the hand position x = -15.7 cm
+PASS  grip diameter at the hand 34.0 mm (want 30-36)
+PASS  triangles 5876 (max 6000)
+PASS  exactly one UV map per object
+PASS  one material (found ['BC_GameAtlas'])
+Info: File exported successfully
+exported C:/Users/Evhenii/VR/GunmanContracts/BlenderRefs/out/billy_club.obj
+PASS  texture out/textures/billy_club_basecolor.png (2048 x 2048)
+PASS  texture out/textures/billy_club_normal.png (2048 x 2048)
+PASS  texture out/textures/billy_club_metallic.png (2048 x 2048)
+PASS  texture out/textures/billy_club_roughness.png (2048 x 2048)
+RESULT: ALL PASS
+

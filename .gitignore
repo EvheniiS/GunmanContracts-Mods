@@ -11,3 +11,8 @@ media/
 release/**/*.png
 release/**/*-prompt.txt
 release/**/*.zip
+
+# Blender work: extracted game meshes and anything containing them (never publish)
+BlenderRefs/game/
+BlenderRefs/*.blend
+BlenderRefs/*.blend1
