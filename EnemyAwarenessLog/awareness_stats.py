@@ -7,7 +7,7 @@ Usage:
 The session file is UserData\\EnemyAwarenessLog\\session-<time>.log (Enemy Awareness Log). The MelonLoader
 log (MelonLoader\\Logs\\<date>.log) only adds the Fix's own lines and the Physical Dodge wave summaries, and
 tells which mod versions were loaded. Only combat scenes count: the range, menus and loader are skipped.
-Works with Enemy Awareness Log 0.4.x and 0.5.x lines.
+Works with Enemy Awareness Log 0.4.x and 0.5.x lines. Door loops are only logged from 0.5.2 on.
 """
 import os
 import re
@@ -25,7 +25,7 @@ def avg(xs):
 def session_stats(path):
     s = dict(scenes=[], combat_s=0.0, waves=0, visits=0, spawns=0, spawn_dist=[], first_sight=0, sight_dist=[], sight_after=[],
              chases=0, live=0, searched=0, unclear=0, timer_runs=0, stuck=0, died=0, heard=0,
-             door_kicks=0, your_shots=0, bow=0, enemy_shots=0, enemy_harmless=0, vis=[])
+             door_kicks=0, door_loops=0, door_longest=0, your_shots=0, bow=0, enemy_shots=0, enemy_harmless=0, vis=[])
     scene, scene_t, last_t = None, 0.0, 0.0
 
     def close(t):
@@ -81,6 +81,10 @@ def session_stats(path):
             m2 = re.search(r'(?:door kicks|doors kicked/breached) (\d+)', x)
             if m2:
                 s['door_kicks'] += int(m2.group(1))
+            m2 = re.search(r'door loops (\d+) \(longest (\d+) opens\)', x)
+            if m2:
+                s['door_loops'] += int(m2.group(1))
+                s['door_longest'] = max(s['door_longest'], int(m2.group(2)))
             m2 = re.search(r'enemy gunshots (\d+) \((?:harmless|marked harmless by the game:) (\d+)\)', x)
             if m2:
                 s['enemy_shots'] += int(m2.group(1))
@@ -99,6 +103,7 @@ def session_stats(path):
 def melon_stats(path):
     m = dict(versions={}, told=0, told_age=[], reached=0, stopped_short=0, couldnt_reach=0, search_over=0,
              gave_up=0, guesses=0, dodged=0, hit=0, hurt=0, free_miss=0)
+    scene = None
     for line in open(path, encoding='utf-8', errors='replace'):
         v = re.search(r'\] (Enemy Awareness (?:Fix|Log)|Physical Dodge) v([\d.]+)', line)
         if v:
@@ -121,10 +126,22 @@ def melon_stats(path):
             if 'never saw you' in line or 'new guess' in line or 'new rough guess' in line:
                 m['guesses'] += 1
         if '[Physical_Dodge]' in line:
-            w = re.search(r'summary .*?: (\d+) shots at you: dodged (\d+).*?hit (\d+) \(hurt (\d+)x\), free miss (\d+)', line)
+            sc = re.search(r"\[Physical_Dodge\] scene '([^']+)'", line)
+            if sc:
+                scene = sc.group(1)
+            if scene in SKIP_SCENES:
+                continue
+            # Dodges, hits and hurts come from the per-shot lines, so a wave cut short by death or quitting
+            # (no summary line) still counts. Free misses are only in the summaries.
+            if '] DODGED' in line:
+                m['dodged'] += 1
+            elif '] HIT' in line:
+                m['hit'] += 1
+            elif '] hurt:' in line:
+                m['hurt'] += 1
+            w = re.search(r'summary .*?free miss (\d+)', line)
             if w:
-                m['dodged'] += int(w.group(2)); m['hit'] += int(w.group(3))
-                m['hurt'] += int(w.group(4)); m['free_miss'] += int(w.group(5))
+                m['free_miss'] += int(w.group(1))
     return m
 
 
@@ -161,7 +178,7 @@ def report(session, melon=None):
            f"- unseen chases {s['chases']}: live-tracked {s['live']}, searched {s['searched']}, unclear {s['unclear']}"
            f" -> live-tracked share of conclusive {fmt(100 * s['live'] / concl if concl else None, 0)}%",
            f"- lost-target timer ran out {s['timer_runs']}, STUCK? {s['stuck']}, HEARD (someone reacted) {s['heard']}",
-           f"- door kicks {s['door_kicks']} ({s['door_kicks'] / mins:.1f}/min); your gunshots {s['your_shots']}, bow {s['bow']}",
+           f"- door kicks {s['door_kicks']} ({s['door_kicks'] / mins:.1f}/min), door loops {s['door_loops']} (longest {s['door_longest']} opens, Log 0.5.2+); your gunshots {s['your_shots']}, bow {s['bow']}",
            f"- enemy gunshots {s['enemy_shots']} ({s['enemy_shots'] / mins:.1f}/min), harmless {s['enemy_harmless']}"
            f" ({fmt(100 * s['enemy_harmless'] / s['enemy_shots'] if s['enemy_shots'] else None, 0)}%); visibility avg {fmt(avg(s['vis']), 2)}"]
     if m:

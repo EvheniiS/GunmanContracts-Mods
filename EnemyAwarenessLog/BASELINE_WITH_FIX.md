@@ -18,6 +18,56 @@ Things to read with care:
 - STUCK? in 0.5.0 still counted enemies > 50 m away after a death (10 in `041812`); 0.5.1 skips them.
 - Deaths and restarts cut waves short; compare per minute, not per session.
 
+## Result: no Fix vs Fix 0.1.6 (Sep 27 2026)
+
+No Fix = `session-20260927-171428.log` (Log 0.5.1, Dodge 0.4.2, 5.7 min). Fix = the two sessions in the next table.
+
+| Metric | No Fix | Fix 0.1.6 |
+|---|---|---|
+| **live-tracked : searched : unclear** | **26 : 0 : 29 (100% live)** | **2 : 18 : 34 (10% live)** |
+| avg spawn distance | 9.2 m | 12.6 m |
+| unseen chases / min | 9.6 | 6.7 |
+| lost-target timer ran out / min | 0.70 | 0.12 |
+| STUCK? / min | 0.18 | 0.48 (042542 only; 041812 has the 0.5.0 counting bug) |
+| hits that hurt you / min (Dodge) | 0.70 | 3.0 |
+| enemy gunshots / min, harmless share | 9.4, 80% | 11.6, 47% |
+| your hits started the harmless window / min | 8.9 | ~6.9 (042542) |
+| first sightings / spawn, distance, delay | 0.95, 5.8 m, 9 s | 0.93, 5.2 m, 8 s |
+| door kicks / min | 10.8 | 11.2 |
+| weapons | bow 85 + 25 gunshots | bow only |
+
+- **The Fix works as designed:** vanilla live-tracks every conclusive chase (matches Sep 25: 27 : 0); with the Fix
+  almost all become searches. Spawns are ~3.4 m further out, which is the randomised spawn points.
+- **The harmless-share gap is not awareness.** "Harmless" = the game's cooldowned shots (warning shot, first second
+  of fire, grace after you hit someone). The no-Fix run hit enemies more often (8.9 vs ~6.9 graces/min, 7.5 vs 6.4
+  kills/min), so more of their fire fell in grace windows. Damage taken tracks that, so don't read "vanilla hurts
+  less" from one 5.7-minute run.
+- Confounds: one short session; pistol used in waves 4-5. (HEARD 8 vs 3 is NOT the pistol: only 3 of the 8
+  followed a gunshot, and the bow-only run below had 7. Most HEARD lines are enemies reacting to a scream.)
+
+**Bow-only no-Fix run, `session-20260927-174137.log` (4.0 min, 3 waves, died in wave 3):**
+- live-tracked : searched : unclear **13 : 0 : 19** (no-Fix total today 39 : 0).
+- Harmless 55% (waves 1-2; wave 3 has no summary), not 80%: the 80% run was the outlier, caused by fast kills.
+- Real shots 22 = 5.5/min, hurt 13 = 3.25/min, dodged 6 of 22 (27%). Close to the Fix runs (6.1/min, 3.0/min).
+- **The death shows the vanilla bug:** E42 and E43 spawned, never saw you, and walked 17 m / 11 m straight to
+  0.1 m from you (live-tracked 13/13 and 6/6). They came round the corner at 1.0-1.6 m and landed 7 hits in 8 s;
+  you moved <= 0.10 m on each, so there was no time to dodge.
+- awareness_stats.py now counts dodges/hits/hurts from the per-shot lines, so a wave cut short still counts.
+
+**Physical Dodge (0.4.2 no Fix; 0.4.2 + 0.4.1 with Fix):**
+
+| | No Fix (5.7 min) | Fix (8.0 min) |
+|---|---|---|
+| shots at you | 54 | 92 |
+| free misses (game-harmless) | 43 (80%) | 43 (47%) |
+| real shots / min | 1.9 | 6.1 |
+| real shots dodged | 7 of 11 (64%) | 18 of 49 (37%), + 3 spread misses |
+| hurt / min | 0.70 | 3.0 |
+| real shots from enemies out of your view | 0 | 9 (5 hurt) |
+
+The difference is how many real shots got through the game's free misses, not the dodging: 11 real shots is too
+few to rate the dodge. All 11 no-Fix real shots came from 1.2-5.7 m, from enemies in view.
+
 ## Fix 0.1.6 + Log 0.5.x (same logger as the no-fix run)
 
 Sessions: `session-20260926-042542.log`, `session-20260926-041812.log`
