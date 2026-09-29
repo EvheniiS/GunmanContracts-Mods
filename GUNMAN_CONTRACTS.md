@@ -2118,3 +2118,18 @@ from when the game's homing still ran), and during that window the follow-throug
 velocity to the hand's, pushing it into the wall it had just hit. When the window closed, the club was below
 2 m/s and the flight ended silently. Fix (0.3.4): impact grace 0.05 s for every throw; follow-through stops once
 the club drops below 60% of its speed; a flight that ends by slowing down now logs `flight ended: slowed to …`.
+
+## Throw Assist 0.2.2 (Sep 30 2026): private knee-assist experiment; built, deployed, initially playtested
+
+Game 0.3.1.0, `MelonLoader/Logs/26-9-30_2-30-31.log`: the player enabled `allowKneeHit` during play with
+head/knee angle limits of 25 degrees. Three knife throws selected Knee at 5.2, 16.7 and 12.8 degrees; two
+logged `KNEELS`. Contacts included LeftLeg, RightUpLeg and RightFoot. One throw logged `stabbed LeftLeg`
+without a kneel trigger. Those prefix/collision logs do not establish damage or the precise reason for a miss.
+Knee Shot Stun 1.0.0 was loaded with four extra seconds; its extension was not separately validated here.
+
+The user liked the feature but reported occasional difficult knee selection and inaccurate leg trajectories.
+Steering currently follows the leg collider's world-bounds center. Collider placement and moving poses are
+possible explanations, not proven defects. Increasing the angle limit can admit more throws but cannot fix
+the three already-selected trajectories. Keep the feature experimental and private, with `allowKneeHit = false`
+by default and the user's personal saved opt-in retained. The Nexus description draft mentions the private
+experiment explicitly; the 0.2.1 release package is unchanged. See `ThrowAssist/TESTING.md` for remaining checks.

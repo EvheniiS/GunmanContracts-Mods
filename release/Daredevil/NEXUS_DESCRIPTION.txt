@@ -69,7 +69,7 @@ You should end up with: [i]Gunman Contracts - Stand Alone\Mods\Daredevil.dll[/i]
 Install the required companion DLLs listed above into the same Mods folder. Remove legacy BillyClubs.dll and RadarSense.dll if present.
 
 [b]4. Check it works[/b]
-Start the game. The MelonLoader console lists [b]Daredevil v0.3.3[/b] among the loaded mods.
+Start the game. The MelonLoader console lists [b]Daredevil v0.4.0[/b] among the loaded mods.
 
 [b]Not working?[/b]
 [list]
@@ -114,12 +114,15 @@ DebugLog                 = false   # Log template building, spawns, holstering, 
 ThrowStyle               = "TipFirst"   # How a thrown club flies: TipFirst (turns from upright to metal tip forward, then holds it), Natural (keeps whatever spin your hand gave it) or SpinEnd (spinning end over end). Ctrl+T cycles them in game.
 RicochetFromEnemy        = false   # A club that hits an enemy bounces on to the next enemy. Off = only walls and the floor send it on (the enemy it then hits stops it).
 SpinSpeed                = 5   # Turns per second for SpinEnd.
-HandThrowBoost           = 1.3   # Multiplies the speed of a club thrown by hand (not steered by the assist or a ricochet). 1 = HVR's release speed.
+HandThrowBoost           = 1.3   # Scales club release velocity before guided-speed clamping, and free throws. 1 = unscaled release speed.
 TipTurnTime              = 0.04   # TipFirst: how quickly the club turns its metal tip to the front, in seconds (time constant: about 90% there after twice this). Smaller = snappier.
 Ricochets                = 2   # How many times a thrown club bounces on to the next enemy in sight after hitting an enemy or a wall. 0 = off.
 RicochetRange            = 12   # How far (m) a ricochet looks for the next enemy.
 FloorShotAngle           = 15   # Throw at least this many degrees below horizontal and it is a floor shot: the game's homing is skipped, the club hits the floor and ricochets off it to the nearest enemy in sight. 0 = off (a club that happens to hit the floor still ricochets).
 RicochetAimHead          = false   # Ricochets aim at the head (a fast club hit to the head is a kill). Off = the chest.
+FollowThroughVerboseLog  = false   # With DebugLog on, include follow-through windows that added no speed. Off logs only actual speed increases.
+DirectThrowAssist        = true    # Guide direct club throws to the game-selected target. False keeps direct throws free.
+ThrowAssistMaxTurnAngle  = 25      # Maximum degrees the club can turn toward a direct target. Wider throws stay free.
 GripSlide                = 0   # Moves the club in the hand along its length, in metres. + = the hand sits closer to the grip end. In game: Ctrl+J / Ctrl+L.
 GripTiltA                = 0   # Tilts the club in the hand, in degrees (first axis). In game: Ctrl+K / Ctrl+I.
 GripTiltB                = 0   # Tilts the club in the hand, in degrees (second axis). In game: Ctrl+[ / Ctrl+]. Ctrl+R resets the grip.
@@ -182,5 +185,3 @@ Delete [i]Mods\Daredevil.dll[/i]. Companion mods are separate; remove their DLLs
 [size=4][b]Source[/b][/size]
 [url=https://github.com/EvheniiS/GunmanContracts-Mods]GitHub[/url] (MIT). Made for game version 0.3.1.0,
 MelonLoader 0.7.3.
-
-

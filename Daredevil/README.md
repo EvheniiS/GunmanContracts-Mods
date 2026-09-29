@@ -1,5 +1,9 @@
 # Daredevil 0.4.0
 
+The tested direct club-assist turn limit is 25° by default (`[BillyClubs] ThrowAssistMaxTurnAngle`).
+Throw Assist 0.2.1 uses a matching 25° limit for head aim. Existing saved preferences keep their
+values until changed.
+
 The Daredevil package, one DLL: **billy clubs** (from the crowbar: belt holsters, F8 recall, spin styles, ricochets,
 knockouts, arsenal panel entry) + **radar sense** (enemy silhouettes through walls in slow motion or always, louder
 3D enemy footsteps, dropped clubs glow).

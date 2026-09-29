@@ -12,16 +12,19 @@ namespace BillyClubs
     public partial class BillyClubsMod
     {
         internal static MelonPreferences_Entry<float> FollowThroughTime;
+        internal static MelonPreferences_Entry<bool> FollowThroughVerboseLog;
 
         static void InitFollowPrefs(MelonPreferences_Category c)
         {
-            FollowThroughTime = c.CreateEntry("FollowThroughTime", 0.12f, description: "Seconds after you let go during which the club still picks up speed from your swing, so opening the hand early in the throw still counts the full swing. 0 = off (HVR's release velocity only).");
+            FollowThroughTime = c.CreateEntry("FollowThroughTime", 0.12f, description: "Seconds after release to sample the hand. If the hand is faster than the club and no impact occurred, the club can gain speed. Many throws receive no extra speed. 0 = off.");
+            FollowThroughVerboseLog = c.CreateEntry("FollowThroughVerboseLog", false, description: "Log every follow-through window. Off logs only throws where follow-through actually increased club speed when DebugLog is on.");
         }
 
         internal class Follow
         {
-            public float Until, HandAtRelease, Peak, PeakAt, Released, ClubAtRelease;
+            public float Until, HandAtRelease, Peak, PeakAt, Released, ClubAtRelease, BoostTo;
             public bool Boosted;
+            public string BoostKind;
         }
 
         // Every physics step: measure each club's hand (while held, and during the follow window).
@@ -32,6 +35,9 @@ namespace BillyClubs
             float dt = Time.fixedDeltaTime;
             // Two-step smoothing: one physics step of tracking jitter alone can read ~1 m/s.
             var raw = k.HandOk && dt > 0f ? (p - k.HandPrev) / dt : Vector3.zero;
+            // A tracking recenter can move a controller an impossible distance in one step. The 50.5 m/s
+            // spike in the 2026-09-30 throw log must not accelerate a club or pollute the peak report.
+            if (raw.magnitude > 25f) raw = Vector3.zero;
             k.HandV = k.HandOk ? Vector3.Lerp(k.HandV, raw, 0.5f) : raw;
             k.HandPrev = p; k.HandOk = true;
         }
@@ -60,18 +66,26 @@ namespace BillyClubs
             // The club lost most of its speed: it hit something. Don't push it on into the wall (that hid the impact
             // until the window ended, and the flight then ended with no ricochet); let the impact check take it.
             if (k.Rb.linearVelocity.magnitude < f.Speed * 0.6f) { EndFollow(f); return; }
+            float handSpeed = k.HandV.magnitude;
+            if (handSpeed > w.Peak) { w.Peak = handSpeed; w.PeakAt = Time.time; }
             var hv = k.HandV * Mathf.Max(HandThrowBoost.Value, 0.1f); // compare like with like: the release was boosted
             float hs = hv.magnitude;
-            if (hs > w.Peak) { w.Peak = hs; w.PeakAt = Time.time; }
             float club = f.Ours ? f.SteerAt : k.Rb.linearVelocity.magnitude;
             if (hs <= club + 0.5f) return;
-            w.Boosted = true;
-            if (f.Ours) f.SteerAt = SteerSpeed(hs);
+            if (f.Ours)
+            {
+                float next = SteerSpeed(hs);
+                if (next <= f.SteerAt + 0.1f) return;
+                f.SteerAt = next;
+                w.BoostTo = next; w.BoostKind = "steering speed";
+            }
             else
             {
                 k.Rb.linearVelocity = hv;
                 f.Dir = hv / hs; f.Speed = hs; f.PrevVy = hv.y;
+                w.BoostTo = hs; w.BoostKind = "club velocity";
             }
+            w.Boosted = true;
         }
 
         static void EndFollow(Flight f)
@@ -79,11 +93,9 @@ namespace BillyClubs
             var w = f.Follow;
             if (w == null) return;
             f.Follow = null;
-            if (!Dbg) return;
-            if (w.Peak > w.HandAtRelease + 0.5f)
-                Log.Msg($"  follow-through: hand {w.HandAtRelease:0.0} m/s at the release (club {w.ClubAtRelease:0.0}), still speeding up to {w.Peak:0.0} m/s {(w.PeakAt - w.Released) * 1000f:0} ms later - early release{(w.Boosted ? ", club sped up" : "")}");
-            else
-                Log.Msg($"  follow-through: hand {w.HandAtRelease:0.0} m/s at the release (club {w.ClubAtRelease:0.0}), slowing after it - released at the peak");
+            if (!Dbg || (!w.Boosted && !FollowThroughVerboseLog.Value)) return;
+            string result = w.Boosted ? $"{w.BoostKind} raised to {w.BoostTo:0.0} m/s" : "no speed added";
+            Log.Msg($"  follow-through: hand {w.HandAtRelease:0.0} -> {w.Peak:0.0} m/s in {(w.PeakAt - w.Released) * 1000f:0} ms, club released at {w.ClubAtRelease:0.0} m/s; {result}");
         }
     }
 }

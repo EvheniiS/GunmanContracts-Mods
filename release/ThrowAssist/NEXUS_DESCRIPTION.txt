@@ -11,11 +11,18 @@ item with real velocity instead, so it keeps its spin and its collisions along t
 [*][b]Pistols:[/b] every pistol ships with its throw assist switched off. This mod turns it on for throws
 faster than [i]MinAssistSpeed[/i]. A thrown pistol that lands on an enemy does real damage (torso x2, head x5,
 a head hit kills) and staggers them — the game's own thrown-pistol hit does neither.
-[*]Other items (knives, katanas, bottles, pans, the crowbar) can optionally be steered the same way
-([i]SteerOtherItems[/i], off by default). [b]Knives[/b] fly at the game's own knife speed (17 m/s) or faster and are
-turned blade-first as they go, so they stab instead of bouncing off (14 of 14 test throws stabbed). With
-[i]AimHead[/i] on they go for the head.
+[*][b]Knives:[/b] assisted throws fly at the knife's own game assist speed (17 m/s on the tested combat knife)
+or faster, blade first. The earlier test recorded 14 stabs in 14 assisted throws; face bounces still need more
+testing. Throws without an assist target can tumble end over end in the throw's vertical plane. [i]SteerOtherItems[/i]
+also enables eligible props, though knife throwing is the focus and other props have not been broadly tested.
 [/list]
+
+[size=4][b]Experimental knee assist — private testing[/b][/size]
+A private test build adds optional knee targeting and a kneel reaction on thrown-item leg hits, using the
+same knee-shot animation as Billy Clubs. Knee Shot Stun can extend the kneel. The setting
+[i]allowKneeHit[/i] defaults to [b]false[/b]. Knee targeting and leg contacts still need tuning: a throw
+aimed toward the knee can contact another part of the leg, and a kneel is not guaranteed.
+This experiment is not included in the current 0.2.1 package.
 
 [size=4][b]Billy Clubs[/b][/size]
 If [url=https://github.com/EvheniiS/GunmanContracts-Mods][b]Daredevil[/b][/url] is installed, its billy clubs
@@ -45,7 +52,7 @@ You should end up with: [i]Gunman Contracts - Stand Alone\Mods\ThrowAssist.dll[/
 Turn on the game's own [b]Assisted Throw[/b] option in its settings, or this mod has nothing to steer.
 
 [b]4. Check it works[/b]
-Start the game. The MelonLoader console lists [b]Throw Assist v0.2.0[/b] among the loaded mods.
+Start the game. The MelonLoader console lists [b]Throw Assist v0.2.1[/b] among the loaded mods.
 
 [b]Not working?[/b]
 [list]
@@ -63,17 +70,27 @@ sure you picked [i]GunmanContracts.exe[/i].
 After the first launch, edit [i]UserData\MelonPreferences.cfg[/i], section [b][ThrowAssist][/b]:
 [code]
 PistolAssist       = true    Thrown pistols home in on enemies. The game ships its pistol assist switched off. Needs the game's own assisted throw option on.
-SteerOtherItems    = false   Knives, katanas, bottles, pans and the crowbar are steered by this mod too (real physics, spin kept) instead of the game's drag. Knives fly at the game's knife speed (17 m/s) or faster, blade first.
+SteerOtherItems    = true    Steer knives and other eligible items with real velocity. Billy Clubs use Daredevil's own flight.
 MinAssistSpeed     = 6       A pistol or other item thrown slower than this (m/s) gets no assist and just flies. Knives use the game's own threshold (3.5).
 MaxSpeed           = 18      An assisted item flies at your own throw speed, up to this (m/s).
+KnifeSpeedMultiplier = 1    1 uses each knife's own game assist speed as a floor; increase only after checking impact logs.
+KnifeVerticalSpin  = true    A knife with no assist target tumbles end over end rather than spinning flat. False keeps its original spin.
 SearchDistance     = 15      How far the assist looks for a target (m). Pistols as shipped: 6.
 MaxFlyDistance     = 20      How far an assisted throw flies before it gives up (m). Pistols as shipped: 4.
-AimHead            = false   Assisted throws aim at the head. Off = the chest. Also applies to Daredevil's normal club throws.
+AimHead            = true    Allow head assist only when the release points closer to the head than chest; false always aims at chest.
+HeadAimMaxAngle    = 25      Maximum angle in degrees from release direction to head. Lower = stricter head aim.
 PistolDamage       = true    A thrown pistol that hits an enemy does real damage (PistolThrowDamage). Off = the game's weak hit.
 PistolThrowDamage  = 3       Thrown pistol damage as a multiple of the game's melee damage (10). The game then doubles it on the torso and multiplies by 5 on the head: 3 = 60 to the body, a head hit kills.
 PistolStagger      = true    A thrown pistol that hits a standing enemy makes them stumble.
-DebugLog           = false   One line per assisted or tracked throw and per pistol hit.
+DebugLog           = true    Record releases, targets, knife impacts and stabs, and pistol hits in MelonLoader/Latest.log. Turn off after testing if desired.
 [/code]
+If you are upgrading, existing saved settings keep their previous values. Set [i]SteerOtherItems = true[/i] and
+[i]AimHead = true[/i] explicitly if you want these new defaults. Set [i]AimHead = false[/i] at any time for chest aim.
+Headshots are based on throw direction, not random chance: the release must point closer to the head than chest
+and within [i]HeadAimMaxAngle[/i] of the head. Normal Daredevil club throws follow this rule too; ricochets have
+their own [i]RicochetAimHead[/i] setting.
+Knife and pistol release speed comes from the game's recent hand motion. Only Daredevil's Billy Clubs have the
+separate short follow-through that can add speed from hand movement after release.
 Or change these live in-VR with [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28][b]Mod Settings[/b][/url] (optional) — no restart, no text editor.
 [/spoiler]
 
