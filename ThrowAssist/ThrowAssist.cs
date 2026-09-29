@@ -7,7 +7,7 @@ using MelonLoader;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(ThrowAssist.ThrowAssistMod), "Throw Assist", "0.2.0", "Evgeeso")]
+[assembly: MelonInfo(typeof(ThrowAssist.ThrowAssistMod), "Throw Assist", "0.2.1", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace ThrowAssist
@@ -38,7 +38,7 @@ namespace ThrowAssist
     {
         internal static MelonLogger.Instance Log;
         internal static MelonPreferences_Entry<bool> PistolAssist, PistolDamage, PistolStagger, SteerOtherItems, AimHead, DebugLog;
-        internal static MelonPreferences_Entry<float> MinAssistSpeed, MaxSpeed, SearchDistance, MaxFlyDistance, PistolThrowDamage;
+        internal static MelonPreferences_Entry<float> MinAssistSpeed, MaxSpeed, SearchDistance, MaxFlyDistance, PistolThrowDamage, KnifeSpeedMultiplier;
         internal static bool Dbg => DebugLog.Value;
 
         public override void OnInitializeMelon()
@@ -46,17 +46,18 @@ namespace ThrowAssist
             Log = LoggerInstance;
             var c = MelonPreferences.CreateCategory("ThrowAssist", "Throw Assist");
             PistolAssist = c.CreateEntry("PistolAssist", true, description: "Thrown pistols home in on enemies. The game ships its pistol assist switched off. Needs the game's own assisted throw option on.");
-            SteerOtherItems = c.CreateEntry("SteerOtherItems", false, description: "Knives, katanas, bottles, pans and the crowbar are steered by this mod too (real physics, spin kept) instead of the game's drag. Knives fly at the game's knife speed (17 m/s) or faster, blade first.");
+            SteerOtherItems = c.CreateEntry("SteerOtherItems", true, description: "Use velocity steering for any item with the game's assisted-throw component, including knives and props. Billy Clubs keep their own assist. Existing saved preferences retain their value.");
             MinAssistSpeed = c.CreateEntry("MinAssistSpeed", 6f, description: "A pistol or other item thrown slower than this (m/s) gets no assist and just flies. Knives use the game's own threshold (3.5).");
             MaxSpeed = c.CreateEntry("MaxSpeed", 18f, description: "An assisted item flies at your own throw speed, up to this (m/s).");
+            KnifeSpeedMultiplier = c.CreateEntry("KnifeSpeedMultiplier", 1f, description: "Knife flight speed relative to that knife's own game assist speed (normally 17 m/s). 1 matches the game; increase only if logged face impacts are too slow to stab.");
             SearchDistance = c.CreateEntry("SearchDistance", 15f, description: "How far the assist looks for a target (m). Pistols as shipped: 6.");
             MaxFlyDistance = c.CreateEntry("MaxFlyDistance", 20f, description: "How far an assisted throw flies before it gives up (m). Pistols as shipped: 4.");
             AimHead = c.CreateEntry("AimHead", false, description: "Assisted throws aim at the head. Off = the chest.");
             PistolDamage = c.CreateEntry("PistolDamage", true, description: "A thrown pistol that hits an enemy does real damage (PistolThrowDamage). Off = the game's weak hit.");
             PistolThrowDamage = c.CreateEntry("PistolThrowDamage", 3f, description: "Thrown pistol damage as a multiple of the game's melee damage (10). The game then doubles it on the torso and multiplies by 5 on the head: 3 = 60 to the body, a head hit kills.");
             PistolStagger = c.CreateEntry("PistolStagger", true, description: "A thrown pistol that hits a standing enemy makes them stumble.");
-            DebugLog = c.CreateEntry("DebugLog", false, description: "One line per assisted or tracked throw and per pistol hit.");
-            LoggerInstance.Msg("loaded");
+            DebugLog = c.CreateEntry("DebugLog", true, description: "Record release settings, target choice, knife impact and stab details, flight end, and pistol damage in MelonLoader/Latest.log. Disable after testing.");
+            LoggerInstance.Msg($"loaded: debug={Dbg}, other items={SteerOtherItems.Value}, knife speed x{KnifeSpeedMultiplier.Value:0.##}");
         }
 
         public override void OnFixedUpdate()
@@ -86,7 +87,7 @@ namespace ThrowAssist
             public string Name;
             public bool Pistol;
             public ANBKnife Knife;
-            public string Stab, EndInfo;
+            public string Stab, EndInfo, Impact;
             public float LastTip = -1f;
             public float Start, Speed, SteerAt, Until, EndedAt = -1f;
             public Vector3 Dir;
@@ -153,7 +154,7 @@ namespace ThrowAssist
             var knife = pistol ? null : ato.GetComponent<ANBKnife>() ?? ato.GetComponentInParent<ANBKnife>();
             if (sp < MinThrowSpeed || (!pistol && target == null))    // nothing to steer, no damage to track
             {
-                if (knife != null && ThrowAssistMod.Dbg) W($"knife '{ato.name}' thrown at {sp:0.0} m/s, assist: {NoAssist(sp, true)}");
+                if (ThrowAssistMod.Dbg) W($"{(pistol ? "pistol" : knife != null ? "knife" : "item")} '{ato.name}' released at {sp:0.0} m/s: {(pistol && !ThrowAssistMod.PistolAssist.Value ? "PistolAssist off" : NoAssist(sp, knife != null))}; game threshold {GameThreshold():0.0}, item speed {ato.speed:0.0}, dontUse {ato.dontUse}");
                 return;
             }
 
@@ -174,7 +175,7 @@ namespace ThrowAssist
                 f.Target = npc; f.AimT = target;
                 float min = ThrowAssistMod.MinAssistSpeed.Value;
                 f.SteerAt = Mathf.Clamp(sp, min, Mathf.Max(ThrowAssistMod.MaxSpeed.Value, min));
-                if (knife != null) f.SteerAt = Mathf.Max(f.SteerAt, ato.speed);   // the game flies knives at a fixed 17 m/s
+                if (knife != null) f.SteerAt = Mathf.Max(f.SteerAt, ato.speed * Mathf.Max(0.1f, ThrowAssistMod.KnifeSpeedMultiplier.Value));
                 f.Until = Time.time + ThrowAssistMod.MaxFlyDistance.Value / f.SteerAt + 0.3f;
                 var to = (npc != null ? AimPoint(npc) : target.position) - rb.worldCenterOfMass;
                 f.Dir = to.normalized; f.Speed = f.SteerAt;
@@ -183,8 +184,10 @@ namespace ThrowAssist
                 assist = $"{(npc != null ? "enemy" : "target")} '{(npc != null ? npc.name : target.name)}' {to.magnitude:0.0} m, steered at {f.SteerAt:0} m/s";
             }
             else assist = !ThrowAssistMod.PistolAssist.Value ? "none (PistolAssist off)" : NoAssist(sp, false);
-            if (ThrowAssistMod.Dbg) W($"{(pistol ? "pistol" : knife != null ? "knife" : "item")} '{f.Name}' thrown at {sp:0.0} m/s, assist: {assist}");
+            if (ThrowAssistMod.Dbg) W($"{(pistol ? "pistol" : knife != null ? "knife" : "item")} '{f.Name}' released at {sp:0.0} m/s, assist: {assist}; game threshold {GameThreshold():0.0}, item speed {ato.speed:0.0}, spin {preW.magnitude:0.0} rad/s, aim {(ThrowAssistMod.AimHead.Value ? "head" : "chest")}");
         }
+
+        static float GameThreshold() => ANBStaticGameManager.ANBmain != null ? ANBStaticGameManager.ANBmain.assistedThrowAtVelocity : -1f;
 
         static bool IsKnife(ANBAssistedThrowingObject ato) =>
             ato.GetComponent<ANBKnife>() != null || ato.GetComponentInParent<ANBKnife>() != null;
@@ -223,7 +226,7 @@ namespace ThrowAssist
                 : game != null && !game.assistedThrow ? "off in the game settings"
                 : game != null && releaseSpeed < game.assistedThrowAtVelocity ? $"{releaseSpeed:0.0} m/s is below the game's {game.assistedThrowAtVelocity:0.0}"
                 : "the game didn't start it";
-            W($"knife '{k.name}' thrown at {releaseSpeed:0.0} m/s, assist: none ({why})");
+            W($"knife '{k.name}' released at {releaseSpeed:0.0} m/s, assist: none ({why}); game threshold {GameThreshold():0.0}, allowAssistedThrow {k.allowAssistedThrow}, other items {ThrowAssistMod.SteerOtherItems.Value}");
         }
 
         internal static void AssistReached() => reachedAssist = true;
@@ -270,12 +273,13 @@ namespace ThrowAssist
                 }
         }
 
-        static void End(Flight f)
+        static void End(Flight f, string reason)
         {
             if (f.EndedAt >= 0f) return;
             f.EndedAt = Time.time;
             f.Target = null; f.AimT = null;
-            if (f.Knife != null) f.EndInfo = $"{f.EndedAt - f.Start:0.00} s at {f.Speed:0} m/s, tip {f.LastTip:0} deg off the flight before the hit";
+            f.EndInfo = $"{reason}, {f.EndedAt - f.Start:0.00} s, last speed {f.Speed:0.0} m/s";
+            if (f.Knife != null) f.EndInfo += $", tip {f.LastTip:0} deg off flight";
             if (!Alive(f.Rb)) return;
             f.Rb.collisionDetectionMode = f.OldMode;
             if (Alive(f.Ato)) { f.Ato.StopAllCoroutines(); f.Ato.homingTarget = null; }
@@ -291,7 +295,7 @@ namespace ThrowAssist
                 {
                     if (Time.time - f.EndedAt > 0.3f)   // kept briefly for the damage and stab hooks
                     {
-                        if (f.Knife != null && ThrowAssistMod.Dbg) W($"  knife '{f.Name}': {f.Stab ?? "no stab"} ({f.EndInfo})");
+                        if (ThrowAssistMod.Dbg) W($"  {(f.Pistol ? "pistol" : f.Knife != null ? "knife" : "item")} '{f.Name}': {f.Stab ?? "no stab"}; {f.Impact ?? "no body collision observed"}; {f.EndInfo}");
                         Flights.RemoveAt(i--);
                     }
                     continue;
@@ -300,12 +304,12 @@ namespace ThrowAssist
                 float age = Time.time - f.Start;
                 bool held = false;
                 try { held = Alive(f.Grab) && f.Grab.IsHandGrabbed; } catch { }
-                if (held && age > 0.2f) { End(f); continue; }
+                if (held && age > 0.2f) { End(f, "grabbed"); continue; }
                 var v = rb.linearVelocity;
                 float sp = v.magnitude;
                 // Impact: the velocity turns hard or loses a lot of speed in one step.
-                if (age > 0.05f && sp > 0.01f && (Vector3.Angle(v, f.Dir) > 50f || sp < f.Speed * 0.6f)) { End(f); continue; }
-                if (sp < 2f || age > 4f) { End(f); continue; }
+                if (age > 0.05f && sp > 0.01f && (Vector3.Angle(v, f.Dir) > 50f || sp < f.Speed * 0.6f)) { End(f, $"impact-like velocity change ({sp:0.0} m/s, turn {Vector3.Angle(v, f.Dir):0} deg)"); continue; }
+                if (sp < 2f || age > 4f) { End(f, sp < 2f ? "slowed below 2 m/s" : "4 s timeout"); continue; }
                 if (f.Target != null || f.AimT != null)
                 {
                     if (Time.time > f.Until || (f.Target != null && (!Alive(f.Target) || f.Target.isDead)) || (f.Target == null && !Alive(f.AimT)))
@@ -325,9 +329,14 @@ namespace ThrowAssist
         // collisionEnter prefix. false = the mod dealt the hit, skip the game's.
         internal static bool BodyHit(ANBBodyMeleeCollisionManager mgr, ANBBodyMeleeCollision bmc, Collision collision)
         {
-            if (!ThrowAssistMod.PistolDamage.Value || Flights.Count == 0 || collision == null || bmc == null) return true;
+            if (Flights.Count == 0 || collision == null || bmc == null) return true;
             var rb = collision.collider != null ? collision.collider.attachedRigidbody : null;
             if (rb == null) return true;
+            if (ThrowAssistMod.Dbg)
+                foreach (var p in Flights)
+                    if (p.Knife != null && Alive(p.Rb) && p.Rb.Pointer == rb.Pointer && p.Impact == null)
+                        p.Impact = $"body collision with '{(mgr.ANBNpc != null ? mgr.ANBNpc.name : "?")}' part '{(bmc.myCol != null ? bmc.myCol.name : "?")}' at {collision.relativeVelocity.magnitude:0.0} m/s, tip {TipOff(p):0} deg";
+            if (!ThrowAssistMod.PistolDamage.Value) return true;
             Flight f = null;
             foreach (var p in Flights) if (p.Pistol && Alive(p.Rb) && p.Rb.Pointer == rb.Pointer) { f = p; break; }
             if (f == null) return true;
@@ -346,7 +355,7 @@ namespace ThrowAssist
             bool stagger = ThrowAssistMod.PistolStagger.Value && !npc.isOffBalance;
             float before = npc.health;
             npc.TakeMeleeDamage(part, collision, stagger, false, false, dmg);
-            End(f);
+            End(f, "pistol hit");
             if (ThrowAssistMod.Dbg)
                 W($"pistol '{f.Name}' hit '{npc.name}' {(Alive(part) ? part.name : "?")} at {speed:0.0} m/s: damage {dmg * mult:0}{(stagger ? ", stagger" : "")}, " +
                   $"health {before:0} -> {npc.health:0}{(npc.isDead ? " (down for good)" : "")}");

@@ -112,7 +112,7 @@ namespace ModSettings
             float u = Mathf.Max(Screen.height / 1080f, 0.6f);
             Styles(u);
 
-            float w = 820 * u, h = 720 * u, pad = 14 * u, row = 36 * u, gap = 6 * u;
+            float w = 1040 * u, h = 720 * u, pad = 14 * u, row = 36 * u, gap = 6 * u;
             var win = new Rect((Screen.width - w) / 2, (Screen.height - h) / 2, w, h);
             Fill(win, new Color(0.06f, 0.06f, 0.07f, 0.94f));
 
@@ -129,7 +129,8 @@ namespace ModSettings
             y += row + 2 * gap;
 
             // Rows: name | value | -big -small +small +big (numbers) or < > (choices)
-            float nameW = inner * 0.44f, valW = inner * 0.2f, stepW = (inner - nameW - valW - 5 * gap) / 4;
+            float resetW = 85 * u;
+            float nameW = inner * 0.36f, valW = inner * 0.18f, stepW = (inner - nameW - valW - resetW - 6 * gap) / 4;
             for (int r = 0; r < Rows; r++, y += row + gap)
             {
                 int idx = pg.Scroll * Rows + r;
@@ -139,7 +140,7 @@ namespace ModSettings
 
                 var bg = s == pg.Selected ? new Color(0.45f, 0.1f, 0.1f) : new Color(0.2f, 0.2f, 0.23f);
                 var txt = s.IsDefault ? Color.white : new Color(1f, 0.82f, 0.35f);
-                if (Btn(new Rect(x, y, nameW, row), " " + s.Name + (s.Restart ? " *" : ""), bg, txt, left: true))
+                if (Btn(new Rect(x, y, nameW, row), " " + s.Name + (s.Restart ? " *" : "") + (s.IsDefault ? " [default]" : " [changed]"), bg, txt, left: true))
                     pg.Selected = pg.Selected == s ? null : s;
                 x += nameW + gap;
 
@@ -176,17 +177,23 @@ namespace ModSettings
                         if (Btn(new Rect(x + 2 * (stepW + gap), y, stepW, row), ">")) Status(Pages.Change(s, 1));
                         break;
                 }
+                var rr = new Rect(x0 + inner - resetW, y, resetW, row);
+                if (s.IsDefault || !s.CanReset) GUI.Label(rr, s.IsDefault ? "Default" : "Managed", label);
+                else if (Btn(rr, "Reset", fg: new Color(1f, 0.82f, 0.35f))) Status(Pages.Reset(s));
             }
 
-            // Footer: Up  n/N  Down   status   Reset
+            // Footer: Up  n/N  Down   status   Reset section
             float bw = 90 * u;
             if (pg.Scroll > 0 && Btn(new Rect(x0, y, bw, row), "Up")) pg.Scroll--;
             if (maxScroll > 0) GUI.Label(new Rect(x0 + bw + gap, y, bw, row), $"{pg.Scroll + 1}/{maxScroll + 1}", label);
             if (pg.Scroll < maxScroll && Btn(new Rect(x0 + 2 * (bw + gap), y, bw, row), "Down")) pg.Scroll++;
             GUI.Label(new Rect(x0 + 3 * (bw + gap), y, inner - 5 * bw, row), status, label);
             var sel = pg.Selected;
-            if (sel != null && sel.Kind != Kind.ReadOnly && !sel.IsDefault && Btn(new Rect(x0 + inner - bw, y, bw, row), "Reset"))
-                Status(Pages.Reset(sel));
+            bool wasEnabled = GUI.enabled;
+            GUI.enabled = wasEnabled && Pages.CanResetSection;
+            if (Btn(new Rect(x0 + inner - 1.8f * bw, y, 1.8f * bw, row), "Reset section"))
+                Status(Pages.ResetSection());
+            GUI.enabled = wasEnabled;
             y += row + 2 * gap;
 
             string text = sel == null

@@ -1,0 +1,12 @@
+Grab Fix Nexus media — built-in imagegen
+
+Thumbnail source: Tumbnail.jpg
+Style reference: ../HeavyMelee/HeavyMelee-Nexus-thumbnail-1600x900.png
+Output: GrabFix-Nexus-thumbnail-base.png; exported to GrabFix-Nexus-thumbnail-1600x900.png
+
+Edit the supplied in-game screenshot into a Gunman Contracts Nexus thumbnail. Preserve the original warm floor, red open glove, red-and-black baton, and white targeting ring. Keep the scene recognizable and realistic. Place large distressed ivory GRAB and amber FIX lettering on the left, matching the existing Heavy Melee thumbnail style. Add GUNMAN CONTRACTS above and the readable feature lines FINGER + PALM / WIDER GRABS and 0.30s GRIP BUFFER / EASIER CATCHES below. Keep text clear of the glove and baton.
+
+Header source: generated Grab Fix thumbnail
+Output: GrabFix-Nexus-header-base.png; exported to GrabFix-Nexus-header-1300x372.png
+
+Create a matching wide Nexus header using the Grab Fix thumbnail scene. Preserve the red glove, baton, targeting ring, and warm in-game look. Use a single-line distressed title GRAB FIX on the left, ivory GRAB and amber FIX, with GUNMAN CONTRACTS above. Place the same two feature lines below: FINGER + PALM / WIDER GRABS and 0.30s GRIP BUFFER / EASIER CATCHES. Keep all text legible within a short banner crop.

@@ -1,4 +1,4 @@
-# Mod Settings 0.3.0
+# Mod Settings 1.0.0
 
 An in-VR settings board for every MelonLoader mod in Gunman Contracts, with a mouse-driven on-screen version for
 flat mode. It reads all categories from
@@ -9,14 +9,22 @@ flat mode. It reads all categories from
 - **Open / close:** take out the phone and press the **Mod Settings** tile in the middle row (an empty slot), or press
   **Ctrl+M**. The board opens 40 cm in front of your eyes, above the phone, and moves with you when you move with the
   stick. It closes on X, on the tile again, on a
-  scene load, or if you walk 1.6 m away.
-- **Press buttons with either index fingertip**, coming in from the front (sliding across the board doesn't press).
+  scene load, or if you walk 5 m away.
+- **Move / tilt:** grip the top bar with an empty hand, nearby or with the laser aimed at it. Move and rotate your
+  hand, then release grip to leave the board there. It stays relative to your player rig, including near the floor.
+  Close and reopen to bring it back in front of your eyes.
+- **Point and press trigger** with either empty hand to select from up to 4 m away, or press with an index fingertip,
+  coming in from the front (sliding across the board doesn't press). Hands aimed at or near the board use the game's
+  menu pointing pose. Held weapons keep their own pose. Release the opening gesture before interacting.
 - `<` / `>` at the top switch mods; `Up` / `Down` scroll a mod's settings; poke a setting's **name** to read its
   description, default and restart note; `Reset` puts the selected setting back to its default.
 - Numbers get `-big -small value +small +big` steps (from the default: 18 → 1/10, 0.6 → 0.01/0.1). Switches toggle.
   Choices written in the description (`TipFirst (...), Natural (...) or SpinEnd (...)`) and `#RRGGBB` colours cycle
   with `<` `>`. Other text (keys, paths, holster positions) is read-only here; edit it in the cfg.
-- Yellow name = not at its default. `*` = the description says it needs a game restart.
+- Each row shows **DEFAULT / CHANGED**, the declared default, and its own **Reset** button when changed. Yellow
+  names mark changed values. Mod-managed saved state remains protected from resetting; ordinary read-only text can
+  be reset to its declared default. `*` = the description says it needs a game restart.
+- The VR board is now **72 × 56 cm** at scale 1 (previously 48 × 44), with larger controls and a dedicated reset column.
 
 ### Flat mode (no headset)
 
@@ -56,15 +64,26 @@ hides with the phone.
 ## Build
 
 ```powershell
-dotnet build ModSettings/ModSettings.csproj -c Release -o feature/ModSettings-0.1.0
+dotnet build ModSettings/ModSettings.csproj -c Release -o feature/ModSettings-1.0.0
 dotnet run --project ModSettings/Tests/Tests.csproj -- "<game>/UserData/MelonPreferences.cfg"
 ```
 
-The test prints how every string setting in the cfg would be shown (choice / colour / read-only) and checks the number
-stepping.
+The test prints how every string setting in the cfg would be shown (choice / colour / read-only), checks number
+stepping and ray intersections, and verifies the direct holster adjustment hold/release gate.
 
 ## How it works
 
 Quads (URP Unlit) + TextMeshPro 3D text under one `DontDestroyOnLoad` root, no colliders. Each frame the index
 fingertip bones (`LndexNub` / `RndexNub` in the glove rig; palm as a fallback) are transformed into panel space and
 tested against the button rectangles. Hands come from a Harmony postfix on `HVRHandGrabber.Start`.
+
+Distance selection uses the native `HVRUIPointer.Camera` forward direction, with a line starting at the fingertip.
+The pointing pose comes from `ANBVrHandProximityPoser` where `isVRHandPointer` is true, applied with
+`HVRHandGrabber.SetAnimatorOverridePose`. The board does not call `showVRpointer`, which also changes global hand
+models and locomotion flags. Pose ownership is released on aim exit, grabbing an item, close and scene change.
+
+Build and automated logic checks are available; the headset checks in [TESTING.md](TESTING.md) still need a VR pass.
+
+Defaults are declared by each mod in CreateEntry, not learned from first launch or your saved configuration. Mod Settings compares the current saved value with that declared default, and Reset calls ResetToDefault. Holster color's Default option preserves native game colors; saved hex colors remain editable.
+
+**Reset section** in the footer restores all editable settings in the current category, including other scroll pages. Per-row **Reset** still restores just one setting. Hidden entries and mod-managed saved state are excluded.

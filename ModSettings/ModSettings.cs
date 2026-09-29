@@ -9,7 +9,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.XR;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(ModSettings.ModSettingsMod), "Mod Settings", "0.3.0", "Evgeeso")]
+[assembly: MelonInfo(typeof(ModSettings.ModSettingsMod), "Mod Settings", "1.0.0", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace ModSettings
@@ -42,7 +42,7 @@ namespace ModSettings
             PhoneTile = c.CreateEntry("PhoneTile", true, description: "Put a Mod Settings tile in an empty slot of the phone's middle row. Press it to open / close this menu.");
             OpenKey = c.CreateEntry("OpenKey", "M", description: "Keyboard: Ctrl + this key opens / closes the menu (Input System key name).");
             Distance = c.CreateEntry("PanelDistance", 0.4f, description: "How far in front of your eyes the menu opens, in metres.");
-            Scale = c.CreateEntry("PanelScale", 1f, description: "Menu size (1 = 48 x 44 cm). Applies the next time it opens.");
+            Scale = c.CreateEntry("PanelScale", 1f, description: "Menu size (1 = 72 x 56 cm). Applies the next time it opens. Grip the top bar to move or tilt the board.");
             DebugLog = c.CreateEntry("DebugLog", false, description: "Log opening/closing and which fingertips were found; write the phone's home-screen layout to UserData/ModSettings_phone.txt once.");
             Log.Msg($"loaded - open with Ctrl+{OpenKey.Value}{(PhoneTile.Value ? " or the Mod Settings tile on the phone" : "")}");
         }
@@ -99,12 +99,18 @@ namespace ModSettings
                 FlatMenu.Update();
                 if (Pages.SaveAt > 0 && now >= Pages.SaveAt) Pages.SaveNow();
             }
-            catch (Exception e) { Log.Warning($"update: {e.GetType().Name}: {e.Message}"); }
+            catch (Exception e) { VRInteraction.Close(); Log.Warning($"update: {e.GetType().Name}: {e.Message}"); }
         }
 
         public override void OnGUI()
         {
             try { FlatMenu.Draw(); } catch (Exception e) { Log.Warning($"flat menu: {e.GetType().Name}: {e.Message}"); FlatMenu.Close(); }
+        }
+
+        public override void OnDeinitializeMelon()
+        {
+            Panel.Close();
+            FlatMenu.Close();
         }
 
         static void Toggle(Transform head, string how)

@@ -12,10 +12,10 @@ namespace ModSettings
 {
     // The floating settings board. Built once from quads + TextMeshPro, then shown/hidden. Panel space: metres,
     // +X right, +Y up, +Z away from the player (the quads' visible side faces -Z). No colliders anywhere: the
-    // fingertips are tested against the button rectangles in panel space, so nothing here touches physics or HVR.
+    // fingertips and pointer rays are tested against button rectangles in panel space; no physics colliders.
     internal static class Panel
     {
-        const float W = 0.48f, H = 0.44f, RowStep = 0.043f, Btn = 0.036f;
+        const float W = 0.72f, H = 0.56f, RowStep = 0.052f, Btn = 0.042f;
         const int Rows = 6;
         const float PressDepth = -0.015f, PressBack = 0.03f, HoverDepth = -0.07f;
 
@@ -31,7 +31,7 @@ namespace ModSettings
             public float FlashUntil;
         }
 
-        sealed class Poker { public bool WasIn; public float LastPress; public Button Hover; }
+        sealed class Poker { public bool WasIn, Trigger, Grip; public float LastPress, LastDepth; public Button Hover; }
 
         static GameObject root;
         static Shader flat;
@@ -39,9 +39,13 @@ namespace ModSettings
         static readonly List<Button> buttons = new();
         static Button title, prevCat, nextCat, close, up, down, pageText, reset, status, desc;
         static readonly Button[] labels = new Button[Rows], values = new Button[Rows];
+        static readonly Button[] resets = new Button[Rows];
         static readonly Button[,] steps = new Button[Rows, 4];
         static readonly Poker[] pokers = { new(), new() };
         static float nextValueRefresh, statusUntil;
+        static int dragging = -1;
+        static Vector3 dragOffset;
+        static Quaternion dragRotation;
 
         static readonly Color Bg = new(0.07f, 0.07f, 0.08f), BtnCol = new(0.22f, 0.22f, 0.25f), LabelCol = new(0.13f, 0.13f, 0.15f),
             SelCol = new(0.32f, 0.08f, 0.08f), FlashCol = new(0.75f, 0.2f, 0.2f), OnCol = new(0.12f, 0.42f, 0.16f),
@@ -65,13 +69,16 @@ namespace ModSettings
             root.transform.SetPositionAndRotation(pos, Quaternion.LookRotation(pos - head.position, Vector3.up));
             float parentScale = head.parent != null ? head.parent.lossyScale.x : 1f;
             root.transform.localScale = Vector3.one * (Mathf.Clamp(scale, 0.5f, 2f) / Mathf.Max(parentScale, 1e-3f));
-            foreach (var p in pokers) { p.WasIn = true; p.Hover = null; } // a finger already in the board doesn't press
+            dragging = -1;
+            foreach (var p in pokers) { p.WasIn = p.Trigger = p.Grip = true; p.LastDepth = float.PositiveInfinity; p.Hover = null; }
             root.SetActive(true);
             Refresh();
         }
 
         public static void Close()
         {
+            dragging = -1;
+            VRInteraction.Close();
             if (Alive(root))
             {
                 root.SetActive(false);
@@ -86,27 +93,78 @@ namespace ModSettings
         {
             if (!IsOpen) return;
             float now = Time.unscaledTime;
-            if (head != null && Vector3.Distance(head.position, root.transform.position) > 1.6f) { Close(); ModSettingsMod.Dbg("closed: walked away"); return; }
+            // A floor-height board should stay open while the player stands and adjusts holsters.
+            if (head != null && Vector3.Distance(head.position, root.transform.position) > 5f) { Close(); ModSettingsMod.Dbg("closed: walked away"); return; }
 
             for (int i = 0; i < pokers.Length; i++)
             {
                 var p = pokers[i];
                 var tip = i < tips.Count ? tips[i] : null;
-                if (!Alive(tip)) { p.WasIn = false; p.Hover = null; continue; }
+                var hand = i < hands.Count ? hands[i] : null;
+                bool free = VRInteraction.Free(hand);
+                bool trigger = free && hand.Controller != null && hand.Controller.TriggerButtonState.Active;
+                bool grip = free && hand.Controller != null && hand.Controller.GripButtonState.Active;
+                if (!Alive(tip) || !free)
+                {
+                    if (dragging == i) dragging = -1;
+                    p.WasIn = p.Trigger = p.Grip = true; p.Hover = null;
+                    p.LastDepth = float.PositiveInfinity;
+                    VRInteraction.Show(i, hand, false, Vector3.zero, Vector3.zero, flat);
+                    continue;
+                }
+                var anchor = Alive(hand.TrackedController) ? hand.TrackedController : hand.transform;
+                if (dragging == i)
+                {
+                    if (grip)
+                        root.transform.SetPositionAndRotation(anchor.TransformPoint(dragOffset), anchor.rotation * dragRotation);
+                    else dragging = -1;
+                    p.WasIn = true; p.Trigger = trigger; p.Grip = grip; p.Hover = null;
+                    p.LastDepth = float.PositiveInfinity;
+                    VRInteraction.Show(i, hand, false, Vector3.zero, Vector3.zero, flat);
+                    continue;
+                }
                 var local = root.transform.InverseTransformPoint(tip.position);
+                var direction = root.transform.InverseTransformDirection(VRInteraction.Direction(hand));
+                bool aimed = PointerGeometry.Hit(local.x, local.y, local.z, direction.x, direction.y, direction.z,
+                    root.transform.lossyScale.x, W, H, out float hitX, out float hitY);
+                var hit = new Vector3(hitX, hitY, 0);
+                bool near = local.z > -0.14f && local.z < PressBack && Mathf.Abs(local.x) < W / 2 && Mathf.Abs(local.y) < H / 2;
+                bool handle = (near && local.y > H / 2 - 0.038f) || (aimed && hit.y > H / 2 - 0.038f);
+                if (dragging < 0 && handle && grip && !p.Grip)
+                {
+                    dragging = i;
+                    dragOffset = anchor.InverseTransformPoint(root.transform.position);
+                    dragRotation = Quaternion.Inverse(anchor.rotation) * root.transform.rotation;
+                    p.Grip = true; p.Trigger = trigger; p.WasIn = true; p.Hover = null;
+                    p.LastDepth = float.PositiveInfinity;
+                    hand.Controller?.Vibrate(0.3f, 0.03f, 160f);
+                    VRInteraction.Close();
+                    continue;
+                }
+                VRInteraction.Show(i, hand, dragging < 0 && (aimed || near), tip.position,
+                    aimed ? root.transform.TransformPoint(new Vector3(hit.x, hit.y, -0.003f)) : tip.position, flat);
                 var b = Hit(new Vector2(local.x, local.y));
                 bool touching = local.z > PressDepth && local.z < PressBack && Mathf.Abs(local.x) < W / 2 && Mathf.Abs(local.y) < H / 2;
                 bool isIn = b != null && touching;
                 p.Hover = b != null && local.z > HoverDepth && local.z < PressBack ? b : null;
+                var rayButton = aimed ? Hit(new Vector2(hit.x, hit.y)) : null;
+                bool rayPress = !near && rayButton != null && trigger && !p.Trigger;
+                if (!near && aimed) p.Hover = rayButton;
                 // Press only when the fingertip comes in from the front, not when it slides sideways across the board.
-                if (isIn && !p.WasIn && now - p.LastPress > 0.2f)
+                if (dragging < 0 && !grip && ((isIn && !p.WasIn && p.LastDepth <= PressDepth) || rayPress) && now - p.LastPress > 0.2f)
                 {
+                    if (rayPress) b = rayButton;
                     p.LastPress = now;
                     b.FlashUntil = now + 0.15f;
                     try { var h = i < hands.Count ? hands[i] : null; if (Alive(h)) h.Controller?.Vibrate(0.3f, 0.03f, 160f); } catch { }
                     try { b.OnPress?.Invoke(); } catch (Exception e) { ModSettingsMod.Log.Warning($"button: {e.Message}"); }
+                    if (!IsOpen) return;
+                    // A page change/reset must not make another finger press newly positioned content.
+                    foreach (var other in pokers) other.WasIn = true;
                 }
                 p.WasIn = touching;
+                p.LastDepth = local.z;
+                p.Trigger = trigger; p.Grip = grip;
             }
 
             foreach (var b in buttons)
@@ -144,12 +202,18 @@ namespace ModSettings
                 var s = idx < pg.Settings.Count ? pg.Settings[idx] : null;
                 labels[r].Go.SetActive(s != null);
                 values[r].Go.SetActive(s != null);
+                resets[r].Go.SetActive(s != null);
                 for (int k = 0; k < 4; k++) steps[r, k].Go.SetActive(false);
                 if (s == null) continue;
 
-                labels[r].Text.SetIfChanged(s.Name + (s.Restart ? " *" : ""));
+                labels[r].Text.SetIfChanged(s.Name + (s.Restart ? " *" : "") +
+                    $"\n<size=65%>{(s.IsDefault ? "DEFAULT" : "CHANGED")} · default: {s.Entry.GetDefaultValueAsString()}</size>");
                 labels[r].Text.color = s.IsDefault ? Color.white : Changed;
                 SetBase(labels[r], s == pg.Selected ? SelCol : LabelCol);
+                resets[r].Text.SetIfChanged(s.IsDefault ? "Default" : s.CanReset ? "Reset" : "Managed");
+                resets[r].Interactive = !s.IsDefault && s.CanReset;
+                resets[r].Text.color = s.IsDefault ? Grey : Changed;
+                SetBase(resets[r], s.IsDefault ? LabelCol : BtnCol);
 
                 var v = values[r];
                 v.Text.SetIfChanged(s.ValueText());
@@ -158,6 +222,7 @@ namespace ModSettings
                 v.Quad.SetActive(s.Kind == Kind.Bool || s.Kind == Kind.Color);
                 if (s.Kind == Kind.Bool) SetBase(v, (bool)s.Entry.BoxedValue ? OnCol : OffCol);
                 else if (s.Kind == Kind.Color && ColorUtility.TryParseHtmlString(s.ValueText(), out var col)) SetBase(v, col);
+                else if (s.Kind == Kind.Color) SetBase(v, LabelCol);
 
                 switch (s.Kind)
                 {
@@ -178,9 +243,12 @@ namespace ModSettings
             up.Go.SetActive(pg.Scroll > 0);
             down.Go.SetActive(pg.Scroll < maxScroll);
             var sel = pg.Selected;
-            reset.Go.SetActive(sel != null && sel.Kind != Kind.ReadOnly && !sel.IsDefault);
+            reset.Go.SetActive(true);
+            reset.Interactive = Pages.CanResetSection;
+            reset.Text.color = reset.Interactive ? Color.white : Grey;
+            SetBase(reset, reset.Interactive ? BtnCol : LabelCol);
             desc.Text.SetIfChanged(sel == null
-                ? "Poke a setting's name to read what it does. Changes apply at once and are saved. * = needs a game restart."
+                ? "Point + trigger or poke to adjust. Grip the top bar to move / tilt this board. Yellow = changed; Reset restores that row. Select a name for help. * = restart required."
                 : $"<b>{sel.Name}</b> = {sel.ValueText()}  <color=#999999>(default {sel.Entry.GetDefaultValueAsString()})</color>\n{sel.Entry.Description}" +
                   (sel.Restart ? "\n<color=#FFD060>Restart the game to apply.</color>" : "") +
                   (sel.Kind == Kind.ReadOnly ? "\n<color=#999999>Edit this one in UserData/MelonPreferences.cfg.</color>" : ""));
@@ -233,20 +301,28 @@ namespace ModSettings
             var bg = Quad(root.transform, Vector2.zero, new Vector2(W, H), 0.002f, out _);
             SetColor(bg, Bg);
 
-            float top = H / 2 - 0.035f;
+            Make(new Vector2(0, H / 2 - 0.019f), new Vector2(W - 0.02f, 0.03f),
+                "GRIP HERE TO MOVE / TILT", 0.12f, BtnCol, null);
+            float top = H / 2 - 0.07f;
             prevCat = Make(new Vector2(-W / 2 + 0.03f, top), new Vector2(Btn, Btn), "<", 0.2f, BtnCol, () => { Pages.Turn(-1); Refresh(); });
-            title = Make(new Vector2(-0.035f, top), new Vector2(0.3f, Btn), "", 0.2f, Bg, null, TextAlignmentOptions.Center, false);
-            nextCat = Make(new Vector2(0.155f, top), new Vector2(Btn, Btn), ">", 0.2f, BtnCol, () => { Pages.Turn(1); Refresh(); });
+            title = Make(new Vector2(-0.025f, top), new Vector2(0.50f, Btn), "", 0.22f, Bg, null, TextAlignmentOptions.Center, false);
+            nextCat = Make(new Vector2(W / 2 - 0.085f, top), new Vector2(Btn, Btn), ">", 0.2f, BtnCol, () => { Pages.Turn(1); Refresh(); });
             close = Make(new Vector2(W / 2 - 0.03f, top), new Vector2(Btn, Btn), "X", 0.2f, OffCol, () => { Close(); ModSettingsMod.Dbg("closed: X"); });
 
-            float[] stepX = { -0.02f, 0.025f, 0.155f, 0.2f };
+            float[] stepX = { -0.073f, -0.023f, 0.132f, 0.182f };
             int[] stepDir = { -2, -1, 1, 2 };
             for (int r = 0; r < Rows; r++)
             {
                 int row = r;
                 float y = top - 0.05f - r * RowStep;
-                labels[r] = Make(new Vector2(-0.14f, y), new Vector2(0.19f, Btn), "", 0.16f, LabelCol, () => Select(row), TextAlignmentOptions.MidlineLeft);
-                values[r] = Make(new Vector2(0.09f, y), new Vector2(0.08f, Btn), "", 0.16f, BtnCol, () => Step(row, 1));
+                labels[r] = Make(new Vector2(-0.23f, y), new Vector2(0.245f, Btn), "", 0.16f, LabelCol, () => Select(row), TextAlignmentOptions.MidlineLeft);
+                values[r] = Make(new Vector2(0.055f, y), new Vector2(0.09f, Btn), "", 0.16f, BtnCol, () => Step(row, 1));
+                resets[r] = Make(new Vector2(0.28f, y), new Vector2(0.12f, Btn), "", 0.15f, BtnCol, () =>
+                {
+                    int idx = Pages.Cur.Scroll * Rows + row;
+                    if (idx < Pages.Cur.Settings.Count) Status(Pages.Reset(Pages.Cur.Settings[idx]));
+                    Refresh();
+                });
                 for (int k = 0; k < 4; k++)
                 {
                     int dir = stepDir[k];
@@ -259,11 +335,9 @@ namespace ModSettings
             pageText = Make(new Vector2(-0.115f, nav), new Vector2(0.07f, Btn), "", 0.15f, Bg, null, TextAlignmentOptions.Center, false);
             down = Make(new Vector2(-0.035f, nav), new Vector2(0.06f, Btn), "Down", 0.16f, BtnCol, () => { Pages.Cur.Scroll++; Refresh(); });
             status = Make(new Vector2(0.065f, nav), new Vector2(0.11f, Btn), "", 0.13f, Bg, null, TextAlignmentOptions.Center, false);
-            reset = Make(new Vector2(0.18f, nav), new Vector2(0.09f, Btn), "Reset", 0.16f, BtnCol, () =>
+            reset = Make(new Vector2(0.245f, nav), new Vector2(0.20f, Btn), "Reset section", 0.16f, BtnCol, () =>
             {
-                var s = Pages.Cur.Selected;
-                if (s == null) return;
-                Status(Pages.Reset(s));
+                Status(Pages.ResetSection());
                 Refresh();
             });
 

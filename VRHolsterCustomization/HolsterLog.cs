@@ -41,10 +41,10 @@ namespace VRHolsterCustomization
                 try
                 {
                     var game = Object.FindObjectOfType<ANBGameLogic>();
-                    if (VRHolsterCustomizationMod.Alive(game) && game.gameStarted)
+                    if (VRHolsterCustomizationMod.Alive(game) && game.gameStarted && game.IsRangeScene)
                     {
                         game.SaveContractHolsters();
-                        if (VRHolsterCustomizationMod.DebugOn) Say("game loadout saved after holster change");
+                        if (VRHolsterCustomizationMod.DebugOn) Say("Range loadout saved after holster change");
                     }
                 }
                 catch (Exception e) { VRHolsterCustomizationMod.Log.Warning($"could not save game loadout: {e.Message}"); }
@@ -68,7 +68,11 @@ namespace VRHolsterCustomization
 
         internal static void SaveSoon()
         {
-            if (!Loading) saveAt = Time.time + 1f;
+            var game = ANBStaticGameManager.ANBmain;
+            // SaveContractHolsters writes the persistent loadout, not merely the current contract.
+            // A knife put away in combat must not erase the prepared pistol slot while that pistol is drawn.
+            if (!Loading && VRHolsterCustomizationMod.Alive(game) && game.gameStarted && game.IsRangeScene)
+                saveAt = Time.time + 1f;
         }
 
         internal static void ModHolster(string slot, string item, bool into) =>

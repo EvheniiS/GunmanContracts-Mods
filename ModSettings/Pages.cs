@@ -67,12 +67,31 @@ namespace ModSettings
 
         public static string Reset(Setting s)
         {
-            if (s == null) return "";
+            if (s == null || !s.CanReset || s.IsDefault) return "";
             string before = s.ValueText();
             s.Entry.ResetToDefault();
             SaveAt = Time.unscaledTime + 1f;
             ModSettingsMod.Log.Msg($"{Cur.Cat.Identifier}.{s.Entry.Identifier}: {before} -> {s.ValueText()} (default)");
             return "reset";
+        }
+
+        public static bool CanResetSection => Cur.Settings.Exists(s => s.CanReset && !s.IsDefault);
+
+        // The complete category, including settings on other scroll pages. Preserve mod-managed state.
+        public static string ResetSection()
+        {
+            int changed = 0, failed = 0;
+            foreach (var s in Cur.Settings)
+            {
+                if (!s.CanReset || s.IsDefault) continue;
+                try { Reset(s); changed++; }
+                catch (Exception e)
+                {
+                    failed++;
+                    ModSettingsMod.Log.Warning($"reset {Cur.Cat.Identifier}.{s.Entry.Identifier}: {e.Message}");
+                }
+            }
+            return failed > 0 ? $"reset {changed}; failed {failed}" : changed > 0 ? "section reset" : "all default";
         }
 
         public static void SaveNow()

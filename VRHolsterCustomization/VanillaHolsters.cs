@@ -11,11 +11,12 @@ using Object = UnityEngine.Object;
 namespace VRHolsterCustomization
 {
     // The game's real sockets are moved, so their grab volumes and holograms follow the setting.
-    static class VanillaHolsters
+    static partial class VanillaHolsters
     {
         static readonly string[] keys = { "LeftHip", "RightHip", "LeftKnife", "RightKnife", "LeftBack", "RightBack" };
         static readonly MelonPreferences_Entry<int>[] up = new MelonPreferences_Entry<int>[6];
         static readonly MelonPreferences_Entry<int>[] along = new MelonPreferences_Entry<int>[6];
+        static readonly MelonPreferences_Entry<int>[] forward = new MelonPreferences_Entry<int>[6];
         static MelonPreferences_Entry<int> allUp;
         static MelonPreferences_Entry<string> color;
 
@@ -25,6 +26,7 @@ namespace VRHolsterCustomization
             public Transform Frame;
             public Vector3 Original;
             public int Index;
+            public HVRSocket Native;
         }
         sealed class Fade
         {
@@ -36,29 +38,35 @@ namespace VRHolsterCustomization
         static readonly Dictionary<IntPtr, Fade> fades = new();
         static float nextSearch, searchDeadline;
         static Color selectedColor;
+        static bool originalColors;
 
         internal static void Init()
         {
             var positions = MelonPreferences.CreateCategory("VRHolsters_Positions", "VR Holster Customization: positions");
-            allUp = positions.CreateEntry("AllUpCm", 0, description: "Move every game holster up or down in centimetres. Negative moves down.");
+            allUp = positions.CreateEntry("AllUpCm", 0, display_name: "All holsters: height (cm)", description: "Move every game holster up or down in centimetres. Negative moves down.");
             for (int i = 0; i < keys.Length; i++)
             {
                 string key = keys[i];
-                up[i] = positions.CreateEntry(key + "UpCm", 0, description: $"Move the {key} holster up or down from its original position (cm).");
-                along[i] = positions.CreateEntry(key + "AlongCm", 0, description: $"Move the {key} holster left or right along its body axis (cm). Positive is right.");
+                string label = (i % 2 == 0 ? "Left " : "Right ") + (i < 2 ? "hip" : i < 4 ? "knife" : "back");
+                up[i] = positions.CreateEntry(key + "UpCm", 0, display_name: label + ": height (cm)", description: $"Move the {label} holster up (+) or down (-) from its original position. Centimetres; updates live.");
+                along[i] = positions.CreateEntry(key + "AlongCm", 0, display_name: label + ": left/right (cm)", description: $"Move the {label} holster right (+) or left (-) along its body axis. Centimetres; updates live.");
+                forward[i] = positions.CreateEntry(key + "ForwardCm", 0, display_name: label + ": forward/back (cm)", description: $"Move the {label} holster forward (+) or back (-) along its body axis. Centimetres; updates live.");
             }
             var visual = MelonPreferences.CreateCategory("VRHolsters_Visual", "VR Holster Customization: color");
-            color = visual.CreateEntry("Color", "#FF2620", description: "Holster hologram color as #RRGGBB, using the same palette as Gloves. Updates live.");
+            color = visual.CreateEntry("Color", "Default", description: "Holster hologram color: Default preserves the game's original colors; #RRGGBB applies a custom color. Updates live.");
             ReadColor();
             color.OnEntryValueChanged.Subscribe((_, _) =>
             {
                 ReadColor();
                 foreach (var pair in fades) Tint(pair.Value);
             });
+            InitAdjustment();
         }
 
         internal static void Scene()
         {
+            EndAdjustment();
+            adjustmentHands = null;
             nextSearch = Time.time;
             searchDeadline = Time.time + 15f;
             // A rig may survive a scene load. Keep its original positions so offsets never stack.
@@ -81,6 +89,7 @@ namespace VRHolsterCustomization
 
         internal static void ApplyPositions()
         {
+            AdjustByHand();
             // Live settings; reapply because the waist rig may adjust its children during a frame.
             foreach (var pair in sockets)
             {
@@ -90,9 +99,10 @@ namespace VRHolsterCustomization
                 if (!VRHolsterCustomizationMod.Alive(parent) || !VRHolsterCustomizationMod.Alive(s.Frame)) continue;
                 float side = along[s.Index].Value / 100f;
                 float height = (allUp.Value + up[s.Index].Value) / 100f;
+                float depth = forward[s.Index].Value / 100f;
                 var shift = s.Frame.Pointer == parent.Pointer
-                    ? new Vector3(side, height, 0f)
-                    : parent.InverseTransformVector(s.Frame.right * side + s.Frame.up * height);
+                    ? new Vector3(side, height, depth)
+                    : parent.InverseTransformVector(s.Frame.TransformVector(new Vector3(side, height, depth)));
                 var want = s.Original + shift;
                 if ((s.Transform.localPosition - want).sqrMagnitude > 0.0000001f) s.Transform.localPosition = want;
             }
@@ -163,7 +173,7 @@ namespace VRHolsterCustomization
                 for (var p = transform.parent; p != null; p = p.parent)
                     if (p.name == "Holsters" && p.parent != null && p.parent.name == "Waist") { frame = p; break; }
             sockets.Add(transform.Pointer, new Socket { Transform = transform, Frame = frame,
-                Original = transform.localPosition, Index = index });
+                Original = transform.localPosition, Index = index, Native = transform.GetComponent<HVRSocket>() });
             VRHolsterCustomizationMod.Log.Msg($"{keys[index]} holster at {Path(transform)}: original local {VRHolsterCustomizationMod.V(transform.localPosition)}");
         }
 
@@ -183,10 +193,12 @@ namespace VRHolsterCustomization
 
         static void ReadColor()
         {
+            originalColors = string.Equals(color.Value?.Trim(), "Default", StringComparison.OrdinalIgnoreCase);
+            if (originalColors) return;
             if (!ColorUtility.TryParseHtmlString(color.Value?.Trim(), out selectedColor))
             {
-                selectedColor = new Color(1f, 0.15f, 0.12f);
-                VRHolsterCustomizationMod.Log.Warning($"Color '{color.Value}' is invalid; using red");
+                originalColors = true;
+                VRHolsterCustomizationMod.Log.Warning($"Color '{color.Value}' is invalid; using original game colors");
             }
         }
 
@@ -196,20 +208,26 @@ namespace VRHolsterCustomization
             return new Color(hue.r * brightness, hue.g * brightness, hue.b * brightness, original.a);
         }
 
-        internal static Color TintColor(Color original) => color == null ? original : Recolor(original, selectedColor);
+        internal static Color TintColor(Color original) => color == null || originalColors ? original : Recolor(original, selectedColor);
 
         static void Tint(Fade f)
         {
             if (!VRHolsterCustomizationMod.Alive(f.Component)) return;
-            f.Component.colorBase = Recolor(f.Base, selectedColor);
-            f.Component.colorNormal = Recolor(f.Normal, selectedColor);
-            f.Component.colorHover = Recolor(f.Hover, selectedColor);
-            f.Component.colorInvisible = Recolor(f.Invisible, selectedColor);
+            f.Component.colorBase = TintColor(f.Base);
+            f.Component.colorNormal = TintColor(f.Normal);
+            f.Component.colorHover = TintColor(f.Hover);
+            f.Component.colorInvisible = TintColor(f.Invisible);
             var rend = f.Component.rend;
             if (!VRHolsterCustomizationMod.Alive(rend) || !VRHolsterCustomizationMod.Alive(rend.material)) return;
             var current = rend.material.color;
             // The fade script owns visibility. Only adjust hue, leaving its current brightness and alpha.
-            rend.material.color = Recolor(current, selectedColor);
+            if (originalColors)
+            {
+                // Restore hue immediately while preserving the fade's current brightness and alpha.
+                float peak = Mathf.Max(f.Normal.r, Mathf.Max(f.Normal.g, f.Normal.b));
+                rend.material.color = peak > 0 ? Recolor(current, f.Normal / peak) : f.Normal;
+            }
+            else rend.material.color = Recolor(current, selectedColor);
         }
     }
 
