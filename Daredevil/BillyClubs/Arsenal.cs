@@ -4,8 +4,8 @@ using System.Runtime.CompilerServices;
 using MelonLoader;
 using UnityEngine;
 
-// Weapon Framework is optional: without it the clubs come from the spawn key only.
-[assembly: MelonOptionalDependencies("WeaponFramework")]
+// These integrations are optional; Daredevil still loads without their DLLs.
+[assembly: MelonOptionalDependencies("WeaponFramework", "VRHolsterCustomization")]
 
 namespace BillyClubs
 {
@@ -26,6 +26,7 @@ namespace BillyClubs
             WallAngle = c.CreateEntry("WallAngle", 45f, description: "Diagonal layout: tilt of the clubs from horizontal, in degrees (grip lower left, tip upper right).");
             WallSpacing = c.CreateEntry("WallSpacing", 0.1f, description: "Distance between the two clubs on the arsenal wall (Diagonal and Upright), in metres.");
             WallShift = c.CreateEntry("WallShift", "0,0,0", description: "Moves the pair on the arsenal wall, in metres, as right,up,out-from-the-board. Used on the next retrieve.");
+            InitBackHolsters();
             bool present = false;
             foreach (var a in AppDomain.CurrentDomain.GetAssemblies())
                 if (a.GetName().Name == "WeaponFramework") { present = true; break; }
@@ -48,6 +49,50 @@ namespace BillyClubs
                 OnSettled = WallSettled,
                 OnHidden = () => { if (Dbg) Log.Msg("arsenal: another weapon retrieved - clubs left on the wall go in with the slot"); },
             });
+        }
+
+        // ---------- Back holsters (independent of the arsenal terminal) ----------
+
+        static bool HolsterPresent;
+
+        static void InitBackHolsters()
+        {
+            foreach (var a in AppDomain.CurrentDomain.GetAssemblies())
+                if (a.GetName().Name == "VRHolsterCustomization")
+                {
+                    try { RegisterBackHolsters(); }
+                    catch (Exception e) { Log.Warning($"back holsters unavailable: {e.Message}"); }
+                    return;
+                }
+            Log.Msg("VR Holster Customization not installed - no club back holsters");
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void RegisterBackHolsters()
+        {
+            VRHolsterCustomization.Holsters.RegisterKind(new VRHolsterCustomization.HolsterKind
+                { Id = "BillyClub", IsMine = IsClub, Spawn = SpawnForBack });
+            HolsterPresent = true;
+        }
+
+        // Let go of a club that the belt didn't take: the back holster may.
+        static bool FwTryHolster(GameObject go) => HolsterPresent && FwTryHolsterCore(go);
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool FwTryHolsterCore(GameObject go) => VRHolsterCustomization.Holsters.TryHolster(go);
+
+        // A club in a back holster is carried: never recalled to the wall or the belt.
+        static bool OnBack(GameObject go) => HolsterPresent && FwHoldsCore(go);
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool FwHoldsCore(GameObject go) => VRHolsterCustomization.Holsters.Holds(go);
+
+        // The framework restores a back-holstered club after a scene load. Still two clubs at most.
+        static GameObject SpawnForBack()
+        {
+            if (!Alive(Template)) return null;
+            int alive = 0;
+            foreach (var k in Clubs) if (Alive(k.Go)) alive++;
+            if (alive >= 2) return null;
+            return NewClub("BillyClub-back", Vector3.zero, Quaternion.identity).Go;
         }
 
         static Texture2D LoadIcon()
@@ -73,7 +118,7 @@ namespace BillyClubs
             int recalled = 0, n = 0;
             foreach (var k in Clubs)
             {
-                if (k.In != null || !Alive(k.Go) || IsHandHeld(k)) continue;
+                if (k.In != null || !Alive(k.Go) || IsHandHeld(k) || OnBack(k.Go)) continue;
                 var free = FreeWallSlot();
                 if (free == null) break;
                 try { if (IsHeld(k.Grab)) k.Grab.ForceRelease(); } catch { }

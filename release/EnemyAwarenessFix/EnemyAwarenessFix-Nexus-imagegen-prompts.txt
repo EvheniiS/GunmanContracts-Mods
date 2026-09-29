@@ -1,0 +1,19 @@
+Generated with the built-in image_gen tool. The user-selected `tumbnail.jpg`
+is the gameplay source for both images. Earlier corridor-screenshot drafts were
+discarded.
+
+THUMBNAIL
+Preserve the steep tilted camera view, single white-shirted enemy with brown
+harness, doorway, orange wall with electrical boxes, and pale floor from
+`tumbnail.jpg`. On the RIGHT, add small "GUNMAN CONTRACTS" above a large
+distressed condensed italic two-line title: "STEALTH" in ivory, "AI FIX" in
+amber. Add a thin amber rule and "LOSE SIGHT / THEY SEARCH" below it. Keep
+the enemy fully visible on the left. No HUD, marker, extra character or prop.
+
+HEADER
+Recompose the same screenshot as a short panoramic banner. Keep the enemy on
+the LEFT and place all text on the RIGHT: "GUNMAN CONTRACTS" above one-line
+"STEALTH AI FIX", with STEALTH in ivory, AI FIX in amber, and a thin amber
+underline. No subtitle or other added text. Preserve the tilted architecture.
+
+The generated base images were exported to 1600x900 and 1300x372 upload sizes.

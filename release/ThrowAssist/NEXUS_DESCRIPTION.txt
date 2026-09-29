@@ -12,7 +12,9 @@ item with real velocity instead, so it keeps its spin and its collisions along t
 faster than [i]MinAssistSpeed[/i]. A thrown pistol that lands on an enemy does real damage (torso x2, head x5,
 a head hit kills) and staggers them — the game's own thrown-pistol hit does neither.
 [*]Other items (knives, katanas, bottles, pans, the crowbar) can optionally be steered the same way
-([i]SteerOtherItems[/i], off by default, untested for knives landing point-first).
+([i]SteerOtherItems[/i], off by default). [b]Knives[/b] fly at the game's own knife speed (17 m/s) or faster and are
+turned blade-first as they go, so they stab instead of bouncing off (14 of 14 test throws stabbed). With
+[i]AimHead[/i] on they go for the head.
 [/list]
 
 [size=4][b]Billy Clubs[/b][/size]
@@ -43,7 +45,7 @@ You should end up with: [i]Gunman Contracts - Stand Alone\Mods\ThrowAssist.dll[/
 Turn on the game's own [b]Assisted Throw[/b] option in its settings, or this mod has nothing to steer.
 
 [b]4. Check it works[/b]
-Start the game. The MelonLoader console lists [b]Throw Assist v0.1.0[/b] among the loaded mods.
+Start the game. The MelonLoader console lists [b]Throw Assist v0.2.0[/b] among the loaded mods.
 
 [b]Not working?[/b]
 [list]
@@ -61,12 +63,12 @@ sure you picked [i]GunmanContracts.exe[/i].
 After the first launch, edit [i]UserData\MelonPreferences.cfg[/i], section [b][ThrowAssist][/b]:
 [code]
 PistolAssist       = true    Thrown pistols home in on enemies. The game ships its pistol assist switched off. Needs the game's own assisted throw option on.
-SteerOtherItems    = false   Knives, katanas, bottles, pans and the crowbar are steered by this mod too (real physics, spin kept) instead of the game's drag. Untested: knives may not land point first.
-MinAssistSpeed     = 6       An item thrown slower than this (m/s) gets no assist and just flies.
+SteerOtherItems    = false   Knives, katanas, bottles, pans and the crowbar are steered by this mod too (real physics, spin kept) instead of the game's drag. Knives fly at the game's knife speed (17 m/s) or faster, blade first.
+MinAssistSpeed     = 6       A pistol or other item thrown slower than this (m/s) gets no assist and just flies. Knives use the game's own threshold (3.5).
 MaxSpeed           = 18      An assisted item flies at your own throw speed, up to this (m/s).
 SearchDistance     = 15      How far the assist looks for a target (m). Pistols as shipped: 6.
 MaxFlyDistance     = 20      How far an assisted throw flies before it gives up (m). Pistols as shipped: 4.
-AimHead            = false   Assisted throws aim at the head. Off = the chest.
+AimHead            = false   Assisted throws aim at the head. Off = the chest. Also applies to Daredevil's normal club throws.
 PistolDamage       = true    A thrown pistol that hits an enemy does real damage (PistolThrowDamage). Off = the game's weak hit.
 PistolThrowDamage  = 3       Thrown pistol damage as a multiple of the game's melee damage (10). The game then doubles it on the torso and multiplies by 5 on the head: 3 = 60 to the body, a head hit kills.
 PistolStagger      = true    A thrown pistol that hits a standing enemy makes them stumble.

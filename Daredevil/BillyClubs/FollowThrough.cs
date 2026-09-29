@@ -57,6 +57,9 @@ namespace BillyClubs
             var w = f.Follow;
             if (w == null) return;
             if (Time.time > w.Until || f.Bounces > 0 || !k.HandOk) { EndFollow(f); return; }
+            // The club lost most of its speed: it hit something. Don't push it on into the wall (that hid the impact
+            // until the window ended, and the flight then ended with no ricochet); let the impact check take it.
+            if (k.Rb.linearVelocity.magnitude < f.Speed * 0.6f) { EndFollow(f); return; }
             var hv = k.HandV * Mathf.Max(HandThrowBoost.Value, 0.1f); // compare like with like: the release was boosted
             float hs = hv.magnitude;
             if (hs > w.Peak) { w.Peak = hs; w.PeakAt = Time.time; }

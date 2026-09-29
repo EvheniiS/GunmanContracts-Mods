@@ -1,4 +1,4 @@
-# Daredevil 0.3.3
+# Daredevil 0.4.0
 
 The Daredevil package, one DLL: **billy clubs** (from the crowbar: belt holsters, F8 recall, spin styles, ricochets,
 knockouts, arsenal panel entry) + **radar sense** (enemy silhouettes through walls in slow motion or always, louder
@@ -12,6 +12,7 @@ knockouts, arsenal panel entry) + **radar sense** (enemy silhouettes through wal
 | [Mod Settings](../ModSettings/README.md) | The in-VR settings board |
 
 **Optional:** [Weapon Framework](../WeaponFramework/README.md) puts the clubs on the arsenal panel in The Range.
+**Optional:** [VR Holster Customization](../VRHolsterCustomization/README.md) lets clubs use the back slots and tints the club holster tubes. Weapon Framework 0.3.0 requires the holster mod.
 
 **Optional but highly recommended:** [Heavy Melee](../HeavyMelee/),
 [Physical Dodge](../PhysicalDodge/), and [Enemy Awareness Fix](../EnemyAwarenessFix/).

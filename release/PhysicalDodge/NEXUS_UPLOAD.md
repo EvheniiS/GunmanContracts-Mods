@@ -10,6 +10,7 @@ values is left, and that's personal taste — not a blocker for release.
 | `PhysicalDodge-0.4.2.zip` | the upload: contains `Mods/PhysicalDodge.dll` |
 | `PhysicalDodge.dll` | the shipping build, 18,944 bytes, sha256 `6db46e9f1dbc0293adb8a3e814660ec848eac36f03aa56463233fae79c00e3d5` |
 | `NEXUS_DESCRIPTION.txt` | the page text (BBCode) |
+| `PhysicalDodge-Nexus-thumbnail-1600x900.png` | Nexus thumbnail artwork from `Tumbnail.jpg` |
 
 Rebuild:
 ```powershell
@@ -31,7 +32,7 @@ then copy the DLL here and zip it as `Mods/PhysicalDodge.dll`.
 | Permissions | Same as the other mods (source is MIT on GitHub) |
 | File name / category | `Physical Dodge` / Main files |
 | File description | `Extract into the game folder. Needs MelonLoader 0.7.x.` |
-| Images | a clip/screenshot of ducking or stepping out of a shot, ideally with the dodge buzz + slow-mo caught |
+| Images | `PhysicalDodge-Nexus-thumbnail-1600x900.png`, made from the in-game `Tumbnail.jpg` screenshot |
 
 **Summary (330 chars):**
 `Enemies aim where you were a moment ago, not where you are. Stand still and get hit; step, lean, duck or move and their shots go past, with a buzz and a brief slow motion on a real dodge. Only shots that would genuinely have hit count, and a dodge is pushed clear so it can never clip you.`

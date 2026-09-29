@@ -1233,6 +1233,8 @@ saving? **They don't.** From the binary (`xref.py`):
   arrow that ends up in a socket) never fired.
 - **To keep a loadout: set the holsters, then use the gun wall or leave via the elevator.**
 
+Sep 29 2026 update: VR Holster Customization 0.1.1 now calls the game's `SaveContractHolsters` one second after a gun or knife is placed in a holster. This is canceled on scene load and is not triggered by unholstering, so the earlier manual save step is no longer required when that mod is installed.
+
 ## Tooling — IL2CPP analysis with no Cpp2IL/Il2CppDumper
 
 [il2cpp_tools/](il2cpp_tools/): `xref.py <Class::Method>` finds direct callers (E8/E9; scans the **`il2cpp` PE section, where game code lives**, plus `.text`; 0 hits ≠ never called, since vtable/delegate/coroutine calls are invisible). `il2.py` parses v31
@@ -1301,7 +1303,7 @@ length/centre/diameters/triangles/UVs/material/textures, then writes `out/billy_
 - Not built yet: the mod's runtime OBJ + PNG loader (mesh from OBJ, URP Lit material, metallic + (1 − roughness) packed
   into the metallic/smoothness map).
 
-## ★ Grab Log 0.1.0 + Grab Fix (Sep 28 2026): palm aim tested WORSE; 0.2.0 = finger + palm together, deployed, untested
+## ★ Grab Fix 1.1.0 RELEASE CANDIDATE, CONFIRMED (Sep 28 2026): docked-item fix holds up in play
 
 Grab Log (`GrabLog/`, observation only) writes `UserData\GrabLog\session-*.jsonl`; the `grip_cycle` lines
 (`GotObject`) and the final `summary` counts give the hit rate per session.
@@ -1321,8 +1323,220 @@ Grab Log (`GrabLog/`, observation only) writes `UserData\GrabLog\session-*.jsonl
   copy of each capsule, appended after the native bags in `GrabBags`. The goal is for a finger target to win, but only if
   the game checks the bags in list order (not verified). `Finger` = native aim only. Palm-only removed. The local sphere is
   re-centred between the native centre and the palm face and grown to cover both (min `NearGrabRadius` 0.12). The copies
-  are removed from `GrabBags` and destroyed when the mod is switched off. Grip is a deliberate button, so a wider zone can't
-  cause accidental grabs.
+  are removed from `GrabBags` and destroyed when the mod is switched off. ~~Grip is a deliberate button, so a wider zone
+  can't cause accidental grabs.~~ **WRONG — see below (Sep 28 2026 evening).** A wider zone can't cause an accidental
+  grip *press*, but it absolutely widens what a deliberate press next to your belt will catch.
+
+**★★ 1.1.0 RELEASE CANDIDATE — promoted off today's live session, no further Grab Log testing planned.**
+Session `26-9-28_19-17-43.log` (19:17–19:33, real play, not a synthetic test): **29 buffered-catch attempts
+logged (`DebugLog`), 29 succeeded, 0 `result=False`, 0 `[ERROR]`/exceptions all session.** 19 were the
+distance/force-grab path (17 R / 2 L), 10 the local-sphere path (7 R / 3 L). Recovery latency (time from the
+grip press the native check missed to the buffered retry) mostly under 100 ms, a few up to 235–277 ms — these
+are exactly the grabs that would have read as a whiff without the fix. Felt great in play; no further tuning
+idea on the table. **Version bumped 0.2.0 → 1.1.0, `DebugLog` default flipped off** (was `true`, meant for the
+"first test build" — RC no longer needs the per-grab log line by default). Deployed to `Mods\GrabFix.dll`.
+**Grab Log (`GrabLog/`) retired for now** — its job (measuring session hit rate to compare aim modes) is done;
+disabled in-game as `Mods\GrabLog.dll.disabled` rather than deleted, since its 134 MB/session jsonl writes are
+pure overhead once Grab Fix isn't being iterated on. Re-enable (rename back to `.dll`) only if a future Grab
+Fix change needs the same before/after measurement.
+
+**⚠ RC call held back same evening: he reported the clubs (and holstered weapons generally) are too easy to
+grab by accident** — reaching for a floor item with a full belt regularly grabs a holster instead. Root cause
+is exactly the geometry the RC evidence praised: the widened near-sphere (`NearGrabRadius` ≥ 0.12 vs the
+game's native 0.08) is the *actual* physical trigger collider, mutated in place, not a copy - so it directly
+extends what the **game's own native hover/grab** can reach, with no GrabFix retry logic involved at all. A
+belt holster sits close enough to the hand's downward reach path that the widened sphere routinely overlaps
+it. Separately, `RecentReleaseAssist` (grab-fix's own assist, 15 s / up to 0.18–0.3 m from the palm) doesn't
+care that an item was re-holstered after release - `OnRelease` fires on every grip release, including a
+gentle one next to a free holster slot that the game (or Daredevil) then docks - so a club sitting in its
+holster stayed "recently released and grabbable" for up to 15 s after every holstering.
+
+**Fix: distinguish "docked" from "loose" by `Rigidbody.isKinematic`, not by item type.** Holsters, HVR sockets,
+and wall mounts (WeaponFramework arsenal) all park an item by setting `rb.isKinematic = true` while docked
+(confirmed in `Daredevil/BillyClubs/BillyClubs.cs` `Holster()`: `rb.isKinematic = true` on dock, `false` on
+draw) - this is the standard HVR docking convention, not something Daredevil invented, so the fix is generic
+and applies to the game's own gun/knife holsters too, not just clubs. A **lying** or **flying** item keeps
+`isKinematic = false` (physics is actually driving it) and is untouched by this change.
+- Added `GrabFixMod.Docked(g) => g.Rigidbody.isKinematic` and excluded it from `Eligible()` — this alone stops
+  `RecentReleaseAssist` and both buffered retries from ever completing a grab on a docked item.
+- Added `Geometry.NativeContains(g)`, which re-tests a candidate against each local sphere's *stored native*
+  centre/radius (before `NearGrabRadius` widening), and a `HVRHandGrabber.CanHover` postfix
+  ([Patches.cs](Patches.cs)) that clamps a native-true result back to `false` for a docked item that only
+  passed because of the widened collider. This is the one that actually stops the accidental native grab —
+  `Eligible()` alone doesn't, since the widened sphere is real detector geometry, not a GrabFix-side retry.
+  A docked item is still grabbable exactly as before once the hand is genuinely inside the *native* 0.08 m
+  radius — "close to the holster itself," per his ask.
+- ~~Scoped to the local/near path only, not `HVRForceGrabber.CanHover`... force-grab needs a deliberate
+  flick/`GrabStyle` match to actually grab, so accidental capture is far less plausible there.~~ **WRONG,
+  disproven same evening — see round 2 below.**
+
+**Round 2 (still Sep 28 2026): reported "still can grab my left club from the right palm on the right
+hip" — confirms the force-grab path, not the local sphere.** The local sphere (0.08–0.25 m) physically
+cannot reach 0.46 m across the belt (`HolsterLeft`/`HolsterRight` are ±0.23 m either side of centre); only
+the distance/force-grab capsules are long enough to span the body. Two ways `HVRForceGrabber`'s own
+detectors can catch a docked item across the belt, neither touched by round 1:
+- `DistanceGrabWidth` (default 1.2×) widens the **native** capsule radius in place, same mechanism as the
+  local sphere.
+- In `Both` mode (his saved setting) the **palm-aimed copy** is a wholly separate capsule, repositioned at
+  the palm and re-oriented by `turn = FromTo(hand.forward, palm.forward)` — at hip height the wrist often
+  isn't square to the arm, so `turn` can swing the copy's whole capsule length across the body far more than
+  a plain width multiplier ever could. This is the more likely culprit for "left club from the right palm."
+- **Fix:** added `Geometry.NativeContainsFar(g)` — rebuilds the **native** (pre-`DistanceGrabWidth`,
+  finger-aimed, never the palm copy) capsule as a world-space line segment from each far detector's stored
+  original radius/centre/transform (untouched by widening) and tests the candidate against that segment's
+  closest point, same closest-point-then-`SurfaceDistance` approach as the sphere check. Added a
+  `HVRForceGrabber.CanHover` postfix ([Patches.cs](Patches.cs)) mirroring the hand one: a docked item stays
+  hoverable only if it also passes this native-segment test — which the palm copy, being a different object
+  entirely, cannot rescue it into.
+- **CONFIRMED in play the same evening — "now it seems to be fixed."** No further docked-item accidental
+  grabs reported (neither the local-sphere case from round 1 nor the cross-belt force-grab case from round
+  2), loose/flying-item assist and close-range holster draws unaffected. **1.1.0 promoted to release
+  candidate**, `DebugLog` reset to `false` (the default) in `UserData\MelonPreferences.cfg` now that the fix
+  is verified. Nothing else on the table for this mod right now.
+
+## ★★ Flat-mode audit + Weapon Framework roadmap (Sep 29 2026); framework 0.1.2 save fix built, untested
+
+Full write-ups: [FLAT_MODE.md](FLAT_MODE.md) (every mod vs flat mode) and
+[WeaponFramework/ROADMAP.md](WeaponFramework/ROADMAP.md) (removal, JSON weapon packs, holsters in the framework, flat).
+- **★★ Weapon Framework 0.1.1's save guard was on the wrong method.** `pickWeapon` calls `SavePurchases` AND
+  `SaveWeapons`; only **`SaveWeapons`** writes `"saveSpotLarge"` (`SaveData_WeaponSetups.json`). His save held
+  `"saveSpotLarge":6` = the Billy Clubs entry. `WaitForStart` sets `currentSpot = savedSpot` after `autoStart`'s clamp,
+  so with the mod removed the panel would index past the list (inferred). **0.1.2 guards `SaveWeapons`** (built to
+  `feature/WeaponFramework-0.1.2`). **Installed Sep 29 `26CFD2E2…`** (backup + the `6` save in
+  `feature/WeaponFramework-backup-before-0.1.2-*`). **C1 PASS (Sep 29 14:25):** clubs retrieved last → file
+  `"saveSpotLarge":1`, no wall errors. First session still started from the old `6` save with the mod present: no errors.
+  Remaining release gate: C2-C7 in [TESTING.md](WeaponFramework/TESTING.md). **Decision Sep 29: Weapon Framework is now
+  REQUIRED by Daredevil** (soft list in `Daredevil.cs`: the terminal is the only player way to get clubs, F8 is a dev
+  key); built, not installed. Most debug logs turned off by him; `[WeaponFramework] DebugLog` stays on.
+  **Session 1 (14:41-14:43) PASS: C2** (bow last → `5`), **C3** (clubs, then a pistol attachment change: `SaveWeapons` from gun
+  editing logged `saved as 5`, file `5` at 14:43:21), **C4** (wall opened on index 1 = the game index the previous
+  session saved in place of the clubs; working as designed). Logging gap found: taking a club off the wall/belt only
+  logs with `[BillyClubs] DebugLog`; the game's own wall/holster actions aren't logged by anything.
+  **→ Weapon Framework 0.1.3 (`ActionLog.cs`): one line per retrieve (both walls, game + mod), stand take/put-back
+  (`ANBGunwallSpot.grabGunCall/placeGunCall`), holster in/out (`holsterGun/unholsterGun/holsterKnife/unholsterKnife`),
+  mod item off its mount; loadout restore in the first 6 s after a load folded into one line; 0.5 s repeat filter.
+  Logging only, save guard unchanged. Installed Sep 29 `9C932CB4…` (backup `feature/WeaponFramework-backup-before-0.1.3-*`),
+  untested (TESTING.md B7).
+  **Session 2 (Daredevil off, 14:53-14:55) C5 PASS:** no errors, nothing registered, big wall `#6/6`, save `5`. Action log
+  worked (retrieve/stand/holster lines match his actions) but **the wall build at load logged ~30 `stand: put back/took`
+  lines** (`initSlot` → `placeGunCall`/`grabGunCall` for every stand, ~40 s into The Range, after the 6 s fold window),
+  and knives were named by object in holster lines (`Knife-Combat-type3`) vs `CombatKnife_v3` on the stand.
+  **→ 0.1.4:** fold window extended +2 s on every `LogLoadTime` step, stand calls counted into one `after load:` line;
+  knives named via `ANBKnife.WPT.WeaponName`. **Installed Sep 29 `D20B4DA7…`.**
+  **Session 3 (framework off, 15:03) C6 PASS:** Daredevil 0.3.4 logged `Weapon Framework not installed - no arsenal entry`,
+  `restored 2 holstered club(s)`, holstered again, no errors. Side note: at the first scene it warns `no club template yet -
+  visit The Range once` (clubs are copied from the Range crowbar), so a game start straight into a contract has no clubs.
+  **Session 4 (both on, 15:07-15:11) C7 PASS**, no errors, save `2`. **Gate C complete: 0.1.2 save fix done.** Action log
+  (0.1.4): the load fold works (`after load: stands filled (40 put, 12 taken), loadout backLeft AB15, backRight
+  CompoundBow, left ShadowGuard2, right Knife-Katana`), `retrieve big #7/7 'BillyClubs' (mod)`, `stand: took 'BillyClubs'
+  item 'BillyClub-wall-right' (Physics RightHand)`. **The double pistol lines are real:** he bought the 1911 and took two
+  (`took '1911'` → `holster left in` → `took '1911'` → `holster right in`), so the ShadowGuard case was two pistols too.
+  Still wrong in 0.1.4: (1) **leaving The Range emptied every stand at once** → 17 `stand: took` lines + 2 holster outs in
+  0.05 s; (2) knife holster lines still showed the object name (`Knife-Combat-type3`: `WPT` is empty on holstered knives);
+  (3) **knife and hip-gun holsters share side names** (`left`/`right`), so the loadout line mixed them and one knife
+  `out` printed `'?'`. **→ 0.1.5** (built, install when the game closes): stand/holster events < 0.2 s apart = a burst,
+  ≥ 4 become one `N stand/holster events at once (…) - scene change` line; knife sides keyed `knife-left/right`; knife
+  name via `WPT` → `ANBWeaponType` on the knife/parent → `knifeID` → object name. Installed Sep 29 `5FA4458A…`.
+  **His feedback:** retrieving the clubs while both are on the belt puts nothing on the wall (by design: the wall only
+  fills what you don't carry), and **there is no way to put a club back on the wall** → confirms the socket-system item
+  (ROADMAP step 3). Daredevil's own log is still long (`draw check …` lines of ~250 chars, `club ignores 240 player
+  colliders` ×2 per spawn): trim it when Daredevil is next touched. No upgrade-path work (no custom weapon was released with 0.1.1); foundation first.
+  Test gates: [WeaponFramework/TESTING.md](WeaponFramework/TESTING.md); helper `WeaponFramework/Check-WFSave.ps1`
+  (0.1.1 log said `saved as 5` while the file got `6` in the same second).
+- **★ Flat guns are the game's HVR guns underneath:** `ANBFPSCore.addGun` wraps them, `ANBFpsWeapons.fire` →
+  `ANBHVRGunBase.FPSshoot` → the same bullet/damage code. So **Knee Shot Stun and Enemy Awareness Fix most likely
+  already work in flat**, and **Radar Sense** too (flat slow-motion key → `ANBGameLogic.buttonSlowMotion`, same state).
+  Physical Dodge's aim lag runs in flat, its dodge detection doesn't (head moves ~0 in the tracking space).
+- Flat melee = LPSP "Knife Attack" (`Character.PlayMelee`), flat bow = `BowFPSShootStart/End`, flat pickup =
+  `ANBFpsInteraction`.
+
+## ★ Weapon Framework 0.2.0 + Daredevil 0.3.5 (Sep 29 2026): test crowbar + back holsters for mod items; installed, untested
+
+His ask: work on the crowbar test entry and back-holster settings, clubs on the back too. Design + API:
+[WeaponFramework/README.md](WeaponFramework/README.md) "0.2.0".
+- **Back holsters = the game's own back sockets** (`HVRShoulderSocket.leftShoulder/rightShoulder`, saved by the game as
+  `holsterGunBackLeft/Right`), shared: each side holds a game gun OR one mod item. The mod item never enters the game's
+  socket (so the game's loadout save never sees a mod id); ours is free only while the game's socket is empty, and
+  `CanHover` is blocked for the game socket while ours is full. Item pinned under the socket's parent (the body), grip
+  up, far end down; pose from `[WeaponFrameworkHolsters]` ints (live, mirrored). Saved in `SavedBackHolsters`, restored
+  after the game's loadout (`ActionLog.Loading` over + 3 s).
+- **Unknown until the first run: the sockets' parent frame.** The pose assumes x = right, y = up, z = forward; the
+  first run logs `back holsters on '…': local L … R …; parent '…' up …, head fwd in parent …` to calibrate.
+- **His loadout has AB15 (back-left) and CompoundBow (back-right)**, so both sides start taken: free one first.
+- Test crowbar: `[WeaponFramework] TestEntries = true` (set in his cfg). Daredevil 0.3.5: clubs registered as kind
+  `BillyClub`; a club the belt doesn't take on release goes to the back if near; clubs on the back are never recalled
+  to the wall/belt; it also carries the framework-required warning and the pending throw-flight fixes (impact grace
+  0.05 s, follow-through ends on a hit, `ThrowAimHead`) from another session, untested.
+- Installed Sep 29 15:33: framework `658B0953…`, Daredevil `CEDC7EF2…` (backup + cfg in
+  `feature/backup-before-WF-0.2.0-DD-0.3.5-*`).
+
+**First test (15:45 log) and 0.2.1 (installed, `BE99B811…`; logs every failed draw / put-back near a back holster with the reason, and the crowbar's wall direction):**
+- **Calibration: the back sockets live under `…/Camera/HeadRelativeInventory/LeftShoulder|RightShoulder`**, local
+  L (-0.36, 0, -0.09) R (0.33, 0, -0.09), head forward in that frame = (0, 0, 1). So x = right, z = forward holds.
+- Crowbar entry retrieved and grabbed; hung upright it stuck out of the slot → 0.2.1 lays it across the slot like the
+  rifles (`Items.Widest` finds the hook's bend and lays it flat along the wall's up).
+- Crowbar went into back-right, a club into back-left. **Neither could be drawn again.** Cause: an item in our holster
+  is kinematic = "docked", and **Grab Fix only lets a hand hover docked items within its small native sphere** (on
+  purpose: stops widened grabs pulling weapons off the belt). Behind your back that's too precise; the game's guns
+  don't need it because the hand grabs them from the shoulder socket's big volume. Daredevil's belt `draw check` lines
+  show the same pattern (hand near, club not in the grab bag). **Fix: framework draw assist**: grip press (window
+  0.3 s) with the palm within `DrawCm` (15) of the shaft, hand empty and not hovering anything else →
+  `HVRHandGrabber.TryGrab(item, force: true)`.
+- **The game still put the bow and AB15 on the full sides.** `HVRShoulderSocket.CanHover` is a real override, but it's
+  not the only way in. **All grabs, socket grabs included, end in the virtual `HVRGrabberBase.GrabGrabbable`, which
+  only the base class declares** (`TryGrab(g, force)` = `CanGrab` unless forced, then `GrabGrabbable` via vtable 0x3c8).
+  0.2.1 refuses there when the grabber is a back socket on a full side (log `back-right: holds '…' - the game's holster
+  refused '…'`); the gun drops as if there were no holster.
+
+**0.2.1 test (16:33 log): back holsters WORK** for the crowbar and both clubs, drawn with either hand, and the crowbar
+carried into a contract (`back holsters restored: back-right Crowbar`). Crowbar lies across the wall slot (hook along the
+wall, bend up). Numbers:
+- ~25 draws, almost all by the assist at **13-15 cm** (= the edge: the grip is pressed while the hand is still moving
+  in); **7 misses at 17-28 cm** "too far". One put-back refused at 2.6 m/s (limit 2.5). No gun was tried on a full side.
+- Crowbar "floaty, no weight": the Range crowbar is **8 kg**; HVR's hand joint can't keep up, so it trails the hand.
+  Billy Clubs use 3 kg and feel right.
+- **0.2.2 (installed, `78727482…`):** `DrawCm` 20 (his cfg updated too), draw window 0.5 s, put-back speed limit 3.5 m/s,
+  crowbar 3 kg, and draw/miss lines now say where the palm was relative to the grip at its closest approach
+  (`8 out, 12 above, 5 behind the grip`), so the holster pose can be moved to where the hand actually goes.
+- **Parent frame note:** `HeadRelativeInventory` up was (-0.05, 0.95, -0.32) in one session and (-0.05, 0.98, 0.21) in the
+  next, so the back-holster frame follows head pitch (partly). The game's own back guns ride in the same frame.
+- **0.2.3 (installed, `697C7442…`): crowbar panel picture**, his own image (grey render + outline, transparent),
+  scaled to the game's sprite size 1364x635 → `BlenderRefs/out/crowbar_icon.png`, embedded in the framework DLL.
+
+**0.2.3 test (17:18 log): all worked** — picture shows, the game refused the Howler on a full side 3× (`holds 'Crowbar' -
+the game's holster refused …`), 3 kg crowbar fine (test weapon: doesn't always hit enemies; not worth more work, ships
+inside the framework as the example). ~50 draws, palm consistently **~22 cm nearer the spine, ~18 cm below, ~5 cm
+behind the grip end** → the 0.2.0 pose put the grip ~15 cm ABOVE the socket point (sockets are at head height, 35 cm out).
+Put-backs refused at 3.5-4.0 m/s. Two findings:
+- **Empty back holsters in a contract started from the main menu:** restore ran in `MainMenu`, the crowbar template
+  didn't exist yet (copied from The Range) → `not made`, and **the entry was then deleted from `SavedBackHolsters`**.
+  Same root as Daredevil's `no club template yet`. 0.2.4 keeps a waiting side until it can be made (after a Range visit).
+- **No haptic when putting an item back** (the draw has one: HVR's own grab buzz). The game's cue for guns is
+  `HVRSocket.GunHoverHaptics` → `ANBHVRGunBase.HolsterHaptics`; ours: `Controller.Vibrate(0.35, 0.06, 150)` once when a
+  held mod item enters `SnapCm` of a free side (Better Bow's quiver uses the same pulse).
+
+**0.2.4 (installed, `60CF4D28…`, his cfg updated):** hover buzz, pose `OutCm -13 / DropCm 30 / BackCm 7` (≈¾ of the
+measured offset, since draws fire while the hand is still moving in), put-back speed 5 m/s, waiting sides kept.
+- **Next: split all holster code into a new mod, VR Holster Customization** (base layer; Weapon Framework and
+  Daredevil require it). Exact move list, dependency rule and phases: [VRHolsterCustomization/PLAN.md](VRHolsterCustomization/PLAN.md).
+- Open: the crowbar's claw is pointy but it only does blunt damage (a stab needs the game's knife logic, i.e. a real
+  crowbar weapon, not a test entry).
+
+## Mod Settings 0.3.0 (Sep 28 2026): flat-screen menu (Nexus request); release files ready (`release/ModSettings/`, commit 2b29f28 on dev), not uploaded, in-game test pending
+
+Users asked for Mod Settings in the flat version. **Ctrl+M in flat mode opens an IMGUI window** (`FlatMenu.cs`) with the
+same pages/buttons, used with the mouse. Page logic moved out of `Panel` into `Pages.cs`, shared by both menus.
+- **IMGUI survived stripping** (`GUI.Button/Label/DrawTexture(Rect,…)`, `GUIStyle(GUIStyle)` copy ctor, `fontSize`,
+  `alignment`, `fontStyle`), but **`GUIStyle.set_wordWrap` / `set_richText` / `get_hover` are stripped** → the copied
+  skin styles are used as-is and the flat description has no rich-text tags.
+- **Flat controller = Low Poly Shooter Pack `Character`**: `cursorLocked` (0x154) gates `OnLook`, `OnTryFire`,
+  `OnTryAiming`; `UpdateCursorState` sets `Cursor.visible/lockState` from it; `ManualLockCursor` refuses while
+  `editingGun` (0x18d); `menuShown` = 0x18c. The menu clears `cursorLocked` while open (re-cleared each frame) and calls
+  `ManualLockCursor` on close unless `menuShown`. No controller (main menu) → saves/restores `Cursor` directly.
+- Flat detection: `!XRSettings.isDeviceActive` (in `UnityEngine.VRModule`, not XRModule), or controller active + no hands.
+- Installed `9AACC571…` (backup `feature/ModSettings-backup-before-0.3.0-*`). **Test (flat):** Ctrl+M in The Range →
+  menu centred, cursor visible, mouse look + fire blocked, WASD still walks; change a value → log line; close →
+  look works again. Also in the main menu. **VR regression check:** phone tile + Ctrl+M still open the board.
 
 ## Mod Settings 0.2.2 (Sep 28 2026): tile in the centre slot; installs when the game closes
 
@@ -1870,3 +2084,37 @@ calls `ANBGameLogic.holsterGun`. → Club holstering = a patch that skips those 
 `NpcMeshes` renderers `enabled = false`, animator culled (`dynamicAnimatorCulled`), `outOfViewObjectsOff` (0x828) = true.
 Back in view, or `outOfViewTime` (0xba4) below the limit → all restored, animator `AlwaysAnimate`. **Any mod that
 reads enemy renderers or bone poses sees hidden, frozen enemies unless it keeps `outOfViewTime` at 0.** Radar Sense does.
+
+## Throw Assist 0.2.0 (Sep 28 2026): knives fly like the game's knife assist; deployed, untested
+
+**Log from the 19:39 session:** `AimHead` "didn't work" because every throw tested was a **Billy Club**, which Throw
+Assist skips. Daredevil aims clubs with its own `AimPoint`, switched by `[BillyClubs] RicochetAimHead`, and that
+setting covers every club throw, not just ricochets. Kept as it is: ricochet is club-only, so the setting stays in the Billy Clubs section.
+Knives with `SteerOtherItems`: 3 throws, steered at 12 / 7 / 8 m/s (your hand speed) with the spin kept. The game's
+own coroutine flies knives at a fixed **17 m/s** (`ato.speed`), turned point first. So ours was up to 2.5× slower
+and hit at a random blade angle.
+**0.2.0:** a thrown item with an `ANBKnife` flies at `max(steer speed, ato.speed)`. Every step
+`rb.rotation = FromToRotation(Stabber.StabLineWorld, flightDir) * rotation`, spin zeroed. DebugLog: one line per
+knife, `stabbed <collider>` (from a `StabEnemyFinal` prefix) or `no stab`, plus the tip angle off the flight line
+on the last step before the hit. **Verify first:** the stab line points base → tip (Better Bow used it that way).
+If knives fly handle first, flip it.
+**0.2.0 test (19:57 log): the knife fix WORKS.** 14/14 assisted knives stabbed (13 head, 1 spine_03), tip 0–22°
+off the flight before the hit. The failed throws he felt left **no line at all**, because the silent paths were
+not logged. Fixes (still 0.2.0, deployed): a `releaseKnife` hook logs every knife throw that never reached
+`StartAssistedThrow`, and `After` logs knives with no target. Likely cause: `MinAssistSpeed` (6) put
+`dontUse` on knives thrown at 3.5–6 m/s, which the game itself would assist. Knives now use the game's 3.5 threshold.
+
+## Daredevil 0.3.4 (Sep 28 2026): club throws follow `ThrowAssist.AimHead`; deployed, untested
+Direct (assisted) club throws read `ThrowAssist.AimHead` (via `MelonPreferences.GetEntry`). Ricochets keep
+`[BillyClubs] RicochetAimHead`. Log now says `(at the head|chest)` instead of the game's target name `knifeSpotChest`.
+**Overlap, for the record:** Daredevil uses none of Throw Assist's code for clubs. It hooks the same
+`StartAssistedThrow`, uses only the game's target choice, and has its own flight plus 4 duplicate settings
+(`ThrowSpeed`↔`MaxSpeed`, `MinSteerSpeed`, `ThrowSearchDistance`↔`SearchDistance`, `ThrowMaxFlyDistance`↔`MaxFlyDistance`).
+Throw Assist is required for pistols (moved out in Billy Clubs 0.11.0) and now knives.
+**Ricochet "got worse" (20:21 log) — not the head-aim change; an old bug.** Ricochets that fired hit 6/6. But 5
+unassisted throws ended their flight 0.13–0.17 s after release with no hit line, at the same moment as the
+follow-through line, so they never ricocheted. Cause: unassisted flights ignored impacts for 0.15 s (a leftover
+from when the game's homing still ran), and during that window the follow-through kept resetting the club's
+velocity to the hand's, pushing it into the wall it had just hit. When the window closed, the club was below
+2 m/s and the flight ended silently. Fix (0.3.4): impact grace 0.05 s for every throw; follow-through stops once
+the club drops below 60% of its speed; a flight that ends by slowing down now logs `flight ended: slowed to …`.

@@ -11,6 +11,8 @@ Required by Daredevil's description — upload this one first, or in the same si
 | `Gloves-0.1.0.zip` | the upload: contains `Mods/Gloves.dll` |
 | `Gloves.dll` | the shipping build, 8,192 bytes, sha256 `05ceabcff45f95fd2bc454e49f02b1eb974d5b66e3189c6b431e404288241d2b` |
 | `NEXUS_DESCRIPTION.txt` | the page text (BBCode) |
+| `Gloves-Nexus-thumbnail-1600x900.png` | Nexus thumbnail artwork |
+| `Gloves-Nexus-header-1300x372.png` | Nexus header artwork |
 
 Rebuild:
 ```powershell
@@ -32,10 +34,10 @@ then copy the DLL here and zip it as `Mods/Gloves.dll`.
 | Permissions | Same as the other mods (source is MIT on GitHub); required by Daredevil |
 | File name / category | `Gloves` / Main files |
 | File description | `Extract into the game folder. Needs MelonLoader 0.7.x. Stands alone; also required by Daredevil.` |
-| Images | a screenshot of the dark red default gloves in VR |
+| Images | `Gloves-Nexus-thumbnail-1600x900.png` and `Gloves-Nexus-header-1300x372.png`; original in-game screenshots are also in this folder |
 
 **Summary (330 chars):**
-`Recolours the player's gloves to any colour, applied at once. Dark red by default (the Daredevil look). Edit the config or change it live on the Mod Settings board's colour picker, no restart needed. Only the gloves change; sleeves are untouched. Required by Daredevil, but works standing alone.`
+`Changes the player's glove colour, applied at once. Dark red by default (the Daredevil look). Edit the config or change it live on the Mod Settings board's colour picker, no restart needed. Only the gloves change; sleeves are untouched. Required by Daredevil, but works standing alone.`
 
 ## Before uploading
 

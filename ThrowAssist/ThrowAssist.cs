@@ -7,7 +7,7 @@ using MelonLoader;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(ThrowAssist.ThrowAssistMod), "Throw Assist", "0.1.0", "Evgeeso")]
+[assembly: MelonInfo(typeof(ThrowAssist.ThrowAssistMod), "Throw Assist", "0.2.0", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace ThrowAssist
@@ -31,7 +31,9 @@ namespace ThrowAssist
     // per throw. Heavy Melee only takes over HELD guns, so the two don't overlap.
     //
     // Other items (knives, katanas, bottles, pans, the crowbar): SteerOtherItems (off) steers them the same way.
-    // Untested: a knife must arrive point first to stab, and the game's coroutine may turn it for that.
+    // Knives (anything with an ANBKnife) fly like the game's own knife assist: at least the item's own assist speed
+    // (17 m/s for combat knives) and blade first. Each step the knife is turned so its stab line (HVRStabber,
+    // base to tip) faces the flight direction, spin removed, so it lands point first and the stabber stabs.
     public class ThrowAssistMod : MelonMod
     {
         internal static MelonLogger.Instance Log;
@@ -44,8 +46,8 @@ namespace ThrowAssist
             Log = LoggerInstance;
             var c = MelonPreferences.CreateCategory("ThrowAssist", "Throw Assist");
             PistolAssist = c.CreateEntry("PistolAssist", true, description: "Thrown pistols home in on enemies. The game ships its pistol assist switched off. Needs the game's own assisted throw option on.");
-            SteerOtherItems = c.CreateEntry("SteerOtherItems", false, description: "Knives, katanas, bottles, pans and the crowbar are steered by this mod too (real physics, spin kept) instead of the game's drag. Untested: knives may not land point first.");
-            MinAssistSpeed = c.CreateEntry("MinAssistSpeed", 6f, description: "An item thrown slower than this (m/s) gets no assist and just flies.");
+            SteerOtherItems = c.CreateEntry("SteerOtherItems", false, description: "Knives, katanas, bottles, pans and the crowbar are steered by this mod too (real physics, spin kept) instead of the game's drag. Knives fly at the game's knife speed (17 m/s) or faster, blade first.");
+            MinAssistSpeed = c.CreateEntry("MinAssistSpeed", 6f, description: "A pistol or other item thrown slower than this (m/s) gets no assist and just flies. Knives use the game's own threshold (3.5).");
             MaxSpeed = c.CreateEntry("MaxSpeed", 18f, description: "An assisted item flies at your own throw speed, up to this (m/s).");
             SearchDistance = c.CreateEntry("SearchDistance", 15f, description: "How far the assist looks for a target (m). Pistols as shipped: 6.");
             MaxFlyDistance = c.CreateEntry("MaxFlyDistance", 20f, description: "How far an assisted throw flies before it gives up (m). Pistols as shipped: 4.");
@@ -83,6 +85,9 @@ namespace ThrowAssist
             public HVRGrabbable Grab;
             public string Name;
             public bool Pistol;
+            public ANBKnife Knife;
+            public string Stab, EndInfo;
+            public float LastTip = -1f;
             public float Start, Speed, SteerAt, Until, EndedAt = -1f;
             public Vector3 Dir;
             public ANBBasicNPC Target;
@@ -114,7 +119,9 @@ namespace ThrowAssist
             preOurs = Ours(ato, out var gun, out var rb);
             if (!preOurs) return;
             preV = rb.linearVelocity; preW = rb.angularVelocity;
-            bool assist = preV.magnitude >= ThrowAssistMod.MinAssistSpeed.Value && (gun == null || ThrowAssistMod.PistolAssist.Value);
+            // Knives keep the game's own threshold (assistedThrowAtVelocity, 3.5 m/s): the game assists them from there.
+            bool knife = gun == null && IsKnife(ato);
+            bool assist = (knife || preV.magnitude >= ThrowAssistMod.MinAssistSpeed.Value) && (gun == null || ThrowAssistMod.PistolAssist.Value);
             // A soft toss isn't a throw at anyone. Pistols are switched on here (the game ships them off).
             if (gun != null) ato.dontUse = !assist;
             else if (!assist) ato.dontUse = true;   // restored below; the game would still drag a slow throw
@@ -130,7 +137,7 @@ namespace ThrowAssist
             if (!preOurs) return;
             preOurs = false;
             if (!Ours(ato, out var gun, out var rb)) return;
-            if (gun == null && preV.magnitude < ThrowAssistMod.MinAssistSpeed.Value) ato.dontUse = false;   // undo Before
+            if (gun == null && !IsKnife(ato) && preV.magnitude < ThrowAssistMod.MinAssistSpeed.Value) ato.dontUse = false;   // undo Before
             Transform target = null;
             if (ato.isHoming)
             {
@@ -142,14 +149,19 @@ namespace ThrowAssist
                 rb.angularVelocity = preW;
             }
             float sp = preV.magnitude;
-            if (sp < MinThrowSpeed) return;
             bool pistol = gun != null;
-            if (!pistol && target == null) return;      // nothing to steer, no damage to track
+            var knife = pistol ? null : ato.GetComponent<ANBKnife>() ?? ato.GetComponentInParent<ANBKnife>();
+            if (sp < MinThrowSpeed || (!pistol && target == null))    // nothing to steer, no damage to track
+            {
+                if (knife != null && ThrowAssistMod.Dbg) W($"knife '{ato.name}' thrown at {sp:0.0} m/s, assist: {NoAssist(sp, true)}");
+                return;
+            }
 
             Flights.RemoveAll(p => !Alive(p.Rb) || p.Rb.Pointer == rb.Pointer);
             var f = new Flight
             {
                 Rb = rb, Ato = ato, Grab = ato.GetComponent<HVRGrabbable>(), Name = pistol ? gun.name : ato.name, Pistol = pistol,
+                Knife = knife,
                 Start = Time.time, Speed = sp, Dir = preV / sp, OldMode = rb.collisionDetectionMode,
             };
             rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;   // fast and small: don't tunnel
@@ -162,23 +174,59 @@ namespace ThrowAssist
                 f.Target = npc; f.AimT = target;
                 float min = ThrowAssistMod.MinAssistSpeed.Value;
                 f.SteerAt = Mathf.Clamp(sp, min, Mathf.Max(ThrowAssistMod.MaxSpeed.Value, min));
+                if (knife != null) f.SteerAt = Mathf.Max(f.SteerAt, ato.speed);   // the game flies knives at a fixed 17 m/s
                 f.Until = Time.time + ThrowAssistMod.MaxFlyDistance.Value / f.SteerAt + 0.3f;
                 var to = (npc != null ? AimPoint(npc) : target.position) - rb.worldCenterOfMass;
                 f.Dir = to.normalized; f.Speed = f.SteerAt;
                 rb.linearVelocity = f.Dir * f.SteerAt;
+                if (knife != null) BladeFirst(f);
                 assist = $"{(npc != null ? "enemy" : "target")} '{(npc != null ? npc.name : target.name)}' {to.magnitude:0.0} m, steered at {f.SteerAt:0} m/s";
             }
-            else
-            {
-                var game = ANBStaticGameManager.ANBmain;
-                assist = !ThrowAssistMod.PistolAssist.Value ? "none (PistolAssist off)"
-                    : sp < ThrowAssistMod.MinAssistSpeed.Value ? $"none ({sp:0.0} m/s is below MinAssistSpeed {ThrowAssistMod.MinAssistSpeed.Value:0.#})"
-                    : game != null && !game.assistedThrow ? "none (off in the game settings)"
-                    : game != null && sp < game.assistedThrowAtVelocity ? $"none ({sp:0.0} m/s is below the game's {game.assistedThrowAtVelocity:0.0})"
-                    : "none (no target in view)";
-            }
-            if (ThrowAssistMod.Dbg) W($"{(pistol ? "pistol" : "item")} '{f.Name}' thrown at {sp:0.0} m/s, assist: {assist}");
+            else assist = !ThrowAssistMod.PistolAssist.Value ? "none (PistolAssist off)" : NoAssist(sp, false);
+            if (ThrowAssistMod.Dbg) W($"{(pistol ? "pistol" : knife != null ? "knife" : "item")} '{f.Name}' thrown at {sp:0.0} m/s, assist: {assist}");
         }
+
+        static bool IsKnife(ANBAssistedThrowingObject ato) =>
+            ato.GetComponent<ANBKnife>() != null || ato.GetComponentInParent<ANBKnife>() != null;
+
+        static string NoAssist(float sp, bool knife)
+        {
+            var game = ANBStaticGameManager.ANBmain;
+            return !knife && sp < ThrowAssistMod.MinAssistSpeed.Value ? $"none ({sp:0.0} m/s is below MinAssistSpeed {ThrowAssistMod.MinAssistSpeed.Value:0.#})"
+                : game != null && !game.assistedThrow ? "none (off in the game settings)"
+                : game != null && sp < game.assistedThrowAtVelocity ? $"none ({sp:0.0} m/s is below the game's {game.assistedThrowAtVelocity:0.0})"
+                : "none (no target in view)";
+        }
+
+        // ANBKnife.releaseKnife runs the game's assist only for a throw faster than assistedThrowAtVelocity, and
+        // only if the knife allows it. A release that never reaches StartAssistedThrow is logged here, so every
+        // knife throw leaves a line.
+        static int releaseDepth;
+        static bool reachedAssist;
+        static float releaseSpeed;
+
+        internal static void KnifeReleaseBefore(ANBKnife k)
+        {
+            if (releaseDepth++ > 0) return;
+            reachedAssist = false;
+            var rb = k.GetComponent<Rigidbody>() ?? k.GetComponentInParent<Rigidbody>();
+            releaseSpeed = rb != null ? rb.linearVelocity.magnitude : 0f;
+        }
+
+        internal static void KnifeReleaseAfter(ANBKnife k)
+        {
+            if (--releaseDepth > 0) return;
+            releaseDepth = 0;
+            if (reachedAssist || !ThrowAssistMod.Dbg || releaseSpeed < MinThrowSpeed) return;   // a drop, not a throw
+            var game = ANBStaticGameManager.ANBmain;
+            string why = !k.allowAssistedThrow ? "not allowed on this knife"
+                : game != null && !game.assistedThrow ? "off in the game settings"
+                : game != null && releaseSpeed < game.assistedThrowAtVelocity ? $"{releaseSpeed:0.0} m/s is below the game's {game.assistedThrowAtVelocity:0.0}"
+                : "the game didn't start it";
+            W($"knife '{k.name}' thrown at {releaseSpeed:0.0} m/s, assist: none ({why})");
+        }
+
+        internal static void AssistReached() => reachedAssist = true;
 
         static Vector3 AimPoint(ANBBasicNPC npc)
         {
@@ -187,11 +235,47 @@ namespace ThrowAssist
             return npc.transform.position + Vector3.up * 1.2f;
         }
 
+        // Turn the knife so its stab line (base to tip) points along the flight, and stop its spin.
+        static void BladeFirst(Flight f)
+        {
+            var st = f.Knife.Stabber;
+            if (!Alive(st)) return;
+            var line = st.StabLineWorld;
+            if (line.sqrMagnitude < 1e-6f) return;
+            f.Rb.rotation = Quaternion.FromToRotation(line, f.Dir) * f.Rb.rotation;
+            f.Rb.angularVelocity = Vector3.zero;
+        }
+
+        static float TipOff(Flight f)
+        {
+            try
+            {
+                var st = f.Knife.Stabber;
+                var v = f.Rb.linearVelocity;
+                return Alive(st) && v.sqrMagnitude > 0.01f ? Vector3.Angle(st.StabLineWorld, v) : -1f;
+            }
+            catch { return -1f; }
+        }
+
+        // StabEnemyFinal prefix: remember what a steered knife stabbed.
+        internal static void KnifeStab(ANBKnife k, Collider col)
+        {
+            if (k == null || Flights.Count == 0) return;
+            foreach (var f in Flights)
+                if (f.Knife != null && Alive(f.Knife) && f.Knife.Pointer == k.Pointer && f.Stab == null)
+                {
+                    bool zone = col != null && col.GetComponent<ANBEnemyDetect>() != null;
+                    f.Stab = $"stabbed {(col != null ? col.name : "?")}{(zone ? "" : " (not a hit zone, no damage)")}";
+                    return;
+                }
+        }
+
         static void End(Flight f)
         {
             if (f.EndedAt >= 0f) return;
             f.EndedAt = Time.time;
             f.Target = null; f.AimT = null;
+            if (f.Knife != null) f.EndInfo = $"{f.EndedAt - f.Start:0.00} s at {f.Speed:0} m/s, tip {f.LastTip:0} deg off the flight before the hit";
             if (!Alive(f.Rb)) return;
             f.Rb.collisionDetectionMode = f.OldMode;
             if (Alive(f.Ato)) { f.Ato.StopAllCoroutines(); f.Ato.homingTarget = null; }
@@ -205,7 +289,11 @@ namespace ThrowAssist
                 if (!Alive(f.Rb)) { Flights.RemoveAt(i--); continue; }
                 if (f.EndedAt >= 0f)
                 {
-                    if (Time.time - f.EndedAt > 0.3f) Flights.RemoveAt(i--);   // kept briefly for the damage hook
+                    if (Time.time - f.EndedAt > 0.3f)   // kept briefly for the damage and stab hooks
+                    {
+                        if (f.Knife != null && ThrowAssistMod.Dbg) W($"  knife '{f.Name}': {f.Stab ?? "no stab"} ({f.EndInfo})");
+                        Flights.RemoveAt(i--);
+                    }
                     continue;
                 }
                 var rb = f.Rb;
@@ -230,6 +318,7 @@ namespace ThrowAssist
                     }
                 }
                 if (sp > 0.01f) { f.Dir = v / sp; f.Speed = sp; }
+                if (f.Knife != null && Alive(f.Knife)) { f.LastTip = TipOff(f); BladeFirst(f); }
             }
         }
 
@@ -270,6 +359,7 @@ namespace ThrowAssist
     {
         static void Prefix(ANBAssistedThrowingObject __instance)
         {
+            Throws.AssistReached();
             try { Throws.Before(__instance); }
             catch (Exception e) { ThrowAssistMod.Log.Warning($"before assist: {e.Message}"); }
         }
@@ -278,6 +368,35 @@ namespace ThrowAssist
         {
             try { Throws.After(__instance); }
             catch (Exception e) { ThrowAssistMod.Log.Warning($"after assist: {e.Message}"); }
+        }
+    }
+
+    [HarmonyLib.HarmonyPatch]
+    static class KnifeReleasePatch
+    {
+        static IEnumerable<System.Reflection.MethodBase> TargetMethods()
+        {
+            foreach (var m in HarmonyLib.AccessTools.GetDeclaredMethods(typeof(ANBKnife)))
+                if (m.Name == nameof(ANBKnife.releaseKnife)) yield return m;
+        }
+
+        static void Prefix(ANBKnife __instance)
+        {
+            try { Throws.KnifeReleaseBefore(__instance); } catch (Exception e) { ThrowAssistMod.Log.Warning($"knife release: {e.Message}"); }
+        }
+
+        static void Postfix(ANBKnife __instance)
+        {
+            try { Throws.KnifeReleaseAfter(__instance); } catch (Exception e) { ThrowAssistMod.Log.Warning($"knife release: {e.Message}"); }
+        }
+    }
+
+    [HarmonyLib.HarmonyPatch(typeof(ANBGameLogic), nameof(ANBGameLogic.StabEnemyFinal))]
+    static class KnifeStabPatch
+    {
+        static void Prefix(Collider collider, ANBKnife knifeScript)
+        {
+            try { Throws.KnifeStab(knifeScript, collider); } catch { }
         }
     }
 

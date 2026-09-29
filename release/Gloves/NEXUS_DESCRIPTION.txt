@@ -1,6 +1,6 @@
 [size=5][b]Gloves[/b][/size]
 
-Recolours the player's gloves to any colour, applied at once. [b]Default dark red[/b], the Daredevil look.
+Changes the player's glove colour, applied at once. [b]Default dark red[/b], the Daredevil look.
 
 [size=4][b]How to use[/b][/size]
 Set a colour in [i]UserData\MelonPreferences.cfg[/i] as [b]#RRGGBB[/b], or change it live on the

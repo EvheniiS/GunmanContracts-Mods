@@ -70,7 +70,7 @@ namespace BillyClubs
             Ricochets = c.CreateEntry("Ricochets", 2, description: "How many times a thrown club bounces on to the next enemy in sight after hitting an enemy or a wall. 0 = off.");
             RicochetRange = c.CreateEntry("RicochetRange", 12f, description: "How far (m) a ricochet looks for the next enemy.");
             FloorShotAngle = c.CreateEntry("FloorShotAngle", 15f, description: "Throw at least this many degrees below horizontal and it is a floor shot: the game's homing is skipped, the club hits the floor and ricochets off it to the nearest enemy in sight. 0 = off (a club that happens to hit the floor still ricochets).");
-            RicochetAimHead = c.CreateEntry("RicochetAimHead", false, description: "Ricochets aim at the head (a fast club hit to the head is a kill). Off = the chest.");
+            RicochetAimHead = c.CreateEntry("RicochetAimHead", false, description: "Ricochets aim at the head (a fast club hit to the head is a kill). Off = the chest. A normal assisted throw follows Throw Assist's AimHead.");
             GripSlide = c.CreateEntry("GripSlide", 0f, description: "Moves the club in the hand along its length, in metres. + = the hand sits closer to the grip end. In game: Ctrl+J / Ctrl+L.");
             GripTiltA = c.CreateEntry("GripTiltA", 0f, description: "Tilts the club in the hand, in degrees (first axis). In game: Ctrl+K / Ctrl+I.");
             GripTiltB = c.CreateEntry("GripTiltB", 0f, description: "Tilts the club in the hand, in degrees (second axis). In game: Ctrl+[ / Ctrl+]. Ctrl+R resets the grip.");
@@ -207,7 +207,7 @@ namespace BillyClubs
             var rb = k.Rb;
             var npc = target.GetComponentInParent<ANBBasicNPC>();
             float speed = SteerSpeed(f.Speed);
-            var aim = npc != null ? AimPoint(npc) : target.position;
+            var aim = npc != null ? AimPoint(npc, ThrowAimHead()) : target.position;
             var to = aim - rb.worldCenterOfMass;
             float turn = Vector3.Angle(to, f.Dir);
             f.Ours = true; f.Target = npc; f.AimT = target;
@@ -216,7 +216,7 @@ namespace BillyClubs
             f.Dir = to.normalized; f.Speed = speed; f.SteerAt = speed;
             rb.linearVelocity = f.Dir * speed; f.PrevVy = rb.linearVelocity.y;
             f.Assist = $"'{(npc != null ? npc.name : target.name)}'";
-            if (Dbg) Log.Msg($"  throw assist: {(npc != null ? "enemy" : "target")} {f.Assist} ({target.name}) {to.magnitude:0.0} m away, {turn:0} deg off the throw - steered by the mod at {speed:0} m/s, spin kept");
+            if (Dbg) Log.Msg($"  throw assist: {(npc != null ? "enemy" : "target")} {f.Assist} (at the {(npc == null ? target.name : ThrowAimHead() ? "head" : "chest")}) {to.magnitude:0.0} m away, {turn:0} deg off the throw - steered by the mod at {speed:0} m/s, spin kept");
         }
 
         // Every way a flight ends. hitNpc != null = it ended against an enemy: bounce off gently and settle.
@@ -277,19 +277,24 @@ namespace BillyClubs
                 var v = rb.linearVelocity;
                 float sp = v.magnitude;
                 float age = Time.time - f.Start;
-                // Impact: the velocity turns hard or loses a lot of speed in one step. Ignore the first 0.15 s,
-                // where the game's homing makes its big course correction.
+                // Impact: the velocity turns hard or loses a lot of speed in one step. Ignore the first 0.05 s (the
+                // release). The old 0.15 s for unassisted throws was for the game's homing, which the mod stops at once;
+                // it let a close wall hit go unseen, so the flight ended silently with no ricochet.
                 // A floor hit at a shallow angle turns the velocity less than 50 deg: catch it as a lost fall instead
                 // (falling at > 1 m/s, then most of that gone in one step, with the floor right below).
                 bool floor = f.PrevVy < -1f && v.y > f.PrevVy * 0.3f && FloorBelow(rb.worldCenterOfMass, rb);
-                float grace = f.FloorShot || f.Ours ? 0.05f : 0.15f;
+                const float grace = 0.05f;
                 if (f.EnemyHit != null || (age > grace && sp > 0.01f && (floor || Vector3.Angle(v, f.Dir) > 50f || sp < f.Speed * 0.6f)))
                 {
                     Impact(k, f, sp);
                     if (k.Fly == null) continue;
                     v = rb.linearVelocity; sp = v.magnitude;
                 }
-                else if (sp < 2f || age > 4f) { EndFlight(k, null, null); continue; }
+                else if (sp < 2f || age > 4f)
+                {
+                    if (Dbg) Log.Msg($"  flight ended: {(sp < 2f ? $"slowed to {sp:0.0} m/s with no impact seen" : "4 s up")}");
+                    EndFlight(k, null, null); continue;
+                }
 
                 FollowStep(k, f);
                 if (k.Fly == null) continue;
@@ -299,7 +304,7 @@ namespace BillyClubs
                     { f.Target = null; f.AimT = null; }
                     else
                     {
-                        var to = (f.Target != null ? AimPoint(f.Target) : f.AimT.position) - rb.worldCenterOfMass;
+                        var to = (f.Target != null ? AimPoint(f.Target, f.Bounces > 0 ? RicochetAimHead.Value : ThrowAimHead()) : f.AimT.position) - rb.worldCenterOfMass;
                         v = to.normalized * f.SteerAt;
                         rb.linearVelocity = v; sp = v.magnitude;
                     }
@@ -378,7 +383,7 @@ namespace BillyClubs
             foreach (var npc in NpcsAround(pos, RicochetRange.Value))
             {
                 if (npc.isDead || f.Hit.Contains(npc.Pointer)) continue;
-                var aim = AimPoint(npc);
+                var aim = AimPoint(npc, RicochetAimHead.Value);
                 float d = Vector3.Distance(pos, aim);
                 if (d >= bestD || !InSight(pos, aim, npc, k.Rb)) continue;
                 best = npc; bestD = d;
@@ -399,17 +404,25 @@ namespace BillyClubs
             f.AimT = null;
             f.Oriented = false; // new direction: line the spin up with it again
             f.Start = Time.time; // restarts the impact grace period
-            var dir = (AimPoint(best) - pos).normalized;
+            var dir = (AimPoint(best, RicochetAimHead.Value) - pos).normalized;
             f.SteerAt = SteerSpeed(Mathf.Max(f.Speed, speedNow));
             k.Rb.linearVelocity = dir * f.SteerAt;
             f.Dir = dir; f.Speed = k.Rb.linearVelocity.magnitude; f.PrevVy = k.Rb.linearVelocity.y;
             if (Dbg) Log.Msg($"club hit {what} at {speedNow:0.0} m/s - ricochet {f.Bounces}/{Ricochets.Value} to '{best.name}' {bestD:0.0} m away at {f.SteerAt:0.0} m/s");
         }
 
-        static Vector3 AimPoint(ANBBasicNPC npc)
+        // A normal (assisted) club throw follows Throw Assist's AimHead, so one switch aims every thrown weapon.
+        static MelonPreferences_Entry<bool> throwAimHead;
+        static bool ThrowAimHead()
+        {
+            throwAimHead ??= MelonPreferences.GetEntry<bool>("ThrowAssist", "AimHead");
+            return throwAimHead != null && throwAimHead.Value;
+        }
+
+        static Vector3 AimPoint(ANBBasicNPC npc, bool atHead)
         {
             var head = npc.aimAtHead;
-            if (head != null) return RicochetAimHead.Value ? head.position : head.position - Vector3.up * 0.35f;
+            if (head != null) return atHead ? head.position : head.position - Vector3.up * 0.35f;
             return npc.transform.position + Vector3.up * 1.2f;
         }
 

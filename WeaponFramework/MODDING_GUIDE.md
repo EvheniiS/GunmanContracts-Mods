@@ -3,6 +3,10 @@
 This guide takes you from nothing to your own weapon on the arsenal panel in The Range: the player pages to it
 with `+` / `-`, presses **Retrieve**, the wall slot slides out with your item on it, and they take it off the wall.
 
+Weapon Framework 0.3.0 requires `VRHolsterCustomization.dll`. Back holsters for mod items are provided by that mod:
+register a `VRHolsterCustomization.HolsterKind`, then call `VRHolsterCustomization.Holsters.TryHolster(item)` on release
+or `VRHolsterCustomization.Holsters.Watch(item)` to let it watch for releases. See its [README](../VRHolsterCustomization/README.md).
+
 A complete, compiling example is in [`Example/`](Example/): `ExampleBaton.cs` (about 120 lines) puts a copy of the
 crowbar on the panel. Read it alongside this guide.
 
@@ -129,6 +133,12 @@ components you don't need before the template is ever activated.
 prefix there is the place to unparent your item from the mount and make it non-kinematic (see `GrabPatch` in the
 example).
 
+**The game's own holsters save by weapon id.** On load (`LoadContractHolstersSingle`) the game looks the saved id up in
+its weapon prefab lists and spawns a copy. So a gun or knife re-skin that carries a real `ANBWeaponType` and is added to
+those lists can use the game's holsters and be saved natively; if your mod is removed, its id matches nothing and that
+holster most likely just comes back empty (read from the code, not tested). An item with no gun or knife component
+(a club, a crowbar) can't go in them at all: the sockets call gun code on it. Use the framework's slots for those.
+
 **Don't put your item in the slot's socket.** The slot's own gun socket (`gunstorage`, a `DemoHolster`) only accepts
 guns and knives and throws on anything else. The framework switches it off; parent to the mount instead.
 
@@ -161,7 +171,9 @@ tex.hideFlags = HideFlags.DontUnloadUnusedAsset;
 5. Retrieve another weapon, then yours again: nothing is duplicated, nothing is lost.
 6. Restart the game with your entry selected last: the wall starts on one of the game's weapons (the framework logs
    `save: wall index 6 is a mod entry - saved as N` with `DebugLog = true`).
-7. Remove your mod (and the framework): the game and the save still work.
+7. Remove your mod (and the framework): the game and the save still work. In full: retrieve your weapon, holster it,
+   enter a contract, quit; disable your mod, start (no errors, the wall opens on a game weapon); enable it again; then
+   the same with the framework disabled instead.
 
 `[WeaponFramework] DebugLog = true` in `UserData\MelonPreferences.cfg` logs every step: the slot, the mount position,
 retrieve, settle and save.

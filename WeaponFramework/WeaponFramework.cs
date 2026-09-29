@@ -5,8 +5,9 @@ using MelonLoader;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(WeaponFramework.WeaponFrameworkMod), "Weapon Framework", "0.1.1", "Evgeeso")]
+[assembly: MelonInfo(typeof(WeaponFramework.WeaponFrameworkMod), "Weapon Framework", "0.3.0", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
+[assembly: MelonAdditionalDependencies("VRHolsterCustomization")]
 
 namespace WeaponFramework
 {
@@ -64,13 +65,15 @@ namespace WeaponFramework
     // - Not added to ANBDataCollection.allGunSpots / allGunSpotObjects (the loadout code walks those).
     // - Always "owned" (ANBDataCollection.checkPurchaseDataWeapon prefix), without the game's free auto-purchase,
     //   which would write the id into the save.
-    // - Retrieving writes the wall index to the save (pickWeapon -> saveSpotLarge -> SavePurchases). A mod index there
-    //   would point past the list once the mod is removed, so SavePurchases always sees the last game index instead.
+    // - Retrieving writes the wall index to the save (pickWeapon -> saveSpotLarge -> SaveWeapons, key "saveSpotLarge" in
+    //   SaveData_WeaponSetups). A mod index there would point past the list once the mod is removed, so SaveWeapons always
+    //   sees the last game index instead. (0.1.1 guarded SavePurchases, which never writes it.)
     public class WeaponFrameworkMod : MelonMod
     {
         internal static MelonLogger.Instance Log;
-        static MelonPreferences_Entry<bool> DebugLog;
+        static MelonPreferences_Entry<bool> DebugLog, TestEntries;
         static bool Dbg => DebugLog.Value;
+        internal static bool DebugOn => DebugLog != null && DebugLog.Value;
 
         const string GunwallDoneLog = "Processed Completed Gunwall";
 
@@ -94,20 +97,25 @@ namespace WeaponFramework
         {
             Log = LoggerInstance;
             var c = MelonPreferences.CreateCategory("WeaponFramework", "Weapon Framework");
-            DebugLog = c.CreateEntry("DebugLog", false, description: "Log how the arsenal entries are built, shown and saved.");
-            Log.Msg("loaded");
+            DebugLog = c.CreateEntry("DebugLog", false, description: "Log arsenal entries, wall retrieves and stand take / put-back events. Holster events are logged by VR Holster Customization.");
+            TestEntries = c.CreateEntry("TestEntries", false, description: "Adds the framework's test weapon, a Crowbar, to the arsenal panel. Restart the game after changing this.");
+            if (TestEntries.Value) TestCrowbar.Init();
+            Log.Msg(TestEntries.Value ? "loaded (test entries on)" : "loaded");
         }
 
         public override void OnSceneWasInitialized(int buildIndex, string sceneName)
         {
             if (!Alive(Wall)) { Wall = null; Data = null; Entries.Clear(); VanillaCount = -1; }
             SceneStart = Time.time;
+            ActionLog.Scene();
+            if (TestEntries.Value) { try { TestCrowbar.Scene(); } catch (Exception e) { Log.Error($"test crowbar: {e.Message}"); } }
         }
 
         // Fallback if the load-log hook never fires: look for a built wall for a while after each scene load.
         static float nextPoll;
         public override void OnUpdate()
         {
+            ActionLog.Tick();
             if (Arsenal.Weapons.Count == 0 || Alive(Wall) || Time.time < nextPoll || Time.time - SceneStart > 60f) return;
             nextPoll = Time.time + 2f;
             if (Time.time - SceneStart < 8f) return;
@@ -283,6 +291,7 @@ namespace WeaponFramework
 
         internal static void AfterPick(ANBGunwall w, IntPtr before)
         {
+            ActionLog.Retrieve(w, before, IsWall(w) && EntryFor(w.currentWeapon) != null);
             if (!IsWall(w)) return;
             if (w.currentSpot >= 0 && w.currentSpot < VanillaCount) LastVanillaSpot = w.currentSpot;
             var cur = w.currentWeapon;
@@ -293,7 +302,6 @@ namespace WeaponFramework
                 if (now)
                 {
                     e.Shown = true;
-                    if (Dbg) Log.Msg($"'{e.W.Id}' retrieved - mount at {V(e.Mount.position)}, facing {V(e.Mount.forward)}");
                     try { e.W.OnShown?.Invoke(e.Mount); } catch (Exception ex) { Log.Error($"'{e.W.Id}' OnShown: {ex}"); }
                 }
                 else if (e.Shown)
@@ -313,9 +321,19 @@ namespace WeaponFramework
             foreach (var e in Entries)
             {
                 if (!e.Shown || !Alive(e.Slot) || e.Slot.Pointer != cur.Pointer) continue;
-                if (Dbg) Log.Msg($"'{e.W.Id}' settled - mount at {V(e.Mount.position)}");
+                if (Dbg) Log.Msg($"'{e.W.Id}' settled - mount at {V(e.Mount.position)}, facing {V(e.Mount.forward)}");
                 try { e.W.OnSettled?.Invoke(e.Mount); } catch (Exception ex) { Log.Error($"'{e.W.Id}' OnSettled: {ex}"); }
             }
+        }
+
+        // A grab of something hanging on one of our mounts = a mod item taken off the stand (logging only).
+        internal static void BeforeGrab(Il2CppHurricaneVR.Framework.Core.Grabbers.HVRGrabberBase grabber, Il2CppHurricaneVR.Framework.Core.HVRGrabbable g)
+        {
+            if (!Alive(g)) return;
+            var t = g.transform;
+            if (Dbg)
+                foreach (var e in Entries)
+                    if (Alive(e.Mount) && t.IsChildOf(e.Mount)) { ActionLog.ModItemTaken(e.W.Id, g, grabber); break; }
         }
 
         // Our entries have no ammo, no attachments and nothing to buy.
@@ -352,7 +370,7 @@ namespace WeaponFramework
         }
 
         static string Name(Object o) => Alive(o) ? o.name : "none";
-        static string V(Vector3 v) => $"({v.x:0.##}, {v.y:0.##}, {v.z:0.##})";
+        internal static string V(Vector3 v) => $"({v.x:0.##}, {v.y:0.##}, {v.z:0.##})";
     }
 
     [HarmonyLib.HarmonyPatch(typeof(ANBGameLogic), nameof(ANBGameLogic.LogLoadTime))]
@@ -360,6 +378,7 @@ namespace WeaponFramework
     {
         static void Postfix(ANBGameLogic __instance, string text)
         {
+            ActionLog.LoadStep();
             if (text == "Processed Completed Gunwall") WeaponFrameworkMod.GunwallBuilt(__instance);
         }
     }
@@ -415,7 +434,9 @@ namespace WeaponFramework
         }
     }
 
-    [HarmonyLib.HarmonyPatch(typeof(ANBSaveData), nameof(ANBSaveData.SavePurchases))]
+    // SaveWeapons writes saveSpotLarge/saveSpotSmall. Callers: pickWeapon, gun editing (ANBWeaponAttachments),
+    // revertAllWeaponData, LoadWeapons.
+    [HarmonyLib.HarmonyPatch(typeof(ANBSaveData), nameof(ANBSaveData.SaveWeapons))]
     static class SavePatch
     {
         static void Prefix() { try { WeaponFrameworkMod.BeforeSave(); } catch { } }

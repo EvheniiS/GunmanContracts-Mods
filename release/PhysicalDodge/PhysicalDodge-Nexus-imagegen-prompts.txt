@@ -1,0 +1,20 @@
+Generated with the built-in image_gen tool.
+
+FINAL THUMBNAIL
+Use the user's original `Tumbnail.jpg` as the exact scene source. Preserve
+the steep tilted first-person view, the enemy firing in the lower central
+doorway, the muzzle flash, fallen person, blue and ochre walls, and in-game
+rendering. Subtly brighten the existing small orange projectile streak on
+the LEFT without adding a new projectile or long tracer.
+
+Place ALL text on the EMPTY WALL ON THE RIGHT: small "GUNMAN CONTRACTS"
+above large two-line "PHYSICAL" in distressed ivory and "DODGE" in
+distressed amber. Add an amber underline and the exact subtitle
+"MOVE. THEY MISS. TIME SLOWS." The shooter, muzzle flash and left-side
+projectile remain unobscured. Avoid HUD, icons, shields or extra props.
+
+Final revision: enlarge the right-side title by roughly 25% and the smaller
+lines by roughly 15–20%, using the available wall space while keeping all
+text clear of the shooter and projectile.
+
+The generated base image was exported to 1600x900 for Nexus upload.

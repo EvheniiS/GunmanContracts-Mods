@@ -1,4 +1,4 @@
-# Throw Assist 0.1.0
+# Throw Assist 0.2.0
 
 Throw assist with real physics, and thrown pistols that hurt. Required by the Daredevil package (Billy Clubs + Radar
 Sense). Moved out of Billy Clubs 0.10.x.
@@ -10,8 +10,10 @@ Sense). Moved out of Billy Clubs 0.10.x.
   that hits an enemy does `meleeDamage x PistolThrowDamage` (3 = 60 to the body, head x5 kills) and staggers them
   (`PistolStagger`), once per enemy per throw. The game's own hit is 10-20, never a stagger (needs > 5 kg; a pistol is
   1.5), and nothing during the enemy's hit stun.
-- **Other items** (knives, katanas, bottles, pans, crowbar): `SteerOtherItems` (off, untested; knives must land point
-  first to stab).
+- **Other items** (knives, katanas, bottles, pans, crowbar): `SteerOtherItems` (off). Knives fly like the game's
+  own knife assist, at least 17 m/s and blade first (turned each step so the stab line faces the flight), so they
+  stab; aimed at the head with `AimHead`. 0.2.0, untested. DebugLog prints one line per knife: what it stabbed, or
+  "no stab" with how far the tip was off the flight line.
 - **Billy Clubs** fly their own club flight (ricochets, spin styles, floor shots): objects named `BillyClub-*` are left
   to that mod, so the two never steer the same throw.
 
@@ -28,5 +30,5 @@ Log: `pistol '...' thrown at X m/s, assist: enemy '...' D m, steered at S m/s` (
 ## Build
 
 ```powershell
-dotnet build ThrowAssist/ThrowAssist.csproj -c Release -o feature/ThrowAssist-0.1.0
+dotnet build ThrowAssist/ThrowAssist.csproj -c Release -o feature/ThrowAssist-0.2.0
 ```

@@ -1,0 +1,20 @@
+Generated with the built-in image_gen tool from the in-game screenshots in this folder.
+
+THUMBNAIL
+Use case: compositing. Create a 16:9 Nexus Mods cover for Gloves from the red
+(192725), green (192804), and blue (192815) glove screenshots. Preserve the
+recognizable leather stitching, gray cuffs, and padded equipment case. Match
+the distressed condensed italic ivory type and amber rule used on the other
+mod covers. Large exact title "GLOVES" with small "GUNMAN CONTRACTS" above
+and exact subtitle "COLOUR CHANGE" below. Keep text legible at thumbnail
+size. Do not claim unlimited colors or add props, logos, or extra text.
+
+HEADER
+Use case: compositing. Adapt the finished thumbnail and the same screenshots
+into a short panoramic Nexus page header. Put one-line exact title "GLOVES"
+on the left with "GUNMAN CONTRACTS" above and an amber underline. Feature
+the dark red glove pair prominently on the right, with green and blue as
+smaller examples. Preserve the real glove design and game-screen aesthetic.
+No subtitle or color-count claim.
+
+The generated base images were exported to 1600x900 and 1300x372 upload sizes.

@@ -1,6 +1,6 @@
 # Throw Assist: Nexus upload sheet
 
-**Status: solid release candidate (0.1.0) — could ship as 1.0. New mod page.**
+**Status: solid release candidate (0.2.0) — could ship as 1.0. New mod page.**
 
 Required by Daredevil's description — upload this one first, or in the same sitting as Daredevil.
 
@@ -8,8 +8,8 @@ Required by Daredevil's description — upload this one first, or in the same si
 
 | File | What |
 |---|---|
-| `ThrowAssist-0.1.0.zip` | the upload: contains `Mods/ThrowAssist.dll` |
-| `ThrowAssist.dll` | the shipping build, 16,384 bytes, sha256 `8251871eef19d1ecef146764153caf082be494a3e77bc452201083766028ed6f` |
+| `ThrowAssist-0.2.0.zip` | the upload: contains `Mods/ThrowAssist.dll` |
+| `ThrowAssist.dll` | the shipping build, 22,016 bytes, sha256 `913f63d1ba64d7d78e30f07f03baac87173602c0d7a9be75e9414c1165a757b6` |
 | `NEXUS_DESCRIPTION.txt` | the page text (BBCode) |
 
 Rebuild:
@@ -24,7 +24,7 @@ then copy the DLL here and zip it as `Mods/ThrowAssist.dll`.
 |---|---|
 | Mod name | `Throw Assist` |
 | Author | `Evgeeso` |
-| Version | `0.1.0` |
+| Version | `0.2.0` |
 | Category | Gameplay |
 | Language | English |
 | Tags | VR, Weapons, Gameplay |
@@ -41,6 +41,6 @@ then copy the DLL here and zip it as `Mods/ThrowAssist.dll`.
 
 - [x] Pistol assist, thrown-pistol damage/stagger, and real-physics steering tested.
 - [ ] Decide it feels solid enough to publish.
-- [ ] Tag: `git tag throwassist-v0.1.0` and push the tag.
+- [ ] Tag: `git tag throwassist-v0.2.0` and push the tag.
 - [ ] README status → released, with the Nexus link; add the link to the table in
       `release/NEXUS_TEMPLATE.txt`, and backfill it into Daredevil's `NEXUS_DESCRIPTION.txt`.

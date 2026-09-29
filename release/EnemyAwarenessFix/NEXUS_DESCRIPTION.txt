@@ -1,4 +1,4 @@
-[size=5][b]Enemy Awareness Fix[/b][/size]
+[size=5][b]Stealth AI Fix[/b][/size]
 
 Enemies that lose sight of you [b]search where they last saw you[/b] instead of walking straight to your
 exact position through walls. [b]Wave spawns don't always use the nearest spawn point[/b], and it's
@@ -56,7 +56,7 @@ Optionally also grab the [b]Enemy Awareness Log[/b] optional file the same way, 
 [i]Mods\EnemyAwarenessLog.dll[/i].
 
 [b]4. Check it works[/b]
-Start the game. The MelonLoader console lists [b]Enemy Awareness Fix v0.1.6[/b] among the loaded mods.
+Start the game. The MelonLoader console lists [b]Stealth AI Fix v0.1.6[/b] among the loaded mods.
 
 [b]Not working?[/b]
 [list]
