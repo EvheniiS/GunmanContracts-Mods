@@ -1,69 +1,36 @@
 # Mod Settings: Nexus upload sheet
 
-**Status: release candidate (0.2.2), not released.**
-
-Game page: Gunman Contracts - Stand Alone (`nexusmods.com/gunmancontractsstandalone`) → Upload a mod.
-
-| Field | Value |
-|---|---|
-| Mod name | `Mod Settings` |
-| Version | `0.2.2` |
-| Author | `Evgeeso` |
-| Category | Gameplay (same as the other mods) |
-| Language | English |
-| Summary (max 350 chars) | `An in-VR settings board for every MelonLoader mod. Reads every category straight from MelonPreferences, so any mod using it — mine and other people's — gets a page automatically. Take out the phone, press the Mod Settings tile (or Ctrl+M), poke with your fingertip to change numbers, switches, choices and colours live.` |
-| Description | paste [`NEXUS_DESCRIPTION.txt`](NEXUS_DESCRIPTION.txt) (BBCode) |
-| Tags | VR, Utility, UI, Gameplay |
-| Requirements | Off-site: `MelonLoader 0.7.x`, `https://github.com/LavaGang/MelonLoader/releases`, note: `Tested with 0.7.3; 0.6.x does not work` |
-| Permissions | Same as the other mods (source is MIT on GitHub) |
-
-## File
+Status: release files prepared locally, not uploaded.
+Existing page: https://www.nexusmods.com/gunmancontractsstandalone/mods/28
 
 | Field | Value |
 |---|---|
-| File | `ModSettings-0.2.2.zip` (contains `Mods/ModSettings.dll`) |
-| File name | `Mod Settings` |
-| Version | `0.2.2` |
+| Version | 1.0.0 |
+| File | ModSettings-1.0.0.zip |
+| File name | Mod Settings |
 | Category | Main files |
-| File description | `Extract into the game folder. Needs MelonLoader 0.7.x.` |
+| File description | Movable VR board, pointing hands and laser selection, per-setting Reset and default indicators. Mouse menu in flat mode. Requires MelonLoader 0.7.x. |
+| Description | Paste NEXUS_DESCRIPTION.txt (BBCode) |
+| Requirement | MelonLoader; tested with 0.7.3, 0.6.x unsupported |
 
-`ModSettings.dll` 39,936 bytes, sha256 `6661f70ca2ee59c9228ee9df2dff8977a0b601146b40cee934722ac0d0a1ffbd`
-(= the built `release/ModSettings/ModSettings.dll`; not yet deployed to a live game folder — deploy
-and re-hash before uploading, so this line always matches what a downloader actually gets).
+Summary:
+A movable VR settings board for MelonLoader mods, with pointing hands, fingertip laser selection, per-setting Reset and clear default indicators. Open from the phone or Ctrl+M. Flat mode uses an on-screen mouse menu.
 
-## Images
+Changelog for 1.0.0:
+- Larger board with a grip bar to move and tilt it.
+- Native menu pointing pose and fingertip laser; trigger selection at a distance.
+- Individual Reset controls and DEFAULT / CHANGED indicators.
+- Default colour option for mods such as VR Holsters, preserving original game colours.
+- Includes the flat-mode mouse menu introduced in 0.3.0.
 
-Artwork from `VirtualDesktop.Android-20260928-100919.jpg`, showing the board on the Fire Selector
-page and the phone tile:
+Package: Mods/ModSettings.dll and INSTALL.txt. No config or game assets.
+DLL: 53,248 bytes; SHA256 54cca5a143e599302cbf2d22080efa2c3aebbfc5cb049bc98c825b6060b5e982
+ZIP SHA256: dc6a6f024bdfcb1dad342e93447e4d1485fe093ea20faf2d3fc75501bf756b3f
 
-- **Thumbnail (1600 × 900):** [`ModSettings-thumbnail.jpg`](ModSettings-thumbnail.jpg), with
-  only the `MOD SETTINGS` title in the same ivory/amber style as the other mod thumbnails.
-- **Header (1300 × 372):** [`ModSettings-header.jpg`](ModSettings-header.jpg), with the same
-  title on one line.
+Validation: Release build passed without warnings; packaged DLL hash matches the build.
+User confirmed the improved VR menu/holster adjustment is usable. Native colour and contract-to-restart save regression checks remain pending.
 
-The prepared image bases and [`make_nexus_art.py`](make_nexus_art.py) are here for export size
-adjustments. A short demo clip can still show opening the board, switching mods, changing a
-number and a switch, and resetting a non-default setting.
+Existing thumbnail/header depict an older board; replace with a current screenshot when available.
+This package is also included in VR Holsters' With-ModSettings ZIP.
 
-## Downstream template change
-
-Went into `release/NEXUS_TEMPLATE.txt`: every future mod's Settings section links here
-(`[url=.../mods/{{ModSettingsID}}]Mod Settings[/url]`) as the optional live-editing alternative
-to hand-editing the cfg. **The `{{ModSettingsID}}` placeholder needs the real mod ID filled in
-across the template once this is actually uploaded** — grep `release/*/NEXUS_DESCRIPTION.txt` for
-`ModSettingsID` afterward (none yet reference it; this is the first upload).
-
-## Before uploading
-
-- [ ] Play-test: open/close (tile and Ctrl+M), switch mods, step a number through all four
-      button sizes, toggle a switch, cycle a choice and a colour, Reset, and confirm the change
-      lands in `MelonPreferences.cfg` a second later.
-- [ ] Confirm the phone tile behaves correctly while a Data Breach holder occupies the middle
-      slot (tile should move to the empty slot and return after).
-- [ ] Decide it feels solid enough to publish (README already says "board tested and works" —
-      confirm that's still current, not stale from an earlier version).
-- [ ] Tag: `git tag modsettings-v0.2.2` and push the tag.
-- [ ] README status → released, with the Nexus link.
-- [ ] Once uploaded, fill in the real `{{ModSettingsID}}` in `release/NEXUS_TEMPLATE.txt` and
-      backfill the Settings-closer line into already-published mods' descriptions (optional,
-      but keeps existing pages consistent with new ones).
+1.0.0 restores the Reset section footer in VR and flat mode while retaining per-setting Reset. Release build passed; section-reset headset regression pending.

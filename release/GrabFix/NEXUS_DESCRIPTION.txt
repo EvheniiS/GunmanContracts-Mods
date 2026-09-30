@@ -1,0 +1,80 @@
+[size=5][b]Grab Fix[/b][/size]
+
+Make pickups more forgiving with [b]finger and palm targeting[/b], a [b]short grip-press buffer[/b],
+and [b]easier catches[/b] for items you just released. [b]Holstered items keep their original grab zones[/b].
+
+[size=4][b]What it does[/b][/size]
+[list]
+[*][b]Aim with your fingers or your palm:[/b] keeps the game's finger-aimed distance pickup and adds palm-aimed detection. Choose Finger in settings if you only want the original aiming direction.
+[*][b]More forgiving nearby pickups:[/b] widens the local pickup area to cover both the finger side and the palm. The default minimum radius is 12 cm.
+[*][b]Wider distance targeting:[/b] distance pickup detectors are 20% wider by default, without extending their reach.
+[*][b]Early grip presses count:[/b] press grip just before an item becomes available and keep it held. The mod remembers that press for 0.30 seconds and retries eligible local or distance pickups.
+[*][b]Catch a released item:[/b] an item released from either hand stays eligible for extra catch assistance for 15 seconds. A fresh grip press gives you a 0.60-second catch window when its collider surface comes within 18 cm of your palm.
+[/list]
+
+[size=4][b]Holsters and deliberate grabs[/b][/size]
+Holstered, socketed and wall-mounted items use their original grab zones, so the wider pickup area and palm targeting do not extend their reach. Recently holstered items are excluded from catch assistance.
+You still press grip deliberately; holding it indefinitely does not keep retrying. The mod uses the game's normal grab checks and distance-grab controls. It changes pickup detection, not how a held item sits in your hand.
+[size=4][b]Install[/b][/size]
+Takes about 5 minutes the first time. Steps 1 and 2 are needed only once, for all MelonLoader mods.
+
+[b]Where is my game folder?[/b] In Steam, right-click [i]Gunman Contracts - Stand Alone[/i] →
+[i]Manage[/i] → [i]Browse local files[/i]. It's the folder with [i]GunmanContracts.exe[/i] in it.
+
+[b]1. Install MelonLoader[/b] (the mod loader)
+Download the installer from [url=https://github.com/LavaGang/MelonLoader/releases]MelonLoader releases[/url],
+run it, pick [i]GunmanContracts.exe[/i] in your game folder, and install [b]version 0.7.3 or newer[/b].
+[b]Version 0.6 does not work[/b] with this game.
+
+[b]2. Start the game once[/b], then quit.
+A black console window opens next to the game: that's MelonLoader working. The first start takes
+a minute or two, later ones are normal.
+
+[b]3. Add the mod[/b]
+Open the downloaded zip. Inside is a folder called [b]Mods[/b]. Drag that [b]Mods[/b] folder into your
+game folder, and if Windows asks, choose to replace / merge.
+You should end up with: [i]Gunman Contracts - Stand Alone\Mods\GrabFix.dll[/i]
+
+[b]4. Check it works[/b]
+Start the game. The MelonLoader console lists [b]Grab Fix v1.1.0[/b] among the loaded mods.
+
+[b]Not working?[/b]
+[list]
+[*][b]The mod isn't in the console list:[/b] check the file isn't at [i]Mods\Mods\GrabFix.dll[/i] (a folder
+too deep). Move it up so it sits directly in [i]Mods[/i].
+[*][b]No console window at all:[/b] MelonLoader isn't installed on this game. Repeat step 1 and make
+sure you picked [i]GunmanContracts.exe[/i].
+[*][b]Errors right at startup:[/b] you likely have MelonLoader 0.6. Install 0.7.3 or newer.
+[/list]
+
+[size=4][b]Settings (optional)[/b][/size]
+[spoiler]
+After the first launch, edit [i]UserData\MelonPreferences.cfg[/i], section [b][GrabFix][/b]:
+[code]
+Enabled                = true    master switch; off restores original pickup geometry
+GrabDirection          = "Both"  Both = finger + palm; Finger = original aim, still widened
+NearGrabRadius         = 0.12    minimum local radius in metres; Both may grow it further; max 0.25
+PalmOffset             = 0.03    reach in front of the palm in Both mode, metres (0-0.08)
+DistanceGrabWidth      = 1.2     distance detector width multiplier (1-2); no extra reach
+BufferGripPress        = true    remember an early grip press while grip stays held
+GripBufferSeconds      = 0.30    local/distance grip buffer in real seconds (0-0.6)
+RecentReleaseAssist    = true    extra catch tolerance for recently released loose items
+RecentReleaseRadius    = 0.18    palm-to-item surface catch distance, metres (0.05-0.3)
+RecentReleaseSeconds   = 15      eligibility after release in real seconds (0-60)
+CatchBufferSeconds     = 0.60    fresh grip press catch window in real seconds (0-1)
+DebugLog               = false   log assisted pickups and detector setup
+[/code]
+Or change these live in-VR with [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28][b]Mod Settings[/b][/url] (optional) — no restart, no text editor.
+[/spoiler]
+
+[size=4][b]Compatibility[/b][/size]
+Made for VR hand pickups. No other gameplay mod is required.
+[url=https://github.com/EvheniiS/GunmanContracts-Mods]Daredevil[/url] club holsters and [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/29]Weapon Framework[/url] wall mounts are covered by the docked-item checks: mounted items retain native detection limits.
+Other mods that replace hand-grab checks or change the same pickup detectors may conflict.
+
+[size=4][b]Uninstall[/b][/size]
+Delete [i]Mods\GrabFix.dll[/i].
+
+[size=4][b]Source[/b][/size]
+[url=https://github.com/EvheniiS/GunmanContracts-Mods]GitHub[/url] (MIT). Made for game version 0.3.1.0,
+MelonLoader 0.7.3.

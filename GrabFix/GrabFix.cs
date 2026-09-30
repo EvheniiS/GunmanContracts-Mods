@@ -10,7 +10,7 @@ using MelonLoader;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(GrabFix.GrabFixMod), "Grab Fix", "0.2.0", "Evgeeso")]
+[assembly: MelonInfo(typeof(GrabFix.GrabFixMod), "Grab Fix", "1.1.0", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace GrabFix;
@@ -57,9 +57,9 @@ public sealed class GrabFixMod : MelonMod
         RegrabRadius = c.CreateEntry("RecentReleaseRadius", .18f, description: "Metres from the palm to a recently released item's collider surface for a catch (0.05 to 0.3).");
         RegrabSeconds = c.CreateEntry("RecentReleaseSeconds", 15f, description: "How long an item stays eligible after release, in real seconds (0 to 60).");
         CatchBufferSeconds = c.CreateEntry("CatchBufferSeconds", .60f, description: "Real seconds to keep a fresh grip press ready for a recently released nearby item (0 to 1).");
-        DebugLog = c.CreateEntry("DebugLog", true, description: "Log assisted pickup outcomes and detector setup for the first test build.");
+        DebugLog = c.CreateEntry("DebugLog", false, description: "Log assisted pickup outcomes and detector setup.");
         wasEnabled = Active; scanAt = Now + 3;
-        Log.Msg($"0.2.0 test build - direction={Direction.Value}, wider local sphere, grip buffer, recent-release catches; native grab checks retained.");
+        Log.Msg($"1.1.0 release candidate - direction={Direction.Value}, wider local sphere, grip buffer, recent-release catches; native grab checks retained.");
     }
 
     public override void OnSceneWasInitialized(int buildIndex, string sceneName)
@@ -183,10 +183,16 @@ public sealed class GrabFixMod : MelonMod
         if (DebugLog.Value) Log.Msg($"buffered distance {(h.IsLeftHand ? "L" : "R")} '{g.name}' result={ok} age={(Now - s.Intent.PressAt) * 1000:0}ms");
     }
 
+    // Kinematic = the game (or a mod) has it docked somewhere - a holster, a socket, a wall
+    // mount - as opposed to a loose item that gravity/physics is actually driving (lying on
+    // the floor or in flight). Never widen reach for a docked item; only its own holster slot
+    // should place your hand close enough to trigger the game's native, unwidened detection.
+    internal static bool Docked(HVRGrabbable g) => Alive(g?.Rigidbody) && g.Rigidbody.isKinematic;
+
     static bool Eligible(HVRGrabbable g)
     {
         if (!Alive(g) || !g.isActiveAndEnabled || !g.CanBeGrabbed || g.BeingDestroyed || g.IsBeingHeld || g.IsSocketed ||
-            g.IsBeingForcedGrabbed || g.Stationary || g.RequiresGrabbable || !Alive(g.Rigidbody)) return false;
+            g.IsBeingForcedGrabbed || g.Stationary || g.RequiresGrabbable || !Alive(g.Rigidbody) || Docked(g)) return false;
         // Do not turn trigger-only controls, bow strings, body grabs, or support grips
         // into generic loose-prop grabs. Enum values are verified against the interop.
         string control = g.GrabControl.ToString();
@@ -210,7 +216,7 @@ public sealed class GrabFixMod : MelonMod
         Released[g.GetInstanceID()] = new ReleasedItem { Item = g, At = Now };
     }
 
-    static float SurfaceDistance(HVRGrabbable g, Vector3 p)
+    internal static float SurfaceDistance(HVRGrabbable g, Vector3 p)
     {
         float d = float.PositiveInfinity;
         if (g.Colliders == null) return d;

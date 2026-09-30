@@ -17,6 +17,20 @@ assisted pistol flies at your own throw speed (0.10.0 homed every lob and sped i
 
 Daredevil-style clubs based on the game's crowbar, with belt holsters, F8 recall, throw styles and ricochets.
 
+Current follow-through diagnostics: `DebugLog` reports speed changes made after release. Set
+`FollowThroughVerboseLog = true` to also report windows that made no change. A one-frame controller tracking jump
+above 25 m/s is ignored. This affects Billy Clubs only; Throw Assist's knives and pistols do not use this feature.
+
+Direct club assist uses the game's view-based target choice, then Daredevil guides the club only when the target
+is within `ThrowAssistMaxTurnAngle` (25 degrees by default) of the release direction. `DirectThrowAssist = false`
+gives free direct throws, useful for throwing past an enemy or at a wall. A wall directly behind an enemy can
+remain inside the angle, so use the switch for that case. `Ricochets` separately controls wall/floor bounces
+toward enemies; set it to 0 for a plain wall impact. The club's 13–18 m/s guided speed is unchanged.
+`HandThrowBoost = 1.3` scales the release velocity before that guided speed is chosen as well as free throws;
+it is not limited to unassisted throws. Follow-through samples the hand for 0.12 seconds after release and only
+adds speed if it beats the club's current velocity or steering speed before impact. It does not add speed to every
+throw.
+
 0.10.0: thrown pistols. `PistolAssist` (on): a thrown pistol homes in on enemies with the clubs' throw assist (the game
 ships its pistol assist switched off, `dontUse = true` on every pistol); needs the game's assisted-throw option on.
 `PistolDamage` (on): a thrown pistol that hits an enemy does `meleeDamage x PistolThrowDamage` (3 = 60 to the body,

@@ -1,7 +1,7 @@
 using System;
 using MelonLoader;
 
-[assembly: MelonInfo(typeof(BillyClubs.BillyClubsMod), "Daredevil", "0.3.3", "Evgeeso")]
+[assembly: MelonInfo(typeof(BillyClubs.BillyClubsMod), "Daredevil", "0.4.0", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace BillyClubs
@@ -9,7 +9,8 @@ namespace BillyClubs
     // The Daredevil package: clubs (BillyClubs/: holsters, recall, ricochets, arsenal entry) + radar sense (RadarSense/:
     // enemy silhouettes through walls, louder footsteps, club highlight) in one DLL. BillyClubsMod is the MelonMod;
     // Radar Sense runs from its hooks with its own log name. Settings stay in [BillyClubs] and [RadarSense].
-    // Required separate mods: Gloves (red gloves), Throw Assist (thrown pistols), Mod Settings. Optional: Weapon Framework.
+    // Companion mods are checked at startup. Weapon Framework supplies the arsenal terminal;
+    // VR Holster Customization supplies the club back slots and hologram tint.
     public partial class BillyClubsMod
     {
         // Separate mods the package expects alongside it. Daredevil still runs without them; the log says what is missing.
@@ -18,6 +19,8 @@ namespace BillyClubs
             ("Gloves", "Gloves (dark red gloves)"),
             ("ThrowAssist", "Throw Assist (thrown pistols)"),
             ("ModSettings", "Mod Settings (the in-VR settings board)"),
+            ("WeaponFramework", "Weapon Framework (clubs on the arsenal terminal)"),
+            ("VRHolsterCustomization", "VR Holster Customization (clubs on your back)"),
         };
 
         static partial void PackageInit()

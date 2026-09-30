@@ -30,10 +30,11 @@ namespace ModSettings
             else if (type == typeof(string) && !Choices.ManagedByMod(e.Description))
             {
                 var s = v as string ?? "";
-                if (Choices.IsColor(s))
+                if (Choices.IsColorSetting(s, DefaultValue() as string, e.Description))
                 {
                     Kind = Kind.Color;
                     Options = new List<string>(Choices.Palette);
+                    if (string.Equals(DefaultValue() as string, "Default", StringComparison.OrdinalIgnoreCase)) Options.Insert(0, "Default");
                     if (!Options.Exists(x => x.Equals(s.Trim(), StringComparison.OrdinalIgnoreCase))) Options.Insert(0, s.Trim().ToUpperInvariant());
                 }
                 else if ((Options = Choices.FromDescription(e.Description, s)) != null) Kind = Kind.Choice;
@@ -59,6 +60,7 @@ namespace ModSettings
         }
 
         public bool IsDefault => string.Equals(Entry.GetValueAsString(), Entry.GetDefaultValueAsString(), StringComparison.Ordinal);
+        public bool CanReset => !Choices.ManagedByMod(Entry.Description);
 
         // dir: -2 / -1 / +1 / +2 (big/small steps for numbers; -1/+1 cycles choices; bools toggle on any).
         // Returns false when the value didn't change (at a limit, or the validator refused it).

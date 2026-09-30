@@ -1,0 +1,95 @@
+[size=5][b]Physical Dodge[/b][/size]
+
+Enemies aim where you were [b]a moment ago[/b], not where you are. Stand still and you get hit;
+[b]step, lean, duck or keep moving[/b] and their shots go past — with a short buzz and a brief
+[b]slow motion[/b] when a shot would have hit and didn't.
+
+[size=4][b]What it does[/b][/size]
+[list]
+[*]Every enemy shot is aimed at where your head was [i]AimLagSeconds[/i] ago (0.2 s by default), using your
+real body movement — steps, leans, ducks — not stick movement, unless you turn that on too.
+[*]The game's own spread is drawn once and applied fairly to both the "aimed" and "dodged" lines, so a dodge
+is never a lucky break: a shot that would genuinely have hit you, and now doesn't because you moved, is the
+only thing counted as a dodge. A dodged shot is also pushed at least [i]DodgeMargin[/i] clear of your body,
+so it can never clip you on the way past.
+[*][b]Moving straight at or away from the shooter[/b] counts too by default ([i]RushDodges[/i]) — pushing the
+aim off to whichever side you're already leaning, the way stepping into or out of a punch works in real life.
+[*]A dodge gives a short controller buzz and, optionally, a brief slow motion using the game's own
+last-enemy slow-motion effect (light / medium / strong, on a cooldown so it can't chain).
+[/list]
+
+The game's own free misses (warning shots, the warm-up second after an enemy first sees you, the hit-confirm
+grace after you land a hit) are untouched — this mod only changes shots the game would otherwise have landed.
+
+[size=4][b]Radar Sense[/b][/size]
+If [url=https://github.com/EvheniiS/GunmanContracts-Mods][b]Daredevil[/b][/url] is installed, its radar sense
+turns on too during the dodge slow motion by default (toggle: [i]WithDodgeSlowMotion[/i] in Daredevil's config).
+
+Shooting, aiming, spread and everything about the guns themselves is the game's own code — only where the
+bullet is aimed changes.
+
+[size=4][b]Install[/b][/size]
+Takes about 5 minutes the first time. Steps 1 and 2 are needed only once, for all MelonLoader mods.
+
+[b]Where is my game folder?[/b] In Steam, right-click [i]Gunman Contracts - Stand Alone[/i] →
+[i]Manage[/i] → [i]Browse local files[/i]. It's the folder with [i]GunmanContracts.exe[/i] in it.
+
+[b]1. Install MelonLoader[/b] (the mod loader)
+Download the installer from [url=https://github.com/LavaGang/MelonLoader/releases]MelonLoader releases[/url],
+run it, pick [i]GunmanContracts.exe[/i] in your game folder, and install [b]version 0.7.3 or newer[/b].
+[b]Version 0.6 does not work[/b] with this game.
+
+[b]2. Start the game once[/b], then quit.
+A black console window opens next to the game: that's MelonLoader working. The first start takes
+a minute or two, later ones are normal.
+
+[b]3. Add the mod[/b]
+Open the downloaded zip. Inside is a folder called [b]Mods[/b]. Drag that [b]Mods[/b] folder into your
+game folder, and if Windows asks, choose to replace / merge.
+You should end up with: [i]Gunman Contracts - Stand Alone\Mods\PhysicalDodge.dll[/i]
+
+[b]4. Check it works[/b]
+Start the game. The MelonLoader console lists [b]Physical Dodge v0.4.2[/b] among the loaded mods.
+
+[b]Not working?[/b]
+[list]
+[*][b]The mod isn't in the console list:[/b] check the file isn't at [i]Mods\Mods\PhysicalDodge.dll[/i] (a
+folder too deep). Move it up so it sits directly in [i]Mods[/i].
+[*][b]No console window at all:[/b] MelonLoader isn't installed on this game. Repeat step 1 and make
+sure you picked [i]GunmanContracts.exe[/i].
+[*][b]Errors right at startup:[/b] you likely have MelonLoader 0.6. Install 0.7.3 or newer.
+[/list]
+
+[size=4][b]Settings (optional)[/b][/size]
+[spoiler]
+After the first launch, edit [i]UserData\MelonPreferences.cfg[/i], section [b][PhysicalDodge][/b]:
+[code]
+Enabled              = true    Enemies aim where you were a moment ago: stand still and you get hit, move and they miss.
+AimLagSeconds        = 0.2     How far behind you enemies aim, in seconds. Higher = easier to dodge. 0 = the game's normal aim.
+StickMovementDodges  = false   Off (default): only your real body movement counts - steps, leans, ducks. On = moving with the stick counts too.
+RushDodges           = true    Moving straight at (or away from) the shooter also makes them miss. Off = only sideways and up/down movement does, as in real life.
+DodgeMargin          = 0.1     A dodged bullet passes at least this far (m) outside your body, so it can't clip you.
+Haptics              = true    A short buzz on both controllers when you dodge a shot.
+SlowMotion           = true    A brief slow motion when you dodge a shot. Uses the game's own slow motion (the one when the last enemy dies).
+SlowMotionSeconds    = 1.0     How long the dodge slow motion lasts, in real seconds.
+SlowMotionStrength   = 2       1 = light, 2 = medium (the game's last-enemy slow motion), 3 = strongest.
+SlowMotionCooldown   = 1.5     Real seconds from the start of one dodge slow motion to the next.
+DebugLog             = false   Log each dodge and hit (one short line each), a line when a wave starts, and a summary per wave.
+[/code]
+Or change these live in-VR with [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28][b]Mod Settings[/b][/url] (optional) — no restart, no text editor.
+[/spoiler]
+
+[size=4][b]Compatibility[/b][/size]
+[list]
+[*][b]Optional but highly recommended for [url=https://github.com/EvheniiS/GunmanContracts-Mods]Daredevil[/url][/b]:
+its radar sense can be set to follow this mod's dodge slow motion, so a real dodge briefly shows enemies
+through walls too. Not required — Daredevil runs fine without it.
+[*]Other mods that change enemy aim, bullet spread, or the player hit colliders may interact with this one.
+[/list]
+
+[size=4][b]Uninstall[/b][/size]
+Delete [i]Mods\PhysicalDodge.dll[/i]. Enemies go back to aiming at your live position.
+
+[size=4][b]Source[/b][/size]
+[url=https://github.com/EvheniiS/GunmanContracts-Mods]GitHub[/url] (MIT). Made for game version 0.3.1.0,
+MelonLoader 0.7.3.

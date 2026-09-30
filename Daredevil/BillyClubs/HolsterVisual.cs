@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Il2CppHurricaneVR.Framework.Core.Sockets;
 using MelonLoader;
 using UnityEngine;
@@ -90,11 +91,15 @@ namespace BillyClubs
         static void SetGhostColor(Ghost g, Color c)
         {
             g.Cur = c;
-            g.Mat.color = c; // what the game's HVRANBSocketHoverFade sets
+            var shown = HolsterPresent ? TintClubColor(c) : c;
+            g.Mat.color = shown; // what the game's HVRANBSocketHoverFade sets
             // The game's 'Rim Dissolve' hologram is additive: every colour has alpha 0 and "invisible" is black, so
             // visibility is the brightness, not the alpha (0.9.0 hid the tubes for good by testing alpha).
-            g.Rend.enabled = Mathf.Max(Mathf.Max(c.r, c.g), Mathf.Max(c.b, c.a)) > 0.005f;
+            g.Rend.enabled = Mathf.Max(Mathf.Max(shown.r, shown.g), Mathf.Max(shown.b, shown.a)) > 0.005f;
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Color TintClubColor(Color c) => VRHolsterCustomization.HolsterColors.Tint(c);
 
         // Every frame: which state each tube should be in.
         static void UpdateGhosts()

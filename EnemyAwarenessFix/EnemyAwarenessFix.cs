@@ -5,7 +5,7 @@ using MelonLoader;
 using UnityEngine;
 using UnityEngine.AI;
 
-[assembly: MelonInfo(typeof(EnemyAwarenessFix.EnemyAwarenessFixMod), "Enemy Awareness Fix", "0.1.6", "Evgeeso")]
+[assembly: MelonInfo(typeof(EnemyAwarenessFix.EnemyAwarenessFixMod), "Stealth AI Fix", "0.1.6", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace EnemyAwarenessFix
@@ -53,7 +53,7 @@ namespace EnemyAwarenessFix
         public override void OnInitializeMelon()
         {
             Log = LoggerInstance;
-            var c = MelonPreferences.CreateCategory("EnemyAwarenessFix", "Enemy Awareness Fix");
+            var c = MelonPreferences.CreateCategory("EnemyAwarenessFix", "Stealth AI Fix");
             Enabled = c.CreateEntry("Enabled", true, description: "Master switch.");
             FixAwareness = c.CreateEntry("FixAwareness", true, description: "Enemies that can't see you go to where they last saw you (or a rough guess) and search there, instead of walking to your exact position.");
             TrackAfterLosingSight = c.CreateEntry("TrackAfterLosingSight", 1.5f, description: "Seconds an enemy keeps following you after losing sight (it saw which way you went).");

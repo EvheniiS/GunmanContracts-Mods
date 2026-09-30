@@ -33,13 +33,12 @@ Game page: Gunman Contracts - Stand Alone (`nexusmods.com/gunmancontractsstandal
 
 ## Images
 
-Record a short clip first: a pistol-whip that staggers an enemy, a follow-up punch that drops them, and a
-hit on the ground that keeps them down. Then generate the images from a frame, the same way as the other
-mods (`release/*/…-imagegen-prompts.txt`):
+Artwork made from the pistol-whip screenshot `v3.jpg`, with a fist and pistol icon:
 
-- **Thumbnail (16:9):** the pistol-whip frame, title `HEAVY MELEE`, small `GUNMAN CONTRACTS` label and amber
-  line in the house style, subtitle `WHIP / DROP / KEEP DOWN`.
-- **Header (1300 × 372):** the house header with `HEAVY` ivory, `MELEE` amber.
+- **Thumbnail (1600 × 900):** `HeavyMelee-Nexus-thumbnail-1600x900.png`
+- **Header (1300 × 372):** `HeavyMelee-Nexus-header-1300x372.png`
+
+The generated base images and `HeavyMelee-Nexus-imagegen-prompts.txt` are in this folder too.
 
 ## Before uploading
 

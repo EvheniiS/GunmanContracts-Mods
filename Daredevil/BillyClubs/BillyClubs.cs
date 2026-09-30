@@ -201,7 +201,7 @@ namespace BillyClubs
                 if (k.Held && !held && k.In == null)
                 {
                     TryHolster(k);
-                    if (k.In == null) StartFlight(k);
+                    if (k.In == null && !FwTryHolster(k.Go)) StartFlight(k);
                 }
                 if (k.In != null && !held) KeepOnBelt(k);
                 k.Held = held;
@@ -262,7 +262,7 @@ namespace BillyClubs
             {
                 foreach (var k in Clubs)
                 {
-                    if ((k.In != null && !k.In.Wall) || !Alive(k.Go) || IsHandHeld(k)) continue;
+                    if ((k.In != null && !k.In.Wall) || !Alive(k.Go) || IsHandHeld(k) || OnBack(k.Go)) continue;
                     var free = FreeSlot();
                     if (free == null) break;
                     try { if (IsHeld(k.Grab)) k.Grab.ForceRelease(); } catch { }
@@ -676,7 +676,7 @@ namespace BillyClubs
             var cam = Camera.main;
             if (cam == null) { Log.Warning("no camera - can't place the clubs"); return; }
             for (int i = 0; i < Clubs.Count; i++)
-                if (Clubs[i].In == null && !Clubs[i].Held) { Object.Destroy(Clubs[i].Go); Clubs.RemoveAt(i--); }
+                if (Clubs[i].In == null && !Clubs[i].Held && !OnBack(Clubs[i].Go)) { Object.Destroy(Clubs[i].Go); Clubs.RemoveAt(i--); }
 
             var head = cam.transform;
             var fwd = Vector3.ProjectOnPlane(head.forward, Vector3.up).normalized;

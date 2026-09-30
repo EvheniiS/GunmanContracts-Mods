@@ -34,5 +34,37 @@ Check(Choices.Add(0.03999999910593033, 0.001) == 0.041, "add 0.04+0.001 = " + Ch
 Check(Choices.Add(18, -10) == 8, "add 18-10");
 Check(Choices.Cycle(new[] { "A", "B", "C" }, "C", 1) == "A", "cycle wrap");
 Check(Choices.Cycle(new[] { "A", "B", "C" }, "a", -1) == "C", "cycle back, case-insensitive");
+Check(Choices.ManagedByMod("Managed by the mod. Saved loadout."), "managed values must not expose reset");
+Check(!Choices.ManagedByMod("Position in cm"), "normal settings can reset");
+Check(Choices.IsColorSetting("Default", "Default", "Default or #RRGGBB"), "native color remains editable");
+Check(Choices.IsColorSetting("#FF2620", "Default", "Default or #RRGGBB"), "saved red stays editable");
+Check(!Choices.IsColorSetting("Default", "Default", "ordinary text"), "ordinary Default text is not a color");
+
+bool Ray(float x, float y, float z, float dx, float dy, float dz, float scale = 1) =>
+    PointerGeometry.Hit(x, y, z, dx, dy, dz, scale, .72f, .56f, out _, out _);
+Check(Ray(0, 0, -1, 0, 0, 1), "front ray hits");
+Check(!Ray(0, 0, 1, 0, 0, -1), "back ray cannot press");
+Check(!Ray(0, 0, -1, 1, 0, 0), "parallel ray cannot press");
+Check(!Ray(0, 0, -1, 0, 0, -1), "ray aimed away cannot press");
+Check(!Ray(.4f, 0, -1, 0, 0, 1), "off-board ray rejected");
+Check(!Ray(0, 0, -4.1f, 0, 0, 1), "distance limited");
+Check(Ray(0, 0, -3, 0, 0, 1, .5f), "small panel uses world distance");
+Check(!Ray(0, 0, -3, 0, 0, 1, 2), "large panel uses world distance");
+Check(!Ray(0, 0, float.NaN, 0, 0, 1), "nonfinite tracking rejected");
+Check(PointerGeometry.Hit(-.2f, 0, -1, .2f, 0, 1, 1, .72f, .56f, out var hx, out var hy)
+      && Math.Abs(hx) < .00001f && hy == 0, "angled ray intersects at expected row");
+
+var hold = new VRHolsterCustomization.AdjustmentHold();
+Check(!hold.TryStart(true, true, 0), "buttons already held when enabled cannot arm");
+Check(!hold.TryStart(false, true, 0), "release arms without starting");
+Check(hold.TryStart(true, true, 1), "fresh chord near empty holster starts hold");
+Check(!hold.Mature(2.999f) && hold.Mature(3), "full two-second hold required");
+hold.Cancel();
+Check(!hold.Mature(100) && !hold.TryStart(true, true, 100), "cancel clears timer and requires release");
+hold.TryStart(false, false, 101);
+Check(!hold.TryStart(true, false, 102), "press away from holster cannot arm");
+Check(!hold.TryStart(true, true, 103), "approaching with buttons held cannot arm");
+hold.TryStart(false, true, 104);
+Check(hold.TryStart(true, true, 105), "release permits another adjustment");
 Console.WriteLine(fail == 0 ? "all checks passed" : $"{fail} check(s) failed");
 return fail;

@@ -20,9 +20,9 @@ namespace BillyClubs
     public partial class BillyClubsMod
     {
         internal static MelonPreferences_Entry<string> ThrowStyle;
-        internal static MelonPreferences_Entry<float> HandThrowBoost, TipTurnTime, SpinSpeed, GripSlide, GripTiltA, GripTiltB, RicochetRange, FloorShotAngle;
+        internal static MelonPreferences_Entry<float> HandThrowBoost, TipTurnTime, SpinSpeed, GripSlide, GripTiltA, GripTiltB, RicochetRange, FloorShotAngle, ThrowAssistMaxTurnAngle;
         internal static MelonPreferences_Entry<int> Ricochets;
-        internal static MelonPreferences_Entry<bool> RicochetAimHead, RicochetFromEnemy;
+        internal static MelonPreferences_Entry<bool> RicochetAimHead, RicochetFromEnemy, DirectThrowAssist;
 
         static readonly string[] Styles = { "TipFirst", "Natural", "SpinEnd" };
         const float MinThrowSpeed = 2.5f;
@@ -38,6 +38,7 @@ namespace BillyClubs
             public bool Oriented, Ours; // Ours = the mod is steering (after a ricochet)
             public CollisionDetectionMode OldMode;
             public bool FloorShot;
+            public bool HeadAim;
             public float PrevVy;
             public float TipAtRelease, TipLast; // degrees between the club's tip and the flight line (diagnostic)
             public Transform AimT;               // the game's assist target (an enemy bone or a non-enemy target)
@@ -64,13 +65,15 @@ namespace BillyClubs
             ThrowStyle = c.CreateEntry("ThrowStyle", "TipFirst", description: "How a thrown club flies: TipFirst (turns from upright to metal tip forward, then holds it), Natural (keeps whatever spin your hand gave it) or SpinEnd (spinning end over end). Ctrl+T cycles them in game.");
             if (Array.IndexOf(Styles, ThrowStyle.Value) < 0) ThrowStyle.Value = ThrowStyle.Value == "Game" ? "Natural" : "TipFirst";
             RicochetFromEnemy = c.CreateEntry("RicochetFromEnemy", false, description: "A club that hits an enemy bounces on to the next enemy. Off = only walls and the floor send it on (the enemy it then hits stops it).");
+            DirectThrowAssist = c.CreateEntry("DirectThrowAssist", true, description: "Guide a direct club throw to an enemy selected by the game's assisted throw. Turn off for free throws at a wall or past an enemy; ricochets have their own setting.");
+            ThrowAssistMaxTurnAngle = c.CreateEntry("ThrowAssistMaxTurnAngle", 25f, description: "Maximum angle in degrees the club can turn from its release direction to a direct assist target. A throw farther off line stays free. 0 requires nearly exact aim; 180 allows every game-selected target.");
             SpinSpeed = c.CreateEntry("SpinSpeed", 5f, description: "Turns per second for SpinEnd.");
-            HandThrowBoost = c.CreateEntry("HandThrowBoost", 1.3f, description: "Multiplies the speed of a club thrown by hand (not steered by the assist or a ricochet). 1 = HVR's release speed.");
+            HandThrowBoost = c.CreateEntry("HandThrowBoost", 1.3f, description: "Multiplies the club's release velocity before direct assist chooses its 13-18 m/s steering speed. Also affects free throws and the follow-through hand-speed comparison. 1 = unscaled release speed.");
             TipTurnTime = c.CreateEntry("TipTurnTime", 0.04f, description: "TipFirst: how quickly the club turns its metal tip to the front, in seconds (time constant: about 90% there after twice this). Smaller = snappier.");
             Ricochets = c.CreateEntry("Ricochets", 2, description: "How many times a thrown club bounces on to the next enemy in sight after hitting an enemy or a wall. 0 = off.");
             RicochetRange = c.CreateEntry("RicochetRange", 12f, description: "How far (m) a ricochet looks for the next enemy.");
             FloorShotAngle = c.CreateEntry("FloorShotAngle", 15f, description: "Throw at least this many degrees below horizontal and it is a floor shot: the game's homing is skipped, the club hits the floor and ricochets off it to the nearest enemy in sight. 0 = off (a club that happens to hit the floor still ricochets).");
-            RicochetAimHead = c.CreateEntry("RicochetAimHead", false, description: "Ricochets aim at the head (a fast club hit to the head is a kill). Off = the chest.");
+            RicochetAimHead = c.CreateEntry("RicochetAimHead", false, description: "Ricochets aim at the head (a fast club hit to the head is a kill). Off = the chest. A normal assisted throw follows Throw Assist's AimHead.");
             GripSlide = c.CreateEntry("GripSlide", 0f, description: "Moves the club in the hand along its length, in metres. + = the hand sits closer to the grip end. In game: Ctrl+J / Ctrl+L.");
             GripTiltA = c.CreateEntry("GripTiltA", 0f, description: "Tilts the club in the hand, in degrees (first axis). In game: Ctrl+K / Ctrl+I.");
             GripTiltB = c.CreateEntry("GripTiltB", 0f, description: "Tilts the club in the hand, in degrees (second axis). In game: Ctrl+[ / Ctrl+]. Ctrl+R resets the grip.");
@@ -203,20 +206,28 @@ namespace BillyClubs
             var f = k.Fly;
             if (f == null) return;
             if (f.FloorShot) { f.Assist = "skipped (floor shot)"; if (Dbg && target != null) Log.Msg("  throw assist: skipped - floor shot"); return; }
+            if (!DirectThrowAssist.Value) { f.Assist = "off (DirectThrowAssist)"; if (Dbg) Log.Msg("  throw assist: off - free throw"); return; }
             if (target == null) { f.Assist = "none"; if (Dbg) Log.Msg($"  throw assist: none - {why}"); return; }
             var rb = k.Rb;
             var npc = target.GetComponentInParent<ANBBasicNPC>();
             float speed = SteerSpeed(f.Speed);
-            var aim = npc != null ? AimPoint(npc) : target.position;
+            f.HeadAim = npc != null && ChooseThrowHead(npc, rb.worldCenterOfMass, f.Dir);
+            var aim = npc != null ? AimPoint(npc, f.HeadAim) : target.position;
             var to = aim - rb.worldCenterOfMass;
             float turn = Vector3.Angle(to, f.Dir);
+            if (turn > Mathf.Clamp(ThrowAssistMaxTurnAngle.Value, 0f, 180f))
+            {
+                f.Assist = $"skipped ({turn:0} deg turn exceeds {ThrowAssistMaxTurnAngle.Value:0} deg)";
+                if (Dbg) Log.Msg($"  throw assist: {f.Assist} - free throw");
+                return;
+            }
             f.Ours = true; f.Target = npc; f.AimT = target;
             f.TargetUntil = Time.time + ThrowMaxFly.Value / speed + 0.3f;
             f.Start = Time.time;
             f.Dir = to.normalized; f.Speed = speed; f.SteerAt = speed;
             rb.linearVelocity = f.Dir * speed; f.PrevVy = rb.linearVelocity.y;
             f.Assist = $"'{(npc != null ? npc.name : target.name)}'";
-            if (Dbg) Log.Msg($"  throw assist: {(npc != null ? "enemy" : "target")} {f.Assist} ({target.name}) {to.magnitude:0.0} m away, {turn:0} deg off the throw - steered by the mod at {speed:0} m/s, spin kept");
+            if (Dbg) Log.Msg($"  throw assist: {(npc != null ? "enemy" : "target")} {f.Assist} (at the {(npc == null ? target.name : f.HeadAim ? "head" : "chest")}) {to.magnitude:0.0} m away, {turn:0} deg off the throw - steered by the mod at {speed:0} m/s, spin kept");
         }
 
         // Every way a flight ends. hitNpc != null = it ended against an enemy: bounce off gently and settle.
@@ -277,19 +288,24 @@ namespace BillyClubs
                 var v = rb.linearVelocity;
                 float sp = v.magnitude;
                 float age = Time.time - f.Start;
-                // Impact: the velocity turns hard or loses a lot of speed in one step. Ignore the first 0.15 s,
-                // where the game's homing makes its big course correction.
+                // Impact: the velocity turns hard or loses a lot of speed in one step. Ignore the first 0.05 s (the
+                // release). The old 0.15 s for unassisted throws was for the game's homing, which the mod stops at once;
+                // it let a close wall hit go unseen, so the flight ended silently with no ricochet.
                 // A floor hit at a shallow angle turns the velocity less than 50 deg: catch it as a lost fall instead
                 // (falling at > 1 m/s, then most of that gone in one step, with the floor right below).
                 bool floor = f.PrevVy < -1f && v.y > f.PrevVy * 0.3f && FloorBelow(rb.worldCenterOfMass, rb);
-                float grace = f.FloorShot || f.Ours ? 0.05f : 0.15f;
+                const float grace = 0.05f;
                 if (f.EnemyHit != null || (age > grace && sp > 0.01f && (floor || Vector3.Angle(v, f.Dir) > 50f || sp < f.Speed * 0.6f)))
                 {
                     Impact(k, f, sp);
                     if (k.Fly == null) continue;
                     v = rb.linearVelocity; sp = v.magnitude;
                 }
-                else if (sp < 2f || age > 4f) { EndFlight(k, null, null); continue; }
+                else if (sp < 2f || age > 4f)
+                {
+                    if (Dbg) Log.Msg($"  flight ended: {(sp < 2f ? $"slowed to {sp:0.0} m/s with no impact seen" : "4 s up")}");
+                    EndFlight(k, null, null); continue;
+                }
 
                 FollowStep(k, f);
                 if (k.Fly == null) continue;
@@ -299,7 +315,7 @@ namespace BillyClubs
                     { f.Target = null; f.AimT = null; }
                     else
                     {
-                        var to = (f.Target != null ? AimPoint(f.Target) : f.AimT.position) - rb.worldCenterOfMass;
+                        var to = (f.Target != null ? AimPoint(f.Target, f.Bounces > 0 ? RicochetAimHead.Value : f.HeadAim) : f.AimT.position) - rb.worldCenterOfMass;
                         v = to.normalized * f.SteerAt;
                         rb.linearVelocity = v; sp = v.magnitude;
                     }
@@ -378,7 +394,7 @@ namespace BillyClubs
             foreach (var npc in NpcsAround(pos, RicochetRange.Value))
             {
                 if (npc.isDead || f.Hit.Contains(npc.Pointer)) continue;
-                var aim = AimPoint(npc);
+                var aim = AimPoint(npc, RicochetAimHead.Value);
                 float d = Vector3.Distance(pos, aim);
                 if (d >= bestD || !InSight(pos, aim, npc, k.Rb)) continue;
                 best = npc; bestD = d;
@@ -399,17 +415,39 @@ namespace BillyClubs
             f.AimT = null;
             f.Oriented = false; // new direction: line the spin up with it again
             f.Start = Time.time; // restarts the impact grace period
-            var dir = (AimPoint(best) - pos).normalized;
+            var dir = (AimPoint(best, RicochetAimHead.Value) - pos).normalized;
             f.SteerAt = SteerSpeed(Mathf.Max(f.Speed, speedNow));
             k.Rb.linearVelocity = dir * f.SteerAt;
             f.Dir = dir; f.Speed = k.Rb.linearVelocity.magnitude; f.PrevVy = k.Rb.linearVelocity.y;
             if (Dbg) Log.Msg($"club hit {what} at {speedNow:0.0} m/s - ricochet {f.Bounces}/{Ricochets.Value} to '{best.name}' {bestD:0.0} m away at {f.SteerAt:0.0} m/s");
         }
 
-        static Vector3 AimPoint(ANBBasicNPC npc)
+        // A normal assisted club throw uses Throw Assist's release-direction head rule.
+        static MelonPreferences_Entry<bool> throwAimHead;
+        static MelonPreferences_Entry<float> throwHeadAngle;
+        static bool ThrowAimHead()
+        {
+            throwAimHead ??= MelonPreferences.GetEntry<bool>("ThrowAssist", "AimHead");
+            return throwAimHead != null && throwAimHead.Value;
+        }
+
+        static bool ChooseThrowHead(ANBBasicNPC npc, Vector3 from, Vector3 releaseDir)
+        {
+            if (!ThrowAimHead() || npc.aimAtHead == null) return false;
+            throwHeadAngle ??= MelonPreferences.GetEntry<float>("ThrowAssist", "HeadAimMaxAngle");
+            var toHead = npc.aimAtHead.position - from;
+            float headAngle = Vector3.Angle(releaseDir, toHead);
+            float chestAngle = Vector3.Angle(releaseDir, toHead - Vector3.up * 0.35f);
+            float limit = throwHeadAngle != null ? throwHeadAngle.Value : 25f;
+            bool chosen = headAngle < chestAngle && headAngle <= Mathf.Max(0f, limit);
+            if (Dbg) Log.Msg($"  club aim check: head {headAngle:0.0} deg, chest {chestAngle:0.0} deg, limit {limit:0.0} deg -> {(chosen ? "head" : "chest")}");
+            return chosen;
+        }
+
+        static Vector3 AimPoint(ANBBasicNPC npc, bool atHead)
         {
             var head = npc.aimAtHead;
-            if (head != null) return RicochetAimHead.Value ? head.position : head.position - Vector3.up * 0.35f;
+            if (head != null) return atHead ? head.position : head.position - Vector3.up * 0.35f;
             return npc.transform.position + Vector3.up * 1.2f;
         }
 

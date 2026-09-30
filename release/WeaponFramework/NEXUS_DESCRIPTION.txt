@@ -1,7 +1,7 @@
 [size=5][b]Weapon Framework[/b][/size]
 
-[size=4][b]Early version / preview[/b][/size]
-This is an early version of Weapon Framework and the base requirement for upcoming weapon mods. [b]Billy Clubs are not included with this framework download.[/b] The artwork includes a small teaser for the upcoming Daredevil mod; the clubs themselves will be released separately with that mod.
+[size=4][b]Version 0.3.0[/b][/size]
+Weapon Framework is a shared requirement for weapon mods that add entries to the arsenal panel. [b]Weapons are not included with this framework download.[/b]
 
 Lets other mods add their own weapons to [b]the arsenal panel in The Range[/b]: page to the weapon with + / -, press
 [b]Retrieve[/b], and the wall slot slides out with it, [b]ready to take off the wall[/b]. No keyboard keys, no debug tools.
@@ -46,12 +46,11 @@ A black console window opens next to the game: that's MelonLoader working. The f
 a minute or two, later ones are normal.
 
 [b]3. Add the mod[/b]
-Open the downloaded zip. Inside is a folder called [b]Mods[/b]. Drag that [b]Mods[/b] folder into your
-game folder, and if Windows asks, choose to replace / merge.
-You should end up with: [i]Gunman Contracts - Stand Alone\Mods\WeaponFramework.dll[/i]
+Install [b]VR Holster Customization[/b] and its required Mod Settings version first. Then open this downloaded zip. Inside is a folder called [b]Mods[/b]. Drag that [b]Mods[/b] folder into your game folder, and if Windows asks, choose to replace / merge.
+You should end up with: [i]Gunman Contracts - Stand Alone\Mods\WeaponFramework.dll[/i] and [i]VRHolsterCustomization.dll[/i].
 
 [b]4. Check it works[/b]
-Start the game. The MelonLoader console lists [b]Weapon Framework v0.1.1[/b] among the loaded mods. With a weapon
+Start the game. The MelonLoader console lists [b]Weapon Framework v0.3.0[/b] among the loaded mods. With a weapon
 mod installed, entering The Range logs [i]arsenal (load): 1 mod entry added after the game's 6[/i].
 
 [b]Not working?[/b]

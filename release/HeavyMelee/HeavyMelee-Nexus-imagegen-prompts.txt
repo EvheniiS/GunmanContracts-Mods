@@ -1,0 +1,20 @@
+Generated with the built-in image_gen tool from `v3.jpg`, using `v2.jpg` as a
+supporting pistol/glove reference and the Fire Selector thumbnail as a house
+typography and icon reference.
+
+THUMBNAIL
+Preserve the actual first-person pistol-whip screenshot, enemy, dark red glove,
+pistol, wrist display and concrete room. Put the large distressed title
+"HEAVY" (ivory) / "MELEE" (amber) on the left, with "GUNMAN CONTRACTS"
+above, amber rule, and "WHIP / DROP / KEEP DOWN" below. Add exactly one
+simple amber clenched-fist icon labeled "FISTS ×2" and one amber side-profile
+pistol icon labeled "WEAPON HITS ×3". Keep the struck enemy prominent on the
+right. No extra characters, weapons or gore.
+
+HEADER
+Recompose the finished thumbnail into a short panoramic banner. Use one-line
+"HEAVY MELEE" at left with the same subtitle and both icon/label pairs below.
+Keep the pistol strike and enemy visible at right. Preserve the same ivory,
+amber and dark concrete visual family.
+
+The generated base images were exported to 1600x900 and 1300x372 upload sizes.

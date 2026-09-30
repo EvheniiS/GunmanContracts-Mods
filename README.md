@@ -8,17 +8,20 @@ of the others (see [Mod structure](#mod-structure)).
 |---|---|---|
 | [Better Bow](BetterBow/README.md) | Quiver, dagger grip, thrown-arrow aim assist, first-press string grab, full draw power without a perfect pull, one-arrow barrels, arrows breach doors | 1.2.0, released on [Nexus](https://www.nexusmods.com/gunmancontractsstandalone/mods/22) |
 | [Knee Shot Stun](KneeShotStun/KneeShotStun.cs) | Enemies shot in the leg stay down on one knee for longer | 1.1.0 (`AllowBurst` toggle), release candidate; 1.0.0 released on [Nexus](https://www.nexusmods.com/gunmancontractsstandalone/mods/26) |
-| [Heavy Melee](HeavyMelee/HeavyMelee.cs) | Guns and bows hit like heavy metal (stagger + damage), fists hit harder, and an enemy on the ground still takes hits, stays down, and can be knocked out | 1.0.0 release candidate (not released) |
-| [Physical Dodge](PhysicalDodge/PhysicalDodge.cs) | Enemies aim where you were a moment ago: stand still and you get hit; step, lean, duck or keep moving and their shots go past (a short buzz and a brief slow motion when one would have hit) | 0.4.2, in testing |
+| [Heavy Melee](HeavyMelee/HeavyMelee.cs) | Guns and bows hit like heavy metal (stagger + damage), fists hit harder, and an enemy on the ground still takes hits, stays down, and can be knocked out | 1.0.0, release candidate; not a priority right now |
+| [Physical Dodge](PhysicalDodge/PhysicalDodge.cs) | Enemies aim where you were a moment ago: stand still and you get hit; step, lean, duck or keep moving and their shots go past (a short buzz and a brief slow motion when one would have hit) | 0.4.2, release candidate; only preference fine-tuning left (personal taste) |
 | [Fire Selector](FireSelector/FireSelector.cs) | Hold A / X on the support hand to switch automatic guns between automatic, 3-round burst (optional) and single shot | 1.1.0 (`AllowBurst` toggle), release candidate; 1.0.0 released on [Nexus](https://www.nexusmods.com/gunmancontractsstandalone/mods/25) |
-| [Enemy Awareness Fix](EnemyAwarenessFix/EnemyAwarenessFix.cs) | Enemies that lose sight of you go to where they last saw you and search there instead of walking to your exact position; wave enemies get a rough guess; flanking and turning use what the enemy knows; wave spawns no longer always use the nearest spawn point and keep a 10 m minimum distance; floor-aware (no hearing you through a floor, no "arrived" on the wrong floor) | 0.1.6, in testing ("getting better") |
-| [Throw Assist](ThrowAssist/README.md) | Real-physics steering for the game's own throw assist, and thrown pistols | 0.1.0, release candidate, untested |
-| [Mod Settings](ModSettings/README.md) | In-VR settings board listing every mod's preferences, live-applied | 0.2.2, board tested and works |
-| [Enemy Awareness Log](EnemyAwarenessLog/EnemyAwarenessLog.cs) | Diagnostic, changes nothing: logs spawns, where each enemy first sees you, whether unseen enemies track your live position, your shots and which sounds alert whom, door kicks (and door loops), stuck enemies, which floor each enemy is on, who is still alive at the end, your stealth visibility, harmless enemy shots, and per-wave summaries | 0.5.2, dev tool |
-| [Grab Log](GrabLog/README.md) | Diagnostic: grip timing, prompt and hover changes, hand alignment, item distances, detection volumes, actual grab results, and pickup state after release/throw | 0.1.0, compiled; VR testing pending |
-| [Daredevil](Daredevil/README.md) | **The Daredevil package, the only build of these features:** textured billy clubs from The Range crowbar (blunt damage, homing throw, ricochets, knockouts, belt holsters that carry into contracts, F8 recall, arsenal panel entry with Weapon Framework) and radar sense (red enemy silhouettes through walls, louder steps, glowing dropped clubs). Requires Gloves, Throw Assist and Mod Settings. The standalone Billy Clubs and Radar Sense mods are legacy and removed from this repo | 0.3.3, tested well; not yet released on Nexus |
-| [Gloves](Gloves/README.md) | Recolours the player's gloves: dark red by default, any colour from the Mod Settings board, applied at once | 0.1.0, required by Daredevil |
-| [Weapon Framework](WeaponFramework/README.md) | Lets mods add their own weapons to the arsenal panel in The Range (page to it, press Retrieve, take it off the wall); used by Daredevil. Guide for adding your own weapon: [MODDING_GUIDE.md](WeaponFramework/MODDING_GUIDE.md) | 0.1.1, tested; release candidate in `release/WeaponFramework/` |
+| [Stealth AI Fix](EnemyAwarenessFix/EnemyAwarenessFix.cs) | Enemies that lose sight of you go to where they last saw you and search there instead of walking to your exact position; wave enemies get a rough guess; flanking and turning use what the enemy knows; wave spawns no longer always use the nearest spawn point and keep a 10 m minimum distance; floor-aware (no hearing you through a floor, no "arrived" on the wrong floor) | 0.1.6, ready for 1.0; [Enemy Awareness Log](EnemyAwarenessLog/EnemyAwarenessLog.cs) ships alongside it as an optional file |
+| [Throw Assist](ThrowAssist/README.md) | Real-physics steering for the game's own throw assist, and thrown pistols | 0.1.0, solid release candidate — could ship as 1.0 |
+| [Mod Settings](ModSettings/README.md) | Movable VR settings board with native pointing pose, laser input and per-setting reset; mouse menu in flat mode | 1.0.0 packaged (0.2.2 released on [Nexus](https://www.nexusmods.com/gunmancontractsstandalone/mods/28)) |
+| [Grab Log](GrabLog/README.md) | Diagnostic: grip timing, prompt and hover changes, hand alignment, item distances, detection volumes, actual grab results, and pickup state after release/throw | 0.1.0, in testing |
+| [Frame Probe](FrameProbe/README.md) | Diagnostic frame timing and draw-call summaries for controlled mod-performance comparisons; optional Jev log filter | 0.1.0 diagnostic; in-game verification pending |
+| [Challenge NPC Limit](ChallengeNpcLimit/README.md) | Raises the selectable enemy count in takedown challenges above the game's 30 limit (60 by default) | 0.1.0, built and installed for local testing; in-game verification pending |
+| [Grab Fix](GrabFix/GrabFix.cs) | Finger + palm-aimed pickup together (wider near sphere, grip buffer, thrown-item catch), so more grabs land without accidental grabs (grip is still a deliberate button) | 0.2.0, in testing |
+| [Daredevil](Daredevil/README.md) | Billy clubs, belt holsters, arsenal panel entry with Weapon Framework, and radar sense. Club back slots use VR Holster Customization. | 0.4.0 on dev; in-game verification pending |
+| [Gloves](Gloves/README.md) | Recolours the player's gloves: dark red by default, any colour from the Mod Settings board, applied at once | 0.1.0, solid release candidate — could ship as 1.0; required by Daredevil |
+| [Weapon Framework](WeaponFramework/README.md) | Adds mod weapons to the arsenal panel in The Range; uses VR Holster Customization for item docking and test crowbar back slots. Guide: [MODDING_GUIDE.md](WeaponFramework/MODDING_GUIDE.md) | 0.3.0 on dev; requires VR Holster Customization |
+| [VR Holster Customization](VRHolsterCustomization/README.md) | Adjust game holsters on three axes or move empty slots by hand; hologram colors and mod-item back slots | 0.2.1 packaged; requires Mod Settings; save-fix VR verification pending |
 
 Settings for each mod are in `UserData\MelonPreferences.cfg`, one section per mod, and on the in-VR Mod Settings board.
 
@@ -31,6 +34,7 @@ Daredevil.dll            clubs (Daredevil/BillyClubs/) + radar sense (Daredevil/
  ├─ requires  Gloves.dll           red gloves by default, any colour from the board
  ├─ requires  ThrowAssist.dll      thrown pistols that home and hurt
  ├─ requires  ModSettings.dll      the in-VR settings board
+ ├─ optional  VRHolsterCustomization.dll  club back slots and holster color
  └─ optional  WeaponFramework.dll  Billy Clubs on the arsenal panel in The Range
 ```
 
@@ -40,7 +44,7 @@ Daredevil.dll            clubs (Daredevil/BillyClubs/) + radar sense (Daredevil/
   `RadarSense.dll` from `Mods` if you have them, or everything loads twice. Their settings sections (`[BillyClubs]`,
   `[RadarSense]`) are still the ones Daredevil uses.
 - **Gloves** replaces the old `[BillyClubs] GloveColor` setting with `[Gloves] Color`.
-- **Weapon Framework** is for any mod: register a weapon and it appears on the arsenal panel (API in its README).
+- **Weapon Framework** is for any mod: register a weapon and it appears on the arsenal panel (API in its README). Version 0.3.0 requires VR Holster Customization.
 
 Parked ideas (hardcore "no free misses") with the game code behind them: [IDEAS.md](IDEAS.md).
 
@@ -49,7 +53,7 @@ Parked ideas (hardcore "no free misses") with the game code behind them: [IDEAS.
 1. Install [MelonLoader 0.7.x](https://github.com/LavaGang/MelonLoader/releases) (tested with 0.7.3)
    on `GunmanContracts.exe`. **0.6.x does not work** on this Unity 6 build.
 2. Put the mod's DLL in the game's `Mods` folder. Released builds are in [`release/`](release/).
-   For Daredevil, also put in `Gloves.dll`, `ThrowAssist.dll` and `ModSettings.dll` (and optionally `WeaponFramework.dll`).
+   For Daredevil, also put in `Gloves.dll`, `ThrowAssist.dll` and `ModSettings.dll`. Add `VRHolsterCustomization.dll` for club back slots; Weapon Framework 0.3.0 also requires it.
 
 ## Build
 
@@ -69,9 +73,9 @@ Or put your path in `<ModFolder>/GameDir.local.props` (git-ignored):
 
 ## Repository layout
 
-- `BetterBow/`, `KneeShotStun/`, `FireSelector/`, `HeavyMelee/`, `PhysicalDodge/`, `EnemyAwarenessFix/`,
-  `EnemyAwarenessLog/`, `ThrowAssist/`, `ModSettings/`, `Gloves/`, `WeaponFramework/`: one folder per mod, source and
-  its own project.
+- `BetterBow/`, `KneeShotStun/`, `FireSelector/`, `HeavyMelee/`, `PhysicalDodge/`, `EnemyAwarenessFix/`, `ChallengeNpcLimit/`,
+  `EnemyAwarenessLog/`, `ThrowAssist/`, `ModSettings/`, `Gloves/`, `WeaponFramework/`, `VRHolsterCustomization/`, `GrabLog/`, `GrabFix/`, `FrameProbe/`: one
+  folder per mod, source and its own project.
 - `Daredevil/`: the package project, with `BillyClubs/` and `RadarSense/` source folders and `Tests/` (the model
   loader test). There are no separate `BillyClubs/` or `RadarSense/` projects any more.
 - `BlenderRefs/`: the billy club model (`out/billy_club.obj` + textures, embedded in Daredevil) and

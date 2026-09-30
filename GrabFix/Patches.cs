@@ -18,10 +18,39 @@ internal static class HoverPatch
     [HarmonyPriority(Priority.Normal)]
     static void Postfix(HVRHandGrabber __instance, HVRGrabbable __0, ref bool __result)
     {
-        if (__result || !Active) return;
+        if (!Active) return;
+        if (__result)
+        {
+            // The widened local sphere is the actual physical trigger collider, so it can make
+            // a docked item (holstered, socketed, wall-mounted) natively hoverable - and so
+            // grabbable on grip press - well beyond arm's reach. Demand native closeness for
+            // those; the widened reach is only meant for a loose item's own recovery.
+            bool native = true;
+            if (Docked(__0)) Safe("docked hover", () => native = Register(__instance).Geometry.NativeContains(__0));
+            if (!native) __result = false;
+            return;
+        }
         bool allowed = false;
         Safe("buffered hover", () => allowed = AllowBufferedHover(__instance, __0));
         if (allowed) __result = true;
+    }
+}
+
+// HVRForceGrabber has its own, separate CanHover - widening its distance capsules (both the
+// native one via DistanceGrabWidth and, in Both mode, the palm-aimed copy at a different
+// position/rotation) can make a docked item hoverable from across the body, e.g. the off-hand
+// club while the palm happens to face across the belt. Same fix as the local sphere above.
+[HarmonyPatch(typeof(HVRForceGrabber), nameof(HVRForceGrabber.CanHover))]
+internal static class ForceHoverPatch
+{
+    static void Postfix(HVRForceGrabber __instance, HVRGrabbable __0, ref bool __result)
+    {
+        if (!Active || !__result || !Docked(__0)) return;
+        var h = __instance.HandGrabber;
+        if (!Alive(h)) return;
+        bool native = true;
+        Safe("docked force hover", () => native = Register(h).Geometry.NativeContainsFar(__0));
+        if (!native) __result = false;
     }
 }
 

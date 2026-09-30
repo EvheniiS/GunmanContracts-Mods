@@ -41,6 +41,9 @@ namespace ModSettings
         }
 
         public static bool IsColor(string s) => s != null && Hex.IsMatch(s.Trim());
+        public static bool IsColorSetting(string value, string defaultValue, string description) => IsColor(value) ||
+            (string.Equals(defaultValue, "Default", StringComparison.OrdinalIgnoreCase) &&
+             description != null && description.Contains("#RRGGBB", StringComparison.OrdinalIgnoreCase));
 
         public static readonly string[] Palette =
         {

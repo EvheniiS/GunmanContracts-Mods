@@ -1,91 +1,86 @@
 [size=5][b]Mod Settings[/b][/size]
 
-Mod Settings shows [b]MelonPreferences settings[/b] from your installed mods on an [b]in-VR board[/b].
-Open it from the [b]phone tile[/b] or with Ctrl+M, then touch the controls with your index finger.
+Change your installed mods' settings from a [b]movable VR board[/b], using [b]pointing hands and a fingertip laser[/b] or direct touch. Each setting shows whether it is [b]default or changed[/b], with its own Reset button.
+[b]Playing flat?[/b] Ctrl+M opens a mouse-operated menu on screen.
 
-[size=4][b]How to use[/b][/size]
-Take out the phone and press the Mod Settings tile in the middle row. Ctrl+M on the keyboard also
-opens or closes the board. It appears in front of you and follows you when you move with the stick.
-Touch the buttons from the front with either index fingertip.
+[size=4][b]How to use in VR[/b][/size]
+Open the phone and press the [b]Mod Settings[/b] tile, or press [b]Ctrl+M[/b].
 [list]
-[*][b]< / >[/b] at the top switches between mods. [b]Up / Down[/b] scrolls through a mod's settings.
-[*]Touch a setting's name to see its description and default value. [b]Reset[/b] restores that default.
-[*]Tap [b]ON / OFF[/b] to change a switch. Numbers have small and large step buttons on either side.
-Choices and colours use [b]< / >[/b].
-[*]Some values, including keys, paths and holster positions, are read-only here. Edit those in
-[i]MelonPreferences.cfg[/i].
-[*]A yellow name means the value differs from its default. [b]*[/b] means the setting's description
-says it needs a game restart.
+[*][b]Point and click:[/b] aim an empty hand at the board and press trigger. A laser starts at your fingertip, and the hand uses the game's menu pointing pose. Works from up to 4 metres away.
+[*][b]Touch:[/b] press a control from the front with either index fingertip.
+[*][b]Move and tilt:[/b] grip the top bar, move or rotate your hand, then release. You can grab it nearby or aim the laser at the bar and grip. Put it beside your holsters or near the floor while configuring them.
+[*]The board follows stick movement and snap turns. Close and reopen it to bring it back in front of you.
+[*]Use [b]< / >[/b] at the top to switch mods and [b]Up / Down[/b] to scroll settings.
+[*]Select a setting's name for its description. Switches toggle; numbers have small and large steps; choices and colours cycle.
 [/list]
+The board is 72 × 56 cm at scale 1. Held weapons keep their own hand pose. Release the opening gesture before using the controls.
+
+[size=4][b]Defaults and resetting[/b][/size]
+Every VR row shows [b]DEFAULT[/b] or [b]CHANGED[/b] and its declared default value. Changed names are yellow, and a [b]Reset[/b] button beside the value restores that individual setting. The desktop menu also has per-row reset controls.
+
+Defaults come from each mod's code, not from your first launch or your personal configuration. Mod Settings compares the current value with that declared default. Mod-managed saved state is protected from reset. Other text that cannot be edited here can still be reset when it has changed; edit custom text in [i]UserData\MelonPreferences.cfg[/i].
+
+[size=4][b]Flat mode (no headset)[/b][/size]
+Press [b]Ctrl+M[/b], click the controls with the mouse, and use the mouse wheel to scroll. [b]X[/b] or Ctrl+M closes the menu. While open, the cursor is free and mouse look and shooting stop. Walking still works; [b]the game is not paused[/b].
 
 [size=4][b]When changes apply[/b][/size]
-Changes are saved to [i]MelonPreferences.cfg[/i] about a second after you make them. Some mods use
-the new value right away. Others read it only when a level loads or the game starts, so you may
-need to reload or restart. The [b]*[/b] marker appears when the mod's own setting description says
-to restart.
-
-Each mod still decides how it uses its settings. Mod Settings only reads and changes their
-MelonPreferences entries.
+Changes update the mod's MelonPreferences entry immediately and are saved about a second later. Each mod decides when it uses the new value: some update live, others need a level reload or restart. [b]*[/b] marks descriptions that mention a game restart.
 
 [size=4][b]Install[/b][/size]
-Takes about 5 minutes the first time. Steps 1 and 2 are needed only once, for all MelonLoader mods.
+[b]Find the game folder:[/b] Steam → right-click [i]Gunman Contracts - Stand Alone[/i] → [i]Manage[/i] → [i]Browse local files[/i]. This is the folder containing [i]GunmanContracts.exe[/i].
 
-[b]Where is my game folder?[/b] In Steam, right-click [i]Gunman Contracts - Stand Alone[/i] →
-[i]Manage[/i] → [i]Browse local files[/i]. It's the folder with [i]GunmanContracts.exe[/i] in it.
+[b]1.[/b] Install [url=https://github.com/LavaGang/MelonLoader/releases]MelonLoader[/url] for this game. Tested with [b]0.7.3[/b]; 0.6.x does not work.
+[b]2.[/b] Start the game once, then quit so MelonLoader can prepare its files.
+[b]3.[/b] Extract the ZIP's [b]Mods[/b] folder into the game folder and merge/replace when prompted.
+The DLL must be at [i]Gunman Contracts - Stand Alone\Mods\ModSettings.dll[/i].
+[b]4.[/b] Start the game. The console should list [b]Mod Settings v1.0.0[/b].
 
-[b]1. Install MelonLoader[/b] (the mod loader)
-Download the installer from [url=https://github.com/LavaGang/MelonLoader/releases]MelonLoader releases[/url],
-run it, pick [i]GunmanContracts.exe[/i] in your game folder, and install [b]version 0.7.3 or newer[/b].
-[b]Version 0.6 does not work[/b] with this game.
-
-[b]2. Start the game once[/b], then quit.
-A black console window opens next to the game: that's MelonLoader working. The first start takes
-a minute or two, later ones are normal.
-
-[b]3. Add the mod[/b]
-Open the downloaded zip. Inside is a folder called [b]Mods[/b]. Drag that [b]Mods[/b] folder into your
-game folder, and if Windows asks, choose to replace / merge.
-You should end up with: [i]Gunman Contracts - Stand Alone\Mods\ModSettings.dll[/i]
-
-[b]4. Check it works[/b]
-Start the game. The MelonLoader console lists [b]Mod Settings v0.2.2[/b] among the loaded mods.
-
-[b]Not working?[/b]
+[b]Troubleshooting[/b]
 [list]
-[*][b]The mod isn't in the console list:[/b] check the file isn't at [i]Mods\Mods\ModSettings.dll[/i]
-(a folder too deep). Move it up so it sits directly in [i]Mods[/i].
-[*][b]No console window at all:[/b] MelonLoader isn't installed on this game. Repeat step 1 and make
-sure you picked [i]GunmanContracts.exe[/i].
-[*][b]Errors right at startup:[/b] you likely have MelonLoader 0.6. Install 0.7.3 or newer.
-[*][b]No tile on the phone:[/b] the middle-row slot is sometimes held by a mission item (e.g. a
-Data Breach holder); the tile moves to the next empty slot while that's active. Ctrl+M always
-works regardless.
+[*]Do not put the DLL in [i]Mods\Mods[/i]; it belongs directly in [i]Mods[/i].
+[*]If a mission item occupies the phone tile's slot, the tile moves to another empty slot. Ctrl+M also opens the menu.
+[*]If Ctrl+M does nothing in flat mode, give the game window keyboard focus.
+[*]If the board is out of reach, close and reopen it. Check that your pointing hand is empty.
 [/list]
 
-[size=4][b]Settings (optional)[/b][/size]
+[size=4][b]Settings[/b][/size]
 [spoiler]
-After the first launch, edit [i]UserData\MelonPreferences.cfg[/i], section [b][ModSettings][/b]:
+Under [b]Mod Settings[/b] on the board, or [b][ModSettings][/b] in [i]UserData\MelonPreferences.cfg[/i]:
 [code]
-PhoneTile   = true   put a Mod Settings tile in an empty slot of the phone's middle row
-OpenKey     = M       keyboard: Ctrl + this key opens/closes the menu
-PanelDistance = 0.4   how far in front of your eyes the menu opens, in metres
-PanelScale  = 1        menu size (1 = 48 x 44 cm); applies the next time it opens
-DebugLog    = false   log opening/closing and write the phone layout to UserData\ModSettings_phone.txt once
+PhoneTile = true       show the phone tile
+OpenKey = "M"          Ctrl + this key opens/closes the menu
+PanelDistance = 0.4    opening distance in metres
+PanelScale = 1         board size: 72 × 56 cm at 1; applies on next opening
+DebugLog = false       menu diagnostics and phone-layout logging
 [/code]
-Mod Settings does not show its own options on the board; edit these in the cfg.
+[/spoiler]
+
+[size=4][b]Changelog[/b][/size]
+[spoiler]
+[b]1.0.0[/b]
+[list]
+[*]Support for a colour setting's Default option, including VR Holsters' original game colours.
+[/list]
+[b]0.4.0[/b]
+[list]
+[*]Larger VR board with a grip bar for movement and tilting.
+[*]Native menu pointing pose and fingertip laser selection with trigger.
+[*]Per-setting Reset and explicit DEFAULT / CHANGED indicators in VR and desktop menus.
+[/list]
+[b]0.3.0[/b]: mouse-operated flat-mode menu.
 [/spoiler]
 
 [size=4][b]Compatibility[/b][/size]
-Works alongside [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/22]Better Bow[/url],
-[url=https://www.nexusmods.com/gunmancontractsstandalone/mods/25]Fire Selector[/url],
-[url=https://www.nexusmods.com/gunmancontractsstandalone/mods/26]Knee Shot Stun[/url] and
-[url=https://github.com/EvheniiS/GunmanContracts-Mods]Heavy Melee[/url]. Mod Settings uses its
-own phone tile and Ctrl+M, so it does not take over those mods' controls. Other mods that use
-MelonPreferences should appear on the board too; hidden settings are not shown.
+Lists visible MelonPreferences settings from installed mods automatically; other mods do not need a special integration.
+[b]VR Holster Customization requires Mod Settings.[/b] Its holster adjustment pages work particularly well with the movable board.
+Mod Settings itself does not require VR Holsters, Weapon Framework or Daredevil.
 
 [size=4][b]Uninstall[/b][/size]
-Delete [i]Mods\ModSettings.dll[/i]. Your cfg keeps whatever values were last saved.
+Delete [i]Mods\ModSettings.dll[/i]. Saved preference values remain in your cfg.
+Mods that require Mod Settings, including VR Holster Customization, also need to be removed or will have a missing dependency.
 
 [size=4][b]Source[/b][/size]
-[url=https://github.com/EvheniiS/GunmanContracts-Mods]GitHub[/url] (MIT). Made for game version 0.3.1.0 and
-MelonLoader 0.7.3.
+[url=https://github.com/EvheniiS/GunmanContracts-Mods]GitHub[/url] (MIT). Made for game version 0.3.1.0 and MelonLoader 0.7.3.
+
+[size=4][b]Reset a whole section[/b][/size]
+[b]Reset section[/b] at the bottom restores all editable settings in the selected config section, including settings on other pages. The [b]Reset[/b] button beside each value still resets only that setting. Hidden entries and mod-managed saved state are excluded. Available in VR and flat mode.

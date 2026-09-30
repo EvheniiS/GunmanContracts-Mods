@@ -1,0 +1,110 @@
+[size=5][b]VR Holster Customization[/b][/size]
+
+Move the game's [b]hip, knife and back holsters[/b] to suit your reach. [b]Grab an empty holster's position point with grip + trigger, then drag the holster by hand[/b]—even out in front of you. Fine-tune positions live in Mod Settings. Keep the [b]original game colours[/b] or choose another colour.
+
+[b]Required:[/b] [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28]Mod Settings[/url] — install version 0.4.1 or newer. This is a hard dependency, not an optional menu.
+
+[size=4][b]Grab and move holsters by hand[/b][/size]
+This is the quickest way to place a holster where your hand naturally reaches: find its highlighted point, hold [b]grip + trigger[/b] to grab it, drag it into position, and release to save.
+[list]
+[*]Open [b]Mod Settings[/b] from the phone tile or Ctrl+M.
+[*]Find [b]VR Holsters: move by hand[/b] and enable [b]Move empty holsters by hand[/b].
+[*][b]Empty your hand and the holster.[/b] Bring your palm within about [b]12 cm[/b] of its position point; a blue marker identifies the nearest empty slot.
+[*]At that point, hold [b]grip + trigger together for two seconds[/b]. Amber and small vibrations mean keep holding. Green and a stronger vibration mean you have grabbed the holster and it is ready to move.
+[*][b]Drag the holster with your hand[/b] while keeping both buttons held. Release either button to save its new position.
+[*]Disable adjustment when you are finished.
+[/list]
+Approach before pressing the buttons. Moving away during the initial hold cancels it; release and try again.
+Positions move in 1 cm steps, normally within ±50 cm of the original position. Only one slot moves at a time.
+
+This gesture moves the [b]six game holsters[/b]: left/right pistol, knife and back slots. Mod-item back slots use their separate settings.
+
+[size=4][b]Fine-tune with the board[/b][/size]
+Under [b]VR Holster Customization: positions[/b], each holster has height, left/right and forward/back controls, labelled in centimetres. Positive values move up, right or forward; negative values move in the opposite direction. [b]All holsters: height[/b] shifts all six together.
+
+The actual sockets move with their highlights, so the grab positions follow your settings. Changes apply live and survive scene changes and restarts. Zero per-slot offsets leave the original position, plus any All holsters height adjustment.
+
+Grip Mod Settings' top bar to move or tilt the board near your holsters, then point and press trigger to adjust from a distance. [b]Reset[/b] beside a position restores that parameter's declared default.
+
+[size=4][b]Holster colours[/b][/size]
+The [b]Color[/b] setting defaults to [b]Default[/b], which preserves the game's original normal and hover colours. It does not use your personal saved colour as its default.
+Cycle colours in Mod Settings, or enter a custom [b]#RRGGBB[/b] value in the cfg. Reset returns to original game colours. Existing red/custom configurations stay custom until you reset them.
+
+[size=4][b]Loadout saving[/b][/size]
+Placing a gun or knife in a holster [b]in The Range[/b] schedules a loadout save about a second later. Contract holster activity does not trigger this automatic save, so putting a knife away while a pistol is drawn does not overwrite your prepared loadout with an empty pistol slot.
+
+[size=4][b]Install[/b][/size]
+[b]Find the game folder:[/b] Steam → right-click [i]Gunman Contracts - Stand Alone[/i] → [i]Manage[/i] → [i]Browse local files[/i].
+
+[b]1.[/b] Install [url=https://github.com/LavaGang/MelonLoader/releases]MelonLoader[/url] for [i]GunmanContracts.exe[/i]. Tested with [b]0.7.3[/b]; 0.6.x does not work.
+[b]2.[/b] Start the game once, then quit.
+[b]3.[/b] Choose [b]one[/b] download:
+[list]
+[*][b]Standalone:[/b] contains VR Holster Customization only. Install [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28]Mod Settings 0.4.1 or newer[/url] separately.
+[*][b]With Mod Settings:[/b] includes both required DLLs for a new installation. If you already use a newer Mod Settings version, choose standalone to keep it.
+[/list]
+Extract the ZIP's [b]Mods[/b] folder into the game folder. You should have:
+[code]
+Mods\VRHolsterCustomization.dll
+Mods\ModSettings.dll
+[/code]
+[b]4.[/b] Start the game. The console should list [b]VR Holster Customization v0.2.1[/b] and Mod Settings.
+
+[b]Troubleshooting[/b]
+[list]
+[*]A missing ModSettings dependency means [i]ModSettings.dll[/i] is absent from the game's Mods folder. Install the required mod.
+[*]No adjustment marker? Enable move-by-hand mode, empty the slot and your hand, release both buttons, then approach again.
+[*]Position controls remain available even when move-by-hand mode is off.
+[*]Do not nest the DLLs under [i]Mods\Mods[/i].
+[/list]
+
+[size=4][b]Settings[/b][/size]
+[spoiler]
+Use Mod Settings to change these live. The same entries are stored in [i]UserData\MelonPreferences.cfg[/i].
+[code]
+[VRHolsters]
+DebugLog = false
+
+[VRHolsters_Adjustment]
+Enabled = false
+
+[VRHolsters_Positions]
+AllUpCm = 0
+[/code]
+For each of LeftHip, RightHip, LeftKnife, RightKnife, LeftBack and RightBack:
+[code]
+<slot>UpCm = 0
+<slot>AlongCm = 0
+<slot>ForwardCm = 0
+[/code]
+Replace <slot> with the slot name when editing the cfg, for example LeftHipUpCm.
+[code]
+[VRHolsters_Visual]
+Color = "Default"
+
+[VRHolsters_BackSlots]
+BackHolsters = true
+OutCm = -13
+UpCm = 0
+BackCm = 7
+DropCm = 30
+TiltDeg = 20
+LeanDeg = 10
+SpinDeg = 0
+SnapCm = 30
+DrawCm = 20
+SavedBackHolsters = ""
+[/code]
+BackSlots controls supported mod items: position in centimetres, rotation in degrees, snap/draw distance and saved contents. SavedBackHolsters is managed automatically; do not edit it during play.
+No personal cfg is included in the download.
+[/spoiler]
+
+[size=4][b]Compatibility[/b][/size]
+[b]Mod Settings is required.[/b] Weapon Framework and Daredevil are optional. With those installed, this mod also provides docking and back-slot support for registered mod items such as the test crowbar and Billy Clubs. Their back-slot positions are separate from the six game holsters' move-by-hand controls.
+
+[size=4][b]Uninstall[/b][/size]
+Delete [i]Mods\VRHolsterCustomization.dll[/i]. Game holster position and colour overrides stop applying. Saved cfg values remain.
+Weapon Framework versions that depend on this DLL must also be removed or updated. Keep Mod Settings if other installed mods require it.
+
+[size=4][b]Source[/b][/size]
+[url=https://github.com/EvheniiS/GunmanContracts-Mods]GitHub[/url] (MIT). Made for game version 0.3.1.0 and MelonLoader 0.7.3.

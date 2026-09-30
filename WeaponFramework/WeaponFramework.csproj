@@ -28,6 +28,15 @@
     <Reference Include="UnityEngine.CoreModule"><HintPath>$(InteropDir)\UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.PhysicsModule"><HintPath>$(InteropDir)\UnityEngine.PhysicsModule.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="Il2CppHurricaneVR.Framework"><HintPath>$(InteropDir)\Il2CppHurricaneVR.Framework.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2CppGD_Game"><HintPath>$(InteropDir)\Il2CppGD_Game.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.ImageConversionModule"><HintPath>$(InteropDir)\UnityEngine.ImageConversionModule.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+
+  <ItemGroup><ProjectReference Include="../VRHolsterCustomization/VRHolsterCustomization.csproj" Private="false" /></ItemGroup>
+
+  <!-- The test crowbar's panel picture (TestEntries). -->
+  <ItemGroup>
+    <EmbeddedResource Include="../BlenderRefs/out/crowbar_icon.png" LogicalName="WeaponFramework.crowbar_icon.png" />
   </ItemGroup>
 
   <!-- The example weapon mod has its own project. -->

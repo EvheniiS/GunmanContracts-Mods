@@ -51,7 +51,7 @@ namespace HeavyMelee
     {
         internal static MelonLogger.Instance Log;
         internal static MelonPreferences_Entry<bool> Enabled, WeaponHits, DownedHits, KeepDown, KnockDownGettingUp, KnockoutOnGround,
-            OpenPalmNoHit, IgnoreKickedObjects, DebugLog;
+            OpenPalmNoHit, IgnoreKickedObjects, DebugLog, KneelOnLegHits;
         internal static MelonPreferences_Entry<float> FistDamageMultiplier, WeaponDamageMultiplier, MaxDamagePerHit, MinPunchSpeed, MinWeaponSpeed,
             FistGrip, OpenPalmStrikeSpeed, HitCooldown, KeepDownSeconds;
 
@@ -63,6 +63,7 @@ namespace HeavyMelee
             var c = MelonPreferences.CreateCategory("HeavyMelee", "Heavy Melee");
             Enabled = c.CreateEntry("Enabled", true, description: "Master switch for the whole mod.");
             WeaponHits = c.CreateEntry("WeaponHits", true, description: "Hitting an enemy with a held gun or bow (or with the hand holding it) counts as a melee hit and makes them stumble.");
+            KneelOnLegHits = c.CreateEntry("KneelOnLegHits", true, description: "Valid fist or held gun/bow hits to the legs drop a standing enemy to one knee, like Billy Clubs. Knee Shot Stun extends the kneel when installed. Speed, grip and cooldown checks still apply.");
             DownedHits = c.CreateEntry("DownedHits", true, description: "Punches and weapon hits do damage to an enemy that is already stunned or on the ground (the game ignores them).");
             KeepDown = c.CreateEntry("KeepDown", true, description: "A hit on an enemy lying on the ground keeps them down for KeepDownSeconds.");
             KeepDownSeconds = c.CreateEntry("KeepDownSeconds", 2.0f, description: "Seconds a downed enemy stays on the ground after your last hit (the game lets them get up as soon as they stop moving).");
@@ -80,7 +81,7 @@ namespace HeavyMelee
             HitCooldown = c.CreateEntry("HitCooldown", 0.3f, description: "Seconds before the same enemy can take another hit (one swing touches several body parts).");
             DebugLog = c.CreateEntry("DebugLog", false, description: "Log every hit the mod handles, and the game's melee values.");
             LoggerInstance.Msg($"loaded - fists x{FistDamageMultiplier.Value:0.##}, weapons x{WeaponDamageMultiplier.Value:0.##}, max {MaxDamagePerHit.Value:0} per hit" +
-                               $"{(WeaponHits.Value ? ", weapon hits on" : "")}{(DownedHits.Value ? ", downed hits on" : "")}.");
+                               $"{(WeaponHits.Value ? ", weapon hits on" : "")}{(DownedHits.Value ? ", downed hits on" : "")}, leg kneel={KneelOnLegHits.Value}.");
         }
 
         public override void OnSceneWasInitialized(int buildIndex, string sceneName)
@@ -160,10 +161,15 @@ namespace HeavyMelee
                 bool stunned = npc.isGettingHit || npc.isOffBalance;
                 if (src == Source.Fist && (!stunned || !DownedHits.Value))
                 {
-                    FistContext = true;                    // the game's punch, with scaled damage
-                    PunchSpeed = speed;
-                    PunchWhat = what;
-                    return true;
+                    // A valid standing leg punch uses Strike so we can suppress the mass-based
+                    // stumble and play the knee-shot animation after applying normal capped damage.
+                    if (stunned || !CanKneel(npc, bmc.myCol))
+                    {
+                        FistContext = true;                // the game's punch, with scaled damage
+                        PunchSpeed = speed;
+                        PunchWhat = what;
+                        return true;
+                    }
                 }
                 if (src == Source.Weapon && !WeaponHits.Value) return true;
                 if (src == Source.Weapon && stunned && !DownedHits.Value) return true;
@@ -251,6 +257,26 @@ namespace HeavyMelee
             return false;
         }
 
+        // Billy Clubs uses the leg-hit flag plus the Hit-layer knee-shot clip. Scope the GetHit
+        // change to our own accepted melee hit so thrown objects and other mods keep their rules.
+        class KneeHit { public ANBBasicNPC Npc; public bool GotHit; }
+        static KneeHit CurrentKnee;
+
+        static bool CanKneel(ANBBasicNPC npc, Collider part)
+        {
+            if (!KneelOnLegHits.Value || npc.isDead || npc.isOffBalance || npc.gettingHitLegs || part == null) return false;
+            if (part.name != "LeftLeg" && part.name != "RightLeg" && part.name != "LeftUpLeg" && part.name != "RightUpLeg") return false;
+            return npc.animator != null && npc.animator.GetLayerIndex("Hit") >= 0;
+        }
+
+        internal static void BeforeGetHit(ANBBasicNPC npc, ref bool isRunning)
+        {
+            if (CurrentKnee == null || CurrentKnee.Npc.Pointer != npc.Pointer) return;
+            npc.gettingHitLegs = true; // set before Knee Shot Stun's GetHit prefix
+            isRunning = false;       // prevent GetHit from substituting a stumble
+            CurrentKnee.GotHit = true;
+        }
+
         static void Strike(ANBGameLogic game, ANBBodyMeleeCollisionManager mgr, ANBBodyMeleeCollision bmc, Collision collision,
                            ANBBasicNPC npc, Source src, string what, Rigidbody rb, float speed, float min)
         {
@@ -266,12 +292,35 @@ namespace HeavyMelee
             float mult = PartMultiplier(npc, bmc.myCol);
             float dmg = Capped(game.meleeDamage * (src == Source.Weapon ? WeaponDamageMultiplier.Value : FistDamageMultiplier.Value), mult);
             // A weapon always staggers a standing enemy; a fist uses the game's rule. Never on the ground.
-            bool stumble = !down && (src == Source.Weapon || npc.isGrabbed || (pm != null && rb.mass > pm.StumbleOnRBMass));
+            bool kneel = CanKneel(npc, bmc.myCol);
+            bool stumble = !kneel && !down && (src == Source.Weapon || npc.isGrabbed || (pm != null && rb.mass > pm.StumbleOnRBMass));
             float before = npc.health;
 
-            npc.TakeMeleeDamage(bmc.myCol, collision, stumble, false, false, dmg);
+            string kneeReaction = "";
+            var previousKnee = CurrentKnee;
+            try
+            {
+                if (kneel) CurrentKnee = new KneeHit { Npc = npc };
+                npc.TakeMeleeDamage(bmc.myCol, collision, stumble, false, false, dmg);
+                if (kneel && !npc.isDead)
+                {
+                    npc.gettingHitLegs = true;
+                    if (!CurrentKnee.GotHit) npc.GetHit(false, npc.stunAtHitTimeLegs, false, false);
+                    var anim = npc.animator;
+                    if (anim != null)
+                    {
+                        int layer = anim.GetLayerIndex("Hit");
+                        if (layer >= 0)
+                        {
+                            anim.CrossFadeInFixedTime(bmc.myCol.name.StartsWith("Right") ? "hit_legs_1_m" : "hit_legs_1", 0.1f, layer, 0f);
+                            kneeReaction = " - KNEELS";
+                        }
+                    }
+                }
+            }
+            finally { CurrentKnee = previousKnee; }
 
-            string extra = HoldDown(npc, puppet, state);
+            string extra = kneeReaction + HoldDown(npc, puppet, state);
 
             // Limb hits never kill in the game (health stops at 1). On the ground, they can knock out.
             if (down && KnockoutOnGround.Value && !npc.isDead && before - dmg * mult <= 0f)
@@ -405,6 +454,13 @@ namespace HeavyMelee
     {
         static void Prefix(ANBBasicNPC __instance, Collider bodyPart, bool fromEnemy, bool noDamage, ref float damageOverride) =>
             HeavyMeleeMod.OnTakeMeleeDamage(__instance, bodyPart, fromEnemy, noDamage, ref damageOverride);
+    }
+
+    [HarmonyLib.HarmonyPatch(typeof(ANBBasicNPC), nameof(ANBBasicNPC.GetHit))]
+    internal static class KneeGetHitPatch
+    {
+        [HarmonyLib.HarmonyPriority(HarmonyLib.Priority.First)]
+        static void Prefix(ANBBasicNPC __instance, ref bool isRunning) => HeavyMeleeMod.BeforeGetHit(__instance, ref isRunning);
     }
 
     [HarmonyLib.HarmonyPatch(typeof(ANBBasicNPC), nameof(ANBBasicNPC.TakeBluntWeaponDamage))]
