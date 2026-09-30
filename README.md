@@ -15,6 +15,7 @@ of the others (see [Mod structure](#mod-structure)).
 | [Throw Assist](ThrowAssist/README.md) | Real-physics steering for the game's own throw assist, and thrown pistols | 0.1.0, solid release candidate — could ship as 1.0 |
 | [Mod Settings](ModSettings/README.md) | Movable VR settings board with native pointing pose, laser input and per-setting reset; mouse menu in flat mode | 1.0.0 packaged (0.2.2 released on [Nexus](https://www.nexusmods.com/gunmancontractsstandalone/mods/28)) |
 | [Grab Log](GrabLog/README.md) | Diagnostic: grip timing, prompt and hover changes, hand alignment, item distances, detection volumes, actual grab results, and pickup state after release/throw | 0.1.0, in testing |
+| [Frame Probe](FrameProbe/README.md) | Diagnostic frame timing and draw-call summaries for controlled mod-performance comparisons; optional Jev log filter | 0.1.0 diagnostic; in-game verification pending |
 | [Challenge NPC Limit](ChallengeNpcLimit/README.md) | Raises the selectable enemy count in takedown challenges above the game's 30 limit (60 by default) | 0.1.0, built and installed for local testing; in-game verification pending |
 | [Grab Fix](GrabFix/GrabFix.cs) | Finger + palm-aimed pickup together (wider near sphere, grip buffer, thrown-item catch), so more grabs land without accidental grabs (grip is still a deliberate button) | 0.2.0, in testing |
 | [Daredevil](Daredevil/README.md) | Billy clubs, belt holsters, arsenal panel entry with Weapon Framework, and radar sense. Club back slots use VR Holster Customization. | 0.4.0 on dev; in-game verification pending |
@@ -73,7 +74,7 @@ Or put your path in `<ModFolder>/GameDir.local.props` (git-ignored):
 ## Repository layout
 
 - `BetterBow/`, `KneeShotStun/`, `FireSelector/`, `HeavyMelee/`, `PhysicalDodge/`, `EnemyAwarenessFix/`, `ChallengeNpcLimit/`,
-  `EnemyAwarenessLog/`, `ThrowAssist/`, `ModSettings/`, `Gloves/`, `WeaponFramework/`, `VRHolsterCustomization/`, `GrabLog/`, `GrabFix/`: one
+  `EnemyAwarenessLog/`, `ThrowAssist/`, `ModSettings/`, `Gloves/`, `WeaponFramework/`, `VRHolsterCustomization/`, `GrabLog/`, `GrabFix/`, `FrameProbe/`: one
   folder per mod, source and its own project.
 - `Daredevil/`: the package project, with `BillyClubs/` and `RadarSense/` source folders and `Tests/` (the model
   loader test). There are no separate `BillyClubs/` or `RadarSense/` projects any more.

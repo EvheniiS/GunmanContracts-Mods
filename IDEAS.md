@@ -6,6 +6,8 @@ are code defaults: prefabs and scenes can override them.
 
 ## VR frame-time baseline and mod isolation (Sep 29 2026)
 
+`FrameProbe/` now implements the timing logger and optional Jev log filter (Sep 30); the controlled in-game comparison below remains to be run. Its measurements are not per-mod attribution.
+
 The Sep 29 Range log averaged about 11.6 ms per frame during steady play (roughly 86 FPS at a
 90 Hz target); its 95th percentile was about 12.1-12.3 ms. The holster mod's repeated socket scans
 and duplicate per-frame position pass were reduced in 0.1.1, and the next subjective test felt better,
