@@ -2133,3 +2133,11 @@ possible explanations, not proven defects. Increasing the angle limit can admit 
 the three already-selected trajectories. Keep the feature experimental and private, with `allowKneeHit = false`
 by default and the user's personal saved opt-in retained. The Nexus description draft mentions the private
 experiment explicitly; the 0.2.1 release package is unchanged. See `ThrowAssist/TESTING.md` for remaining checks.
+
+## Challenge NPC Limit 0.1.0 (Sep 30 2026): takedown enemy selection cap
+
+Research on the local Gunman Contracts 0.3.1.0 installation (`GameAssembly.dll` and IL2CPP metadata):
+
+- `ANBContractTerminal.buttonEnemiesAdd` increments `ANBGameLogic.CD_totalSpawns` (float, offset `0x1498`) and clamps it to the selected `ANBContractData.maxTakedownEnemies` (float, offset `0xB4`). `buttonEnemiesSub` similarly clamps to `minTakedownEnemies` (`0xB8`). `updateContractInfo` clamps to both bounds again and copies the selected count to `currentTakedownEnemies` (`0xBC`).
+- `ANBContractData`'s constructor defaults `maxTakedownEnemies` to 40. Given the reported 30 limit, a serialized value on the challenge data is the likely source; the value on that asset has not been extracted independently. `ANBNpcSpawner.maxEnemiesAtOnce` is 0 in previous local challenge logs; it is a separate simultaneous-enemy setting.
+- `ChallengeNpcLimit.dll` raises `maxTakedownEnemies` on takedown-available challenge data to the configured value (60 by default). It patches data initialization and the terminal paths that clamp the count. Build: Release, zero warnings/errors. Installed for local testing; selecting and playing >30 enemies has not yet been verified in game.
