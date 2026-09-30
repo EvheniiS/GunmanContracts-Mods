@@ -37,7 +37,7 @@ namespace BillyClubs
     {
         internal static MelonPreferences_Entry<string> SpawnKey, BodyColor, SlotLeft, SlotRight, SavedSlots;
         internal static MelonPreferences_Entry<float> Length, Radius, Mass, ThrowSpeed, MinSteerSpeed, ThrowSearch, ThrowMaxFly, SnapDistance;
-        internal static MelonPreferences_Entry<bool> DebugLog, UseCustomModel;
+        internal static MelonPreferences_Entry<bool> DebugLog, UseCustomModel, ClubDoorKick;
         static MelonPreferences_Category Cat;
 
         const string CrowbarName = "Prop-Bluntweapon-Crowbar";
@@ -91,6 +91,7 @@ namespace BillyClubs
         static Transform Belt;
         static float SceneStart, NextBeltSearch;
         static bool Restored;
+        static float CheckpointRestoreAt = float.PositiveInfinity;
 
         static MelonLogger.Instance Log;
         static bool Dbg => DebugLog.Value;
@@ -119,7 +120,8 @@ namespace BillyClubs
             SlotRight = c.CreateEntry("HolsterRight", "0.23,-0.12,-0.10", description: "Right club holster, same format.");
             SnapDistance = c.CreateEntry("HolsterSnapDistance", 0.4f, description: "Let go of a club within this many metres of a free club holster and it snaps in.");
             SavedSlots = c.CreateEntry("SavedHolsters", "", description: "Managed by the mod: which club holsters are full (L, R). Restored after every scene load.");
-            DebugLog = c.CreateEntry("DebugLog", false, description: "Log template building, spawns, holstering, grabs, throws and ricochets.");
+            ClubDoorKick = c.CreateEntry("ClubDoorKick", true, description: "Press A (right hand) / X (left hand) while holding a Billy Club to kick open a marked door. Uses the game's VR door-kick setting and range.");
+            DebugLog = c.CreateEntry("DebugLog", false, description: "Log template building, spawns, holstering, grabs, throws, ricochets and unsuccessful door-kick presses.");
             InitThrowPrefs(c);
             InitMiddleGripPref(c);
             InitDamagePrefs(c);
@@ -136,6 +138,7 @@ namespace BillyClubs
         public override void OnSceneWasInitialized(int buildIndex, string sceneName)
         {
             PackageScene();
+            DoorButtonWasDown.Clear();
             // Scenes may load additively: keep whatever is still alive, reset only what died with the old scene.
             for (int i = 0; i < Clubs.Count; i++) if (!Alive(Clubs[i].Go)) Clubs.RemoveAt(i--);
             foreach (var s in Slots)
@@ -151,9 +154,15 @@ namespace BillyClubs
             if (!Alive(Belt))
             {
                 Belt = null;
+                // A new player rig is a new loadout. Contract draws change the live slots,
+                // but the saved Range loadout is what a retry must restore.
+                var saved = SavedSlots.Value ?? "";
+                Slots[0].Full = saved.Contains('L');
+                Slots[1].Full = saved.Contains('R');
                 Restored = false;
                 SceneStart = NextBeltSearch = Time.time;
             }
+            CheckpointRestoreAt = float.PositiveInfinity;
             if (Alive(Template)) return;
             var crowbar = GameObject.Find(CrowbarName);
             if (crowbar == null) return;
@@ -183,6 +192,12 @@ namespace BillyClubs
                 Restored = true;
                 if (Slots[0].Full || Slots[1].Full) FillHolsters(false);
             }
+            if (Time.time >= CheckpointRestoreAt && Alive(Belt))
+            {
+                CheckpointRestoreAt = float.PositiveInfinity;
+                try { RestoreCheckpointClubs(); }
+                catch (Exception e) { Log.Error($"checkpoint club restore failed: {e}"); }
+            }
 
             for (int i = 0; i < Clubs.Count; i++)
             {
@@ -206,6 +221,8 @@ namespace BillyClubs
                 if (k.In != null && !held) KeepOnBelt(k);
                 k.Held = held;
             }
+
+            UpdateDoorKicks();
         }
 
         static bool KeyPressed()
@@ -286,6 +303,48 @@ namespace BillyClubs
             SaveSlots();
             if (!fromKey) Log.Msg($"restored {n} holstered club(s)");
             else Log.Msg(recalled + n == 0 ? "clubs: nothing to do (both holstered, or held in your hands)" : $"clubs: {recalled} brought back to the holsters, {n} new");
+        }
+
+        // The game can restart a contract in the same scene. Its player loadout is reloaded,
+        // but loose clubs are still where they fell; no OnSceneWasInitialized runs then.
+        internal static void PlayerLoadoutReset(ANBGameLogic game)
+        {
+            if (!Alive(game) || game.IsRangeScene) return;
+            CheckpointRestoreAt = Time.time + 1f;
+        }
+
+        static void RestoreCheckpointClubs()
+        {
+            if (!Alive(Template) || !Alive(Belt)) return;
+            var saved = SavedSlots.Value ?? "";
+            int recalled = 0, spawned = 0;
+            foreach (var s in Slots)
+            {
+                bool wanted = saved.Contains(s == Slots[0] ? 'L' : 'R');
+                if (!wanted) continue;
+                if (Alive(s.Club?.Go)) { s.Full = true; continue; }
+                s.Club = null;
+                Club k = null;
+                foreach (var candidate in Clubs)
+                {
+                    if (!Alive(candidate.Go) || candidate.In != null || OnBack(candidate.Go)) continue;
+                    k = candidate;
+                    break;
+                }
+                if (k != null)
+                {
+                    try { if (IsHeld(k.Grab)) k.Grab.ForceRelease(); } catch { }
+                    k.Held = false;
+                    recalled++;
+                }
+                else
+                {
+                    k = NewClub("BillyClub-" + s.Name, s.Anchor.position, s.Anchor.rotation);
+                    spawned++;
+                }
+                Holster(k, s, false);
+            }
+            Log.Msg($"checkpoint loadout: {recalled} loose club(s) recalled, {spawned} spawned into leg holsters");
         }
 
         static Slot FreeSlot()
@@ -453,6 +512,10 @@ namespace BillyClubs
 
         static void SaveSlots()
         {
+            // Match the game's loadout policy: contract combat must not overwrite
+            // the equipment prepared in The Range before entering the level.
+            var game = ANBStaticGameManager.ANBmain;
+            if (!Alive(game) || !game.gameStarted || !game.IsRangeScene) return;
             var v = (Slots[0].Full ? "L" : "") + (Slots[1].Full ? "R" : "");
             if (SavedSlots.Value == v) return;
             SavedSlots.Value = v;
@@ -760,6 +823,16 @@ namespace BillyClubs
                 return false;
             }
             catch { return true; }
+        }
+    }
+
+    [HarmonyLib.HarmonyPatch(typeof(ANBGameLogic), nameof(ANBGameLogic.resetPlayerLoadout))]
+    static class PlayerLoadoutResetPatch
+    {
+        static void Postfix(ANBGameLogic __instance)
+        {
+            try { BillyClubsMod.PlayerLoadoutReset(__instance); }
+            catch (Exception e) { MelonLogger.Error($"[BillyClubs] checkpoint reset: {e}"); }
         }
     }
 }

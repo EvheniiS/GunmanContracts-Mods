@@ -31,7 +31,8 @@ always knows where to find the same information.
   | Knee Shot Stun | `https://www.nexusmods.com/gunmancontractsstandalone/mods/26` |
   | Mod Settings | `https://www.nexusmods.com/gunmancontractsstandalone/mods/28` |
   | Weapon Framework | `https://www.nexusmods.com/gunmancontractsstandalone/mods/29` |
-  | everything else (Heavy Melee, Throw Assist, Daredevil, Gloves, Physical Dodge, Enemy Awareness
+  | Gloves | `https://www.nexusmods.com/gunmancontractsstandalone/mods/32` |
+  | everything else (Heavy Melee, Throw Assist, Daredevil, Physical Dodge, Enemy Awareness
     Fix, Grab Log, Grab Fix, ...) | `https://github.com/EvheniiS/GunmanContracts-Mods` (no per-mod subfolder link is recorded anywhere, so link the repo root) |
 - Changelog is a spoiler, newest version first, only added once there's a second version; each
   entry is `[b]New:[/b]` / `[b]Fixed:[/b]` items, not prose paragraphs.

@@ -31,7 +31,7 @@ The [b]Color[/b] setting defaults to [b]Default[/b], which preserves the game's 
 Cycle colours in Mod Settings, or enter a custom [b]#RRGGBB[/b] value in the cfg. Reset returns to original game colours. Existing red/custom configurations stay custom until you reset them.
 
 [size=4][b]Loadout saving[/b][/size]
-Placing a gun or knife in a holster [b]in The Range[/b] schedules a loadout save about a second later. Contract holster activity does not trigger this automatic save, so putting a knife away while a pistol is drawn does not overwrite your prepared loadout with an empty pistol slot.
+Placing a gun or knife in a holster [b]in The Range[/b] schedules a loadout save about a second later. Contract holster activity does not trigger this automatic save, so putting a knife away while a pistol is drawn does not overwrite your prepared loadout with an empty pistol slot. Registered mod-item back slots also save in The Range and restore their prepared items after a same-scene checkpoint retry, including Weapon Framework's crowbar.
 
 [size=4][b]Install[/b][/size]
 [b]Find the game folder:[/b] Steam → right-click [i]Gunman Contracts - Stand Alone[/i] → [i]Manage[/i] → [i]Browse local files[/i].
@@ -48,7 +48,7 @@ Extract the ZIP's [b]Mods[/b] folder into the game folder. You should have:
 Mods\VRHolsterCustomization.dll
 Mods\ModSettings.dll
 [/code]
-[b]4.[/b] Start the game. The console should list [b]VR Holster Customization v0.2.1[/b] and Mod Settings.
+[b]4.[/b] Start the game. The console should list [b]VR Holster Customization v0.2.2[/b] and Mod Settings.
 
 [b]Troubleshooting[/b]
 [list]

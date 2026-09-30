@@ -4,7 +4,7 @@ using Il2CppHurricaneVR.Framework.Core.Grabbers;
 using MelonLoader;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(VRHolsterCustomization.VRHolsterCustomizationMod), "VR Holster Customization", "0.2.1", "Evgeeso")]
+[assembly: MelonInfo(typeof(VRHolsterCustomization.VRHolsterCustomizationMod), "VR Holster Customization", "0.2.2", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 [assembly: MelonAdditionalDependencies("ModSettings")]
 
@@ -68,6 +68,16 @@ namespace VRHolsterCustomization
             }
             catch (Exception e) { VRHolsterCustomizationMod.Log.Warning($"grab: {e.Message}"); }
             return true;
+        }
+    }
+
+    [HarmonyLib.HarmonyPatch(typeof(Il2Cpp.ANBGameLogic), nameof(Il2Cpp.ANBGameLogic.resetPlayerLoadout))]
+    static class BackLoadoutResetPatch
+    {
+        static void Postfix(Il2Cpp.ANBGameLogic __instance)
+        {
+            try { Holsters.PlayerLoadoutReset(__instance); }
+            catch (Exception e) { VRHolsterCustomizationMod.Log.Error($"checkpoint back holsters: {e}"); }
         }
     }
 }

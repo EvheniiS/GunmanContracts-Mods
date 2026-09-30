@@ -9,6 +9,55 @@ release DLL + Nexus BBCode in `release/BetterBow/` (see Source control).
 Engine: **Unity 6000.0.41f1, IL2CPP** (metadata v31), built on the **HurricaneVR** framework.
 Developer string: `ANB_Seth`. Game logic lives in `HurricaneVR.Framework.dll` (classes prefixed `ANB*`).
 
+## Daredevil 1.0.0 first-release package (Sep 30 2026)
+
+The 0.4.0 source was renamed to 1.0.0 for the first public release. A Release build using the
+local game installation completed with zero warnings/errors (latest MelonLoader log: game 0.3.1.0).
+`release/Daredevil/Daredevil.dll` and `Daredevil-1.0.0.zip` were prepared; the ZIP contains only
+`Mods/Daredevil.dll`, byte-identical to the release DLL. The 0.4.0 ZIP and the pre-fix 1.0.0
+package are retained for rollback. Nothing has been uploaded or tagged yet.
+
+**Leg holster death/retry fix, game 0.3.1.0:** the user reported that clubs from the leg holsters
+were missing after death in a contract and clarified that the level remains loaded: loose clubs
+are still lying where they fell. Source audit found `[BillyClubs] SavedHolsters` was rewritten on
+every belt draw. Daredevil now persists this loadout only in The Range and rereads saved belt
+occupancy when a new player rig loads. Game metadata and earlier binary research identify
+`ANBGameLogic.resetPlayerLoadout` as the game's saved-loadout reload path from `resetScene`.
+Daredevil also hooks that method to recall loose clubs after a same-scene contract restart.
+The revised 1.0.0 build completed with zero warnings/errors, is installed, and is packaged.
+The test prepared clubs in the leg holsters in The Range before entering the contract.
+The Sep 30 game log (`MelonLoader/Logs/26-9-30_17-58-16.log`) confirms same-scene checkpoint
+restores at 18:06:00 (2 loose clubs recalled) and 18:07:39 (1 recalled, 1 spawned); the user
+confirmed the leg holster fix worked. The installed 1.0.0 test DLL includes a separate club door
+kick change from another agent. It opened marked doors at 17:59:57, 17:59:59 and 18:01:30.
+After the second checkpoint reset, A/X attempts from held clubs returned `no marked door in range`
+while both `[BillyClubs] ClubDoorKick` and the game's `useVRDoorKick` were on. The log does not
+distinguish aim/range from door marker state; door-kick behavior after a checkpoint needs follow-up.
+
+**Back holster precaution:** source audit found `[VRHolsters_BackSlots] SavedBackHolsters` was
+also rewritten on every back-slot draw. VR Holster Customization 0.2.2 now persists these mod-item
+back slots only in The Range. Its test build was built and installed; the user will test back
+holsters separately. Its same-scene checkpoint behavior is still unverified. The 0.2.1 release
+package remains unchanged.
+
+**Later Sep 30 follow-up:** the user confirmed the leg-holster checkpoint fix, but a Weapon Framework
+crowbar saved in the right back holster did not return on a same-scene checkpoint reset. The saved
+preference was `R=Crowbar`; Weapon Framework had registered the kind and tracked the live item.
+VR Holster Customization previously ran back-slot `Restore()` only after a scene load. The 0.2.2
+test build now hooks `ANBGameLogic.resetPlayerLoadout` and recalls the tracked or drawn item after
+the game's own loadout reset, spawning only when no live item is available. Build succeeded with
+zero warnings/errors and was installed while the game was closed; VR verification is pending.
+The 0.2.1 public release package is unchanged.
+
+The same session's Throw Assist log showed pistol releases at 3.8 and 5.3 m/s rejected by its
+6 m/s mod gate, while an assisted 6.3 m/s pistol flew at only 6 m/s. The user requested a general
+4 m/s trigger. A private 0.2.2 test build now uses a 4 m/s activation setting for pistols and
+other props (still subject to the game's gate) and a 13 m/s pistol-only assisted flight floor.
+Knives retain their already-lower game threshold of about 3.5 m/s. Build succeeded with zero
+warnings/errors and was installed while the game was closed. The local `MinAssistSpeed` preference
+was changed from 6 to 4 m/s; the previous preference file and both previous DLLs are backed up
+under the game's `ModBackups/Codex-backslot-pistol-20260930-185549/`. Gameplay feel remains unverified.
+
 ## ★★★ Daredevil is the ONE package; standalone Billy Clubs / Radar Sense are LEGACY (Sep 28 2026)
 
 His decision: stop maintaining two separate mods. **All club, glove, radar-sense and club-glow work happens in
@@ -2141,3 +2190,9 @@ Research on the local Gunman Contracts 0.3.1.0 installation (`GameAssembly.dll` 
 - `ANBContractTerminal.buttonEnemiesAdd` increments `ANBGameLogic.CD_totalSpawns` (float, offset `0x1498`) and clamps it to the selected `ANBContractData.maxTakedownEnemies` (float, offset `0xB4`). `buttonEnemiesSub` similarly clamps to `minTakedownEnemies` (`0xB8`). `updateContractInfo` clamps to both bounds again and copies the selected count to `currentTakedownEnemies` (`0xBC`).
 - `ANBContractData`'s constructor defaults `maxTakedownEnemies` to 40. Given the reported 30 limit, a serialized value on the challenge data is the likely source; the value on that asset has not been extracted independently. `ANBNpcSpawner.maxEnemiesAtOnce` is 0 in previous local challenge logs; it is a separate simultaneous-enemy setting.
 - `ChallengeNpcLimit.dll` raises `maxTakedownEnemies` on takedown-available challenge data to the configured value (60 by default). It patches data initialization and the terminal paths that clamp the count. Build: Release, zero warnings/errors. Installed for local testing; selecting and playing >30 enemies has not yet been verified in game.
+
+## Sep 30 2026 release preparation (game 0.3.1.0)
+
+The user confirmed the VR Holster Customization 0.2.2 back-slot checkpoint reset in game, including the crowbar. Daredevil 1.0.0 club door kicks worked repeatedly with A/X; some steel doors did not expose a usable marked kick point. The 1.0.0 ZIP now includes the tested door-kick code and the earlier confirmed club-leg checkpoint fix.
+
+Throw Assist 0.2.2 now defaults to 3.5 m/s for both pistol and other-prop assist gates; knives continue to use the game's own 3.5 m/s gate. Its optional knee assist remains off by default. These three builds passed with zero warnings and errors, were packaged and installed after backup. The 3.5 m/s change itself has not yet been tested in VR.

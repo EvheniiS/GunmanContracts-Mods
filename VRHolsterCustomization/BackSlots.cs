@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using Il2Cpp;
 using Il2CppHurricaneVR.Framework.Core;
 using Il2CppHurricaneVR.Framework.Core.Grabbers;
 using Il2CppHurricaneVR.Framework.Core.Utils;
@@ -51,6 +52,7 @@ namespace VRHolsterCustomization
         static readonly Slot[] slots = { new() { Name = "back-left", Key = "L", Left = true }, new() { Name = "back-right", Key = "R", Left = false } };
         static readonly HashSet<IntPtr> ignoresPlayer = new();
         static readonly List<GameObject> tracked = new();   // items whose release this mod watches
+        static readonly List<GameObject> drawn = new();     // back items that may still exist after a checkpoint reset
         static readonly Dictionary<IntPtr, bool> wasHeld = new();
 
         static MelonPreferences_Entry<bool> Enabled;
@@ -59,6 +61,7 @@ namespace VRHolsterCustomization
         static MelonPreferences_Category cat;
 
         static float sceneStart, nextSearch;
+        static float checkpointRestoreAt = float.PositiveInfinity;
         static bool restored, loggedSockets;
 
         // Pose defaults from the 0.2.2 test (~50 draws): the palm met the item ~22 cm nearer the spine, ~18 cm below and
@@ -166,7 +169,15 @@ namespace VRHolsterCustomization
             }
             sceneStart = nextSearch = Time.time;
             restored = false;
+            checkpointRestoreAt = float.PositiveInfinity;
+            drawn.Clear();
             ignoresPlayer.Clear();
+        }
+
+        internal static void PlayerLoadoutReset(ANBGameLogic game)
+        {
+            if (Enabled == null || !Enabled.Value || !VRHolsterCustomizationMod.Alive(game) || game.IsRangeScene) return;
+            checkpointRestoreAt = Time.time + 1f;
         }
 
         internal static void Tick()
@@ -209,6 +220,12 @@ namespace VRHolsterCustomization
                 restored = true;
                 Restore();
             }
+            if (Time.time >= checkpointRestoreAt && VRHolsterCustomizationMod.Alive(slots[0].Socket)
+                && VRHolsterCustomizationMod.Alive(slots[1].Socket))
+            {
+                checkpointRestoreAt = float.PositiveInfinity;
+                RestoreCheckpoint();
+            }
         }
 
         // A hand (or anything) grabs an item in a back holster: out it comes.
@@ -220,6 +237,7 @@ namespace VRHolsterCustomization
             {
                 if (!VRHolsterCustomizationMod.Alive(s.Item) || !t.IsChildOf(s.Item.transform)) continue;
                 var item = s.Item; var kind = s.Kind;
+                if (!drawn.Exists(go => VRHolsterCustomizationMod.Alive(go) && go.Pointer == item.Pointer)) drawn.Add(item);
                 s.Item = null; s.Kind = null;
                 Dock.Unpin(item);
                 HolsterLog.ModHolster(s.Name, Label(kind, item), false);
@@ -518,6 +536,10 @@ namespace VRHolsterCustomization
 
         static void Save()
         {
+            // A contract retry restores the loadout prepared in The Range. Drawing,
+            // re-holstering or losing an item during combat changes only live slots.
+            var game = ANBStaticGameManager.ANBmain;
+            if (!VRHolsterCustomizationMod.Alive(game) || !game.gameStarted || !game.IsRangeScene) return;
             var parts = new List<string>();
             foreach (var s in slots)
             {
@@ -574,6 +596,56 @@ namespace VRHolsterCustomization
                 if (!known) pending[kv[0]] = kv[1];
             }
             Save();
+        }
+
+        static void RestoreCheckpoint()
+        {
+            var want = Saved.Value ?? "";
+            if (want.Length == 0) return;
+            var done = new List<string>();
+            foreach (var part in want.Split(';'))
+            {
+                var kv = part.Split('=');
+                if (kv.Length != 2) continue;
+                Slot s = kv[0] == "L" ? slots[0] : kv[0] == "R" ? slots[1] : null;
+                if (s == null) continue;
+                HolsterKind kind = null;
+                foreach (var k in kinds) if (k.Id == kv[1]) { kind = k; break; }
+                if (kind == null) { done.Add($"{s.Name} '{kv[1]}' unavailable"); continue; }
+                if (VRHolsterCustomizationMod.Alive(s.Item))
+                {
+                    done.Add($"{s.Name} already holds {Label(s.Kind, s.Item)}");
+                    continue;
+                }
+                s.Item = null; s.Kind = null;
+                if (!Free(s)) { done.Add($"{s.Name} blocked by {GameGun(s)}"); continue; }
+
+                GameObject item = Existing(kind);
+                bool reused = VRHolsterCustomizationMod.Alive(item);
+                if (!reused)
+                    try { item = kind.Spawn?.Invoke(); }
+                    catch (Exception e) { VRHolsterCustomizationMod.Log.Error($"checkpoint '{kind.Id}' spawn: {e.Message}"); }
+                if (!VRHolsterCustomizationMod.Alive(item)) { done.Add($"{s.Name} '{kind.Id}' unavailable"); continue; }
+                Put(s, item, kind);
+                pending.Remove(s.Key);
+                done.Add($"{s.Name} {kind.Id} {(reused ? "recalled" : "spawned")}");
+            }
+            VRHolsterCustomizationMod.Log.Msg("checkpoint back holsters: " + string.Join(", ", done));
+        }
+
+        static GameObject Existing(HolsterKind kind)
+        {
+            foreach (var item in drawn)
+                if (Available(item, kind)) return item;
+            foreach (var item in tracked)
+                if (Available(item, kind)) return item;
+            return null;
+        }
+
+        static bool Available(GameObject item, HolsterKind kind)
+        {
+            if (!VRHolsterCustomizationMod.Alive(item) || Holds(item)) return false;
+            try { return kind.IsMine(item); } catch { return false; }
         }
 
         // Saved sides whose item isn't on the back yet (not made yet, or its mod isn't loaded): key -> kind id.

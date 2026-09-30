@@ -1,7 +1,7 @@
 using System;
 using MelonLoader;
 
-[assembly: MelonInfo(typeof(BillyClubs.BillyClubsMod), "Daredevil", "0.4.0", "Evgeeso")]
+[assembly: MelonInfo(typeof(BillyClubs.BillyClubsMod), "Daredevil", "1.0.0", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace BillyClubs

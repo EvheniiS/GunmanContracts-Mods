@@ -1,10 +1,8 @@
 # Throw Assist: Nexus upload sheet
 
-**Status: 0.2.1 packaged release candidate. The 2026-09-30 session selected 25° for head aim. Not uploaded yet.**
+**Status: 0.2.2 packaged release candidate with 3.5 m/s default assist gates. Not uploaded yet.**
 
-The description now mentions the private 0.2.2 knee-assist experiment, explicitly outside the 0.2.1 package.
-Keep that experimental build private for now. Its `allowKneeHit` default remains false; no package replacement
-or public 0.2.2 release is implied by this description update.
+Optional knee assist is included but off by default and remains experimental.
 
 Required by Daredevil's description — upload this one first, or in the same sitting as Daredevil.
 
@@ -12,14 +10,14 @@ Required by Daredevil's description — upload this one first, or in the same si
 
 | File | What |
 |---|---|
-| `ThrowAssist-0.2.1.zip` | current upload: contains only `Mods/ThrowAssist.dll`; 12,121 bytes; sha256 `81C76E66FB6B8C7A7BE0822617B5D73B6D1F867A5FACEB26E1BD7347799103F9` |
-| `ThrowAssist.dll` | current 0.2.1 build; 27,648 bytes; sha256 `BEB3A859A2A5E6F61F926CCA9408C8B964129536CF1104B1D9227E0F92F8FCA3` |
-| `ThrowAssist-0.2.0.zip` | previous package; keep for rollback, do not upload as 0.2.1 |
-| `NEXUS_DESCRIPTION.txt` | page text for 0.2.1 (BBCode) |
+| `ThrowAssist-0.2.2.zip` | current upload candidate: contains only `Mods/ThrowAssist.dll`; 14,362 bytes; sha256 `F95C835501B9E6EE5226F6EC1E68592E46B5BBF6E8971FBF4A6B75B59594EC2E` |
+| `ThrowAssist.dll` | current 0.2.2 build; 32,768 bytes; sha256 `EB2A926A1F3E36CED4CE684B7440DC83FC88429E53A3F94B8918A156EDF17872` |
+| `ThrowAssist-0.2.0.zip` and `ThrowAssist-0.2.1.zip` | previous packages; keep for rollback |
+| `NEXUS_DESCRIPTION.txt` | page text for 0.2.2 (BBCode) |
 
 Rebuild:
 ```powershell
-dotnet build ThrowAssist/ThrowAssist.csproj -c Release -o feature/ThrowAssist-0.2.1-release-build --no-restore
+dotnet build ThrowAssist/ThrowAssist.csproj -c Release -o feature/ThrowAssist-0.2.2-release-build --no-restore
 ```
 then copy the DLL here and zip it as `Mods/ThrowAssist.dll`.
 
@@ -29,7 +27,7 @@ then copy the DLL here and zip it as `Mods/ThrowAssist.dll`.
 |---|---|
 | Mod name | `Throw Assist` |
 | Author | `Evgeeso` |
-| Version | `0.2.1` |
+| Version | `0.2.2` |
 | Category | Gameplay |
 | Language | English |
 | Tags | VR, Weapons, Gameplay |
@@ -48,6 +46,6 @@ then copy the DLL here and zip it as `Mods/ThrowAssist.dll`.
 - [x] Review 2026-09-30 throw log: 25° head aim selected; assisted knife stabs are consistent. No assisted face-bounce failure was observed.
 - [x] Test direct Billy Club throws with the matching Daredevil build and select 25° maximum turn. Ricochet aiming keeps its separate setting.
 - [ ] Decide it feels solid enough to publish.
-- [ ] Tag: `git tag throwassist-v0.2.1` and push the tag.
+- [ ] Tag: `git tag throwassist-v0.2.2` and push the tag.
 - [ ] README status → released, with the Nexus link; add the link to the table in
       `release/NEXUS_TEMPLATE.txt`, and backfill it into Daredevil's `NEXUS_DESCRIPTION.txt`.

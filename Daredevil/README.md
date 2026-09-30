@@ -1,7 +1,20 @@
-# Daredevil 0.4.0
+# Daredevil 1.0.0
+
+Version 1.0.0 saves the club belt loadout in The Range. Drawing or losing clubs during a
+contract changes the live holsters but should not change the loadout restored on a death/retry.
+When the game resets its player loadout without reloading the scene, Daredevil recalls loose clubs
+to the saved leg holsters. The 2026-09-30 contract test confirmed that clubs returned on two
+same-scene checkpoint resets.
+
+**Club door kick:** while holding a Billy Club, press **A** on the right controller or
+**X** on the left while aiming the controller at the door's marked kick point. This calls the game's VR door-kick
+routine, so its VR door-kick setting and range apply. `[BillyClubs] ClubDoorKick` enables it (default `true`). A
+successful kick is logged; with `[BillyClubs] DebugLog = true`, presses that find no marked door are logged too.
+The 2026-09-30 playtest confirmed successful kicks. Some steel doors returned `no marked door in range`
+when the game did not expose a kick point; aim at the marked point when it appears.
 
 The tested direct club-assist turn limit is 25° by default (`[BillyClubs] ThrowAssistMaxTurnAngle`).
-Throw Assist 0.2.1 uses a matching 25° limit for head aim. Existing saved preferences keep their
+Throw Assist 0.2.2 uses a matching 25° limit for head aim. Existing saved preferences keep their
 values until changed.
 
 The Daredevil package, one DLL: **billy clubs** (from the crowbar: belt holsters, F8 recall, spin styles, ricochets,

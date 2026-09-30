@@ -10,6 +10,7 @@ Fight with a pair of [b]billy clubs[/b], send them into [b]ricochet throws[/b], 
 [*]Club hits to the legs drop enemies to one knee. Thrown body hits also make them kneel by default; choose a standing stun, knockdown, or the game's short flinch instead.
 [*]Body hits can knock an enemy out when their health runs out.
 [*]Press F8 to recall the pair into your club holsters, replacing missing clubs.
+[*]While holding a club, press A on the right controller or X on the left to kick open a doorway. Aim your controller knuckle at the marked kick point; the game's VR door-kick setting and range apply.
 [/list]
 
 [size=4][b]Radar sense[/b][/size]
@@ -26,7 +27,7 @@ The game's normal crowbar remains available.
 [size=4][b]Required companion mods[/b][/size]
 Install these separately alongside Daredevil:
 [list]
-[*][url=https://github.com/EvheniiS/GunmanContracts-Mods][b]Gloves[/b][/url] — dark red gloves by default, with colour changes available in VR.
+[*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/32][b]Gloves[/b][/url] — dark red gloves by default, with colour changes available in VR.
 [*][url=https://github.com/EvheniiS/GunmanContracts-Mods][b]Throw Assist[/b][/url] — assisted pistol throws with damage and stagger. Billy club throws are handled by Daredevil itself.
 [*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28][b]Mod Settings[/b][/url] — the in-VR settings board for changing the clubs, radar sense, and companion mods.
 [/list]
@@ -43,9 +44,10 @@ For the full Daredevil experience, I highly recommend all three. [b]None is requ
 [size=4][b]Other optional companions[/b][/size]
 [list]
 [*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/29][b]Weapon Framework[/b][/url] — adds Billy Clubs to the arsenal panel in The Range. Page to them, press Retrieve, and take the pair from the wall. Without it, use F8 after visiting The Range.
+[*][url=https://github.com/EvheniiS/GunmanContracts-Mods][b]VR Holster Customization[/b][/url] — adds club back slots and tints the club holster tubes. Weapon Framework 0.3.0 also requires this mod.
 [*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/26][b]Knee Shot Stun[/b][/url] — extends the kneeling reaction used by club leg hits and the Kneel throw reaction.
 [/list]
-GitHub links open the shared project repository; Gloves and Throw Assist aren't on Nexus yet.
+GitHub links open the shared project repository for companions without a Nexus link here.
 
 [size=4][b]Install[/b][/size]
 Takes about 5 minutes the first time. Steps 1 and 2 are needed only once, for all MelonLoader mods.
@@ -69,7 +71,7 @@ You should end up with: [i]Gunman Contracts - Stand Alone\Mods\Daredevil.dll[/i]
 Install the required companion DLLs listed above into the same Mods folder. Remove legacy BillyClubs.dll and RadarSense.dll if present.
 
 [b]4. Check it works[/b]
-Start the game. The MelonLoader console lists [b]Daredevil v0.4.0[/b] among the loaded mods.
+Start the game. The MelonLoader console lists [b]Daredevil v1.0.0[/b] among the loaded mods.
 
 [b]Not working?[/b]
 [list]

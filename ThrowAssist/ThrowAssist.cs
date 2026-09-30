@@ -38,7 +38,7 @@ namespace ThrowAssist
     {
         internal static MelonLogger.Instance Log;
         internal static MelonPreferences_Entry<bool> PistolAssist, PistolDamage, PistolStagger, SteerOtherItems, AimHead, DebugLog, KnifeVerticalSpin, AllowKneeHit;
-        internal static MelonPreferences_Entry<float> MinAssistSpeed, MaxSpeed, SearchDistance, MaxFlyDistance, PistolThrowDamage, KnifeSpeedMultiplier, HeadAimMaxAngle, KneeAimMaxAngle;
+        internal static MelonPreferences_Entry<float> MinAssistSpeed, PistolAssistMinSpeed, PistolSteerMinSpeed, MaxSpeed, SearchDistance, MaxFlyDistance, PistolThrowDamage, KnifeSpeedMultiplier, HeadAimMaxAngle, KneeAimMaxAngle;
         internal static bool Dbg => DebugLog.Value;
 
         public override void OnInitializeMelon()
@@ -47,7 +47,9 @@ namespace ThrowAssist
             var c = MelonPreferences.CreateCategory("ThrowAssist", "Throw Assist");
             PistolAssist = c.CreateEntry("PistolAssist", true, description: "Thrown pistols home in on enemies. The game ships its pistol assist switched off. Needs the game's own assisted throw option on.");
             SteerOtherItems = c.CreateEntry("SteerOtherItems", true, description: "Use velocity steering for knives and other items with the game's assisted-throw component. Billy Clubs keep their own assist. Existing saved preferences retain their value.");
-            MinAssistSpeed = c.CreateEntry("MinAssistSpeed", 6f, description: "A pistol or other item thrown slower than this (m/s) gets no assist and just flies. Knives use the game's own threshold (3.5).");
+            MinAssistSpeed = c.CreateEntry("MinAssistSpeed", 3.5f, description: "A non-pistol prop thrown slower than this (m/s) gets no assist. Knives use the game's own threshold; pistols use PistolAssistMinSpeed.");
+            PistolAssistMinSpeed = c.CreateEntry("PistolAssistMinSpeed", 3.5f, description: "Minimum pistol release speed (m/s) for assist, never below the game's own assisted-throw threshold. Soft throws above this can still be steered.");
+            PistolSteerMinSpeed = c.CreateEntry("PistolSteerMinSpeed", 13f, description: "Minimum flight speed (m/s) for a pistol after assist finds a target. It does not change unassisted throws.");
             MaxSpeed = c.CreateEntry("MaxSpeed", 18f, description: "An assisted item flies at your own throw speed, up to this (m/s).");
             KnifeSpeedMultiplier = c.CreateEntry("KnifeSpeedMultiplier", 1f, description: "Knife flight speed relative to that knife's own game assist speed (normally 17 m/s). 1 matches the game; increase only if logged face impacts are too slow to stab.");
             KnifeVerticalSpin = c.CreateEntry("KnifeVerticalSpin", true, description: "On knife throws with no assist target, turn the release spin into an end-over-end tumble in the throw's vertical plane. Assisted knives stay blade first. Off keeps the hand's original spin.");
@@ -131,7 +133,8 @@ namespace ThrowAssist
             preV = rb.linearVelocity; preW = rb.angularVelocity;
             // Knives keep the game's own threshold (assistedThrowAtVelocity, 3.5 m/s): the game assists them from there.
             bool knife = gun == null && IsKnife(ato);
-            bool assist = (knife || preV.magnitude >= ThrowAssistMod.MinAssistSpeed.Value) && (gun == null || ThrowAssistMod.PistolAssist.Value);
+            float threshold = gun != null ? Mathf.Max(GameThreshold(), ThrowAssistMod.PistolAssistMinSpeed.Value) : ThrowAssistMod.MinAssistSpeed.Value;
+            bool assist = (knife || preV.magnitude >= threshold) && (gun == null || ThrowAssistMod.PistolAssist.Value);
             // A soft toss isn't a throw at anyone. Pistols are switched on here (the game ships them off).
             if (gun != null) ato.dontUse = !assist;
             else if (!assist) ato.dontUse = true;   // restored below; the game would still drag a slow throw
@@ -163,7 +166,7 @@ namespace ThrowAssist
             var knife = pistol ? null : ato.GetComponent<ANBKnife>() ?? ato.GetComponentInParent<ANBKnife>();
             if (sp < MinThrowSpeed || (!pistol && knife == null && target == null && !ThrowAssistMod.AllowKneeHit.Value))
             {
-                if (ThrowAssistMod.Dbg) W($"{(pistol ? "pistol" : knife != null ? "knife" : "item")} '{ato.name}' released at {sp:0.0} m/s: {(pistol && !ThrowAssistMod.PistolAssist.Value ? "PistolAssist off" : NoAssist(sp, knife != null))}; game threshold {GameThreshold():0.0}, item speed {ato.speed:0.0}, dontUse {ato.dontUse}");
+                if (ThrowAssistMod.Dbg) W($"{(pistol ? "pistol" : knife != null ? "knife" : "item")} '{ato.name}' released at {sp:0.0} m/s: {(pistol && !ThrowAssistMod.PistolAssist.Value ? "PistolAssist off" : NoAssist(sp, knife != null, pistol))}; game threshold {GameThreshold():0.0}, item speed {ato.speed:0.0}, dontUse {ato.dontUse}");
                 return;
             }
 
@@ -184,7 +187,7 @@ namespace ThrowAssist
                 var npc = target.GetComponentInParent<ANBBasicNPC>();
                 f.Target = npc; f.AimT = target;
                 if (npc != null) ChooseAim(f, npc, rb.worldCenterOfMass, f.Dir);
-                float min = ThrowAssistMod.MinAssistSpeed.Value;
+                float min = pistol ? ThrowAssistMod.PistolSteerMinSpeed.Value : ThrowAssistMod.MinAssistSpeed.Value;
                 f.SteerAt = Mathf.Clamp(sp, min, Mathf.Max(ThrowAssistMod.MaxSpeed.Value, min));
                 if (knife != null) f.SteerAt = Mathf.Max(f.SteerAt, ato.speed * Mathf.Max(0.1f, ThrowAssistMod.KnifeSpeedMultiplier.Value));
                 f.Until = Time.time + ThrowAssistMod.MaxFlyDistance.Value / f.SteerAt + 0.3f;
@@ -194,7 +197,7 @@ namespace ThrowAssist
                 if (knife != null) BladeFirst(f);
                 assist = $"{(npc != null ? "enemy" : "target")} '{(npc != null ? npc.name : target.name)}' {to.magnitude:0.0} m, steered at {f.SteerAt:0} m/s";
             }
-            else assist = pistol && !ThrowAssistMod.PistolAssist.Value ? "none (PistolAssist off)" : NoAssist(sp, knife != null);
+            else assist = pistol && !ThrowAssistMod.PistolAssist.Value ? "none (PistolAssist off)" : NoAssist(sp, knife != null, pistol);
             if (ThrowAssistMod.Dbg) W($"{(pistol ? "pistol" : knife != null ? "knife" : "item")} '{f.Name}' released at {sp:0.0} m/s, assist: {assist}; game threshold {GameThreshold():0.0}, item speed {ato.speed:0.0}, spin {preW.magnitude:0.0} rad/s, aim {f.Aim}");
         }
 
@@ -231,10 +234,12 @@ namespace ThrowAssist
         static bool IsKnife(ANBAssistedThrowingObject ato) =>
             ato.GetComponent<ANBKnife>() != null || ato.GetComponentInParent<ANBKnife>() != null;
 
-        static string NoAssist(float sp, bool knife)
+        static string NoAssist(float sp, bool knife, bool pistol)
         {
             var game = ANBStaticGameManager.ANBmain;
-            return !knife && sp < ThrowAssistMod.MinAssistSpeed.Value ? $"none ({sp:0.0} m/s is below MinAssistSpeed {ThrowAssistMod.MinAssistSpeed.Value:0.#})"
+            float minimum = pistol ? ThrowAssistMod.PistolAssistMinSpeed.Value : ThrowAssistMod.MinAssistSpeed.Value;
+            string setting = pistol ? "PistolAssistMinSpeed" : "MinAssistSpeed";
+            return !knife && sp < minimum ? $"none ({sp:0.0} m/s is below {setting} {minimum:0.#})"
                 : game != null && !game.assistedThrow ? "none (off in the game settings)"
                 : game != null && sp < game.assistedThrowAtVelocity ? $"none ({sp:0.0} m/s is below the game's {game.assistedThrowAtVelocity:0.0})"
                 : "none (no target in view)";

@@ -21,11 +21,13 @@ Sense). Moved out of Billy Clubs 0.10.x.
 
 ## Settings (`[ThrowAssist]`)
 
-`PistolAssist` (on), `SteerOtherItems` (on for new installs), `MinAssistSpeed` (6 m/s for pistols and props),
+`PistolAssist` (on), `SteerOtherItems` (on for new installs), `MinAssistSpeed` (3.5 m/s for non-pistol props),
+`PistolAssistMinSpeed` (3.5 m/s, also subject to the game's assisted-throw threshold),
+`PistolSteerMinSpeed` (13 m/s once a target is found),
 `MaxSpeed` (18 m/s cap for release-speed steering), `KnifeSpeedMultiplier` (1: knife prefab speed floor),
 `KnifeVerticalSpin` (on for unassisted knives), `SearchDistance` (15 m), `MaxFlyDistance` (20 m),
 `AimHead` (**on for new installs**; false disables head selection), `HeadAimMaxAngle` (25 degrees),
-`allowKneeHit` (**experimental, off by default; private 0.2.2 test build**), `KneeAimMaxAngle` (25 degrees),
+`allowKneeHit` (**experimental, off by default; 0.2.2 release candidate**), `KneeAimMaxAngle` (25 degrees),
 `PistolDamage` (on), `PistolThrowDamage` (3), `PistolStagger` (on), `DebugLog` (on for new installs).
 
 Existing values in `MelonPreferences.cfg` are retained when upgrading. In particular, an older file may still
@@ -71,7 +73,8 @@ why steering ended, last speed, and for knives the tip angle, observed body coll
 Pistol hits report damage and health. A knife that hits a face but does not stab can then be distinguished from a
 slow collision, bad blade alignment, or a missed hit zone. `DebugLog` may be turned off after testing.
 
-Speed recap: pistols and props use the hand's release speed clamped to `MinAssistSpeed`–`MaxSpeed`; knives use at
+Speed recap: pistols use the hand's release speed with a `PistolSteerMinSpeed` floor once assisted;
+non-pistol props use `MinAssistSpeed`–`MaxSpeed`. Knives use at
 least `item assist speed × KnifeSpeedMultiplier` while assisted. The game's own assist instead moves a knife at its
 prefab's fixed speed while suppressing velocity and spin. The mod uses velocity steering and aligns an assisted
 knife's stab line each step. `KnifeSpeedMultiplier = 1` is often visually identical to vanilla, especially for
@@ -83,12 +86,13 @@ unlogged. This build records those releases too; face bounces still need an in-g
 
 | Behavior | Game | Throw Assist default |
 |---|---|---|
-| Assisted-throw gate | Game option on and release speed at least the game's threshold (3.5 m/s in prior testing) | Keeps that gate for knives; pistols and props additionally need 6 m/s |
+| Assisted-throw gate | Game option on and release speed at least the game's threshold (3.5 m/s in prior testing) | Keeps the game gate; pistols use `PistolAssistMinSpeed` (3.5 m/s), other props need 3.5 m/s; knives retain the game threshold |
 | Pistol eligibility | Pistol prefabs ship with assist disabled | Enables it when `PistolAssist = true` |
 | Target selection | Game selects by headset view and angle, usually its chest target | Keeps game selection; release direction chooses head or chest, plus optional knees with `allowKneeHit` |
 | Search / flight distance | Item-specific overrides; pistol/crowbar values observed at 6 m / 4 m | 15 m / 20 m |
 | Knife flight speed | Tested combat knife assist uses 17 m/s | At least prefab speed × 1; a faster release may use up to `MaxSpeed` |
 | Knife orientation | Game's assisted coroutine controls rotation and removes spin | Assisted: blade first. No target: optional vertical tumble from the release spin |
+| Pistol assisted flight | Game assist is disabled on pistol prefabs | At least 13 m/s after acquiring a target (0.2.2 release candidate) |
 | Pistol impact | Weak game melee hit, generally no stagger | Configurable damage and stagger |
 
 HurricaneVR computes the object's release velocity from recent hand motion when the grip opens. Throw Assist does

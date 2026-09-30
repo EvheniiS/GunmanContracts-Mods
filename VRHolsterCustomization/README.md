@@ -1,4 +1,4 @@
-# VR Holster Customization 0.2.1
+# VR Holster Customization 0.2.2 (release candidate)
 
 This MelonLoader mod customizes the game's hip, knife, and back holsters and requires Mod Settings. It also owns the back slots for mod items, their grab and draw behavior, and their saved state. Weapon Framework uses its docking API for wall items and its back slot API for the test crowbar. Daredevil uses the back slot API for clubs.
 
@@ -39,6 +39,11 @@ their separate settings. Use each position row's Reset in Mod Settings to undo a
 ## Game loadout saving
 
 The game normally writes its holster loadout only when using the gun wall or leaving the Range by elevator. Version 0.2.1 saves the loadout one second after placing a gun or knife in a holster **in The Range only**. Contract holster activity no longer overwrites the prepared loadout: putting a knife away while the left pistol is drawn used to save that pistol slot as empty. Pending saves are canceled during scene loads, and restore or removal events do not trigger a save.
+
+Version 0.2.2 also saves mod-item back slots only in The Range. Drawing or losing an item
+during a contract leaves the prepared back-slot loadout available for a death/retry. On a same-scene
+checkpoint reset it reuses a tracked or previously drawn item (including Weapon Framework's crowbar)
+and spawns one only if the original is gone. The user confirmed this fix in game on September 30, 2026.
 
 ## Mod item back slots
 
