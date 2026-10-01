@@ -47,6 +47,7 @@ namespace BillyClubs
             var hand = Alive(grabber) ? grabber.TryCast<HVRHandGrabber>() : null;
             if (hand == null) return;           // the force grab passes it on to a hand right after
             k.HandT = hand.transform; k.HandOk = false;
+            SwingGrabbed(k, grabber);
         }
 
         // Called when a flight starts from a release.

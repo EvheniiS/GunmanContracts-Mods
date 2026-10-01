@@ -395,6 +395,20 @@ it looks right, so the "darker than 0.047" mod idea below is shelved.** Paint is
   block. The same method works for any weapon. **IL2CPP asset files have no type trees**, so the block is
   located by the `designColor1/max1/2/max2` floats and parsed using the field order from `il2.py`.
 
+## ★ Bow model exported for remodelling (Oct 1 2026)
+
+`python il2cpp_tools/export_bow.py` → `BlenderRefs/game/bow/` (git-ignored game assets, never publish).
+Source: `sharedassets2.assets`, `CompoundBow` → `Bow - basecolor` → `HuntingBow` (**SkinnedMeshRenderer**).
+- **One mesh, 38,975 verts / 44,301 faces, one material (`HuntingBowShader`, URP Lit), 28 bones.** Riser, limbs, cams, cables,
+  sight, rest and stabiliser are all in that one mesh; the three paint variants (`Bow - basecolor/black/yellow`) are the **same
+  mesh and the same textures** with a different `_BaseColor` tint (grey 0.368, black 0.085, brown 0.66/0.49/0.25).
+- 1:1 mesh size 0.10 × 0.955 × 0.536 m; the prefab root `CompoundBow` is scaled **0.92** in the game. Limbs run along Unity Y.
+- Textures: `HuntingBow_D` 2048² (base), `_N` 4096² (DXT5nm, converted to plain RGB), `_M` 2048² (R metallic, A smoothness), `_AO` 512².
+- Lower LODs `bow_lod1..3.obj` (31k / 23k / 17k verts) are reference only. `bones.json` has bind-pose joint positions.
+- **A replacement model must keep the rig to animate.** The string/limb flex is skinned to the 28 joints (`botSpine*`, `topSpine*`,
+  `bowClamp_JNT`, `arrowLOCATOR_JNT`, …), so a static remodel only works as a swap of the whole mesh with new weights (or a mod-side
+  static prop). Not attempted.
+
 ## ★ Better Bow 1.1.0 RELEASED (Sep 24 2026)
 
 Tester: **"everything works flawlessly"** on the 1.1.5 test build (throw assist hits reliably, the phone
@@ -2172,6 +2186,16 @@ calls `ANBGameLogic.holsterGun`. → Club holstering = a patch that skips those 
 Back in view, or `outOfViewTime` (0xba4) below the limit → all restored, animator `AlwaysAnimate`. **Any mod that
 reads enemy renderers or bone poses sees hidden, frozen enemies unless it keeps `outOfViewTime` at 0.** Radar Sense does.
 
+**★★ Pooled enemies get a NEW body on respawn (Oct 2 2026, Radar Sense "silhouette vanishes / floating vest").** The same
+`ANBBasicNPC` object is reused across spawns (`#79882` = E15, E52, E121 in one run) and re-dressed: its skinned meshes
+(`CC_Combined_LOD0-4`, clothes, hair) are destroyed and NEW ones with the same names are created. A mod that cached the
+renderer list once points at a dead body: 0 (or only the vest) of N meshes "on" while the game still draws the enemy.
+Between spawns / while idle out of view the enemy is drawn by a plain `CulledMesh` MeshRenderer plus its gun, with every
+skinned mesh off. Radar Sense 0.3.x fix: rescan the enemy (≤ every 2 s, only while it should show and ≤ 2 meshes are on),
+drop dead parts, outline the new ones. Confirmed by the `rescan #id: 23 new renderers ...` log lines; the 01:20 session
+had 0 `NOT DRAWN` lines (was 563 the run before). **Any mod caching an enemy's renderers or bones must re-fetch them.**
+GPU Instancer mod ruled out: it only flags materials instanced and logs `0 skinned meshes skipped`.
+
 ## Throw Assist 0.2.0 (Sep 28 2026): knives fly like the game's knife assist; deployed, untested
 
 **Log from the 19:39 session:** `AimHead` "didn't work" because every throw tested was a **Billy Club**, which Throw
@@ -2234,3 +2258,71 @@ Research on the local Gunman Contracts 0.3.1.0 installation (`GameAssembly.dll` 
 The user confirmed the VR Holster Customization 0.2.2 back-slot checkpoint reset in game, including the crowbar. Daredevil 1.0.0 club door kicks worked repeatedly with A/X; some steel doors did not expose a usable marked kick point. The 1.0.0 ZIP now includes the tested door-kick code and the earlier confirmed club-leg checkpoint fix.
 
 Throw Assist 0.2.2 now defaults to 3.5 m/s for both pistol and other-prop assist gates; knives continue to use the game's own 3.5 m/s gate. Its optional knee assist remains off by default. These three builds passed with zero warnings and errors, were packaged and installed after backup. The 3.5 m/s change itself has not yet been tested in VR.
+
+## Oct 1 2026: club swing feel ("floaty / delayed / keeps going after I stop"): diagnostics added, no fix yet
+
+Report: a fast swing lags the hand a lot, and a fast sideways swing keeps moving and twists back after the hand stops, like a heavy object.
+Clubs are 3 kg already (crowbar 8). Daredevil's `Mass` setting now applies live (also to a club in the hand).
+
+**HVR's chain, from the game's own types (`il2cpp_tools/dumpt.py`):** two soft links, tuned separately.
+- **A, controller → physics hand:** `HVRJointHand` has a `ConfigurableJoint` (`Joint`) on its `RigidBody`, driven by `Strength` (`PDStrength`: Spring, Damper, MaxForce, TorqueSpring/Damper/MaxTorque). `HVRHandStrengthHandler` swaps that strength while something is held (`StrengthOverride`, `HandGrabOverride`, the grabbable's `OneHandStrength`/`TwoHandStrength`) and can also apply `HVRJointSettings` (`CurrentSettings`). The hand body is 20 kg (`StumbleOnRBMass` notes), so a swung club is a small part of the load; a weak MaxForce/Spring is what looks like heaviness.
+- **B, hand → club:** `HVRHandGrabber.Joint`, a `ConfigurableJoint` built from the grabbable's `JointOverride` / `OneHandJointSettings` (`HVRJointSettings`: X/Y/Z drive, SlerpDrive or AngularX/YZ drives, `MassScale`/`ConnectedMassScale`, `CriticalDampPosition`, `DampConnectedBody`). Spring + low damper = the "keeps going, twists back" ringing; low MaxForce = lag.
+- The settings are **ScriptableObjects shared with the other items**: change a clone, never the asset.
+- Candidate levers, in the order to try: club `Mass` (live now) → hand strength while holding a club → B joint spring/damper/massScale → a "stiff grip" that steers the club's velocity to the controller pose each physics step (as Throw Assist steers thrown items), which removes both links but pushes nothing back on the hand.
+
+**`[BillyClubs] SwingLog = true`** (set in his cfg; `SwingLogMinSpeed` 4) writes, from `BillyClubs/SwingLog.cs`:
+- once per grip (identical physics later = one short line): club mass/inertia/COM/drag/max spin, hand body, hand strength + settings now, the grabbable's overrides, and the live drives of both joints, all as spring/damper/maxForce;
+- one line per swing: peak tip speed the hand asks for vs the club reaches, **tip delay in ms split into hand (A) + grip (B)**, max lag in cm and where it peaks, twist in degrees, and after the stop: cm behind/ahead, overshoot cm and when, swing-back count, twist before/after;
+- one line per grip: swing count, delay range, worst lag.
+Method: offsets of tip/axis/hand relative to the controller are measured while the controller is still (0.25 s), then each frame the "ideal" tip (bolted to the controller) is compared with the real one; the delay is the shift that best matches the two paths over the swing. Sampled in `OnLateUpdate` from transforms (what the player sees), unscaled time; slow motion is tagged.
+**Next:** play one session (a few slow and fast swings with each hand), then read the `hold` block and the `swing` lines: if delay is mostly "hand", tune A; if "grip" with overshoot, tune B; if the numbers look small but it feels bad, suspect the view (interpolation) rather than the physics.
+
+### Oct 1 2026 SwingLog result (log `26-10-1_22-49-35.log`, Daredevil built + installed; 76 swing lines, 5 grips)
+
+His verdict: melee is mostly great; the remaining issue is a delay between his movement and the glove. Numbers (90 Hz physics, 11.1 ms step):
+- **Hand strength is the game's default: spring 9000, damper 900, maxF 9000, torque 500/50/75, on a 20 kg body**
+  (`HVR_DefaultHandStrength`; no override while holding a club). That is critically damped at ωn ≈ 21 rad/s, so at an acceleration `a`
+  the hand trails the controller by about `a / ωn²` (100 m/s² → 22 cm); the log shows hand lag max 15-25 cm at fast swings. **Doubling
+  the spring should halve that.** The grab joint to the club is rigid (slerp/angular 100000/1000, projection PositionAndRotation).
+- **Typical swing at 10-20 m/s: tip delay 24-44 ms = hand 16-24 + grip 12-24.** At 20 m/s that is 50-90 cm of tip lag, which
+  matches the logged "lag max 60-90 cm". Light swings (4-7 m/s) are 8-20 ms and 5-20 cm. Overshoot after the stop is small
+  (0-8 cm, 0-1 swing-backs), so the "keeps going like a heavy object" is not a ringing joint.
+- **The mass is not the cause:** club 3 kg, inertia (0, 0.14, 0.14), centre of mass 6 cm from the middle; the drive is the same for an empty hand.
+- Slow motion (x0.22, Radar Sense focus): the few samples show 88-96 ms (hand 40-44), roughly double. Physics steps run at 0.22 of real
+  speed, so in slow motion the hand can only catch up at that rate. Needs more samples before blaming it.
+- Not trustworthy: the first "swing" after a grab often reads 19-21 m/s with the club moving 1-3% (the club was still being drawn
+  or the pose snapped), and a few left-hand lines with 100+ cm lag and 130-180° twist (club knocked out of the grip pose or the baseline taken in a
+  different pose). Treat lines where the club speed is under 15% of the hand's as noise.
+- Hand body interpolation is **None** (club: Interpolate). With 90 Hz physics and a display at another rate, the glove updates in steps
+  while the club is smoothed; to be checked with the new probe, since it adds up to one step of delay and judder.
+
+**Built next (installed, not yet played): `HandProbe.cs`.** Per hand, empty or holding, it follows the raw controller (`TrackedController`), the
+physics target, the 20 kg body and the glove (`HandModel`) and logs, per hand movement over 2.5 m/s (relative to the head): delay in ms and max
+gap in cm of each stage behind the raw controller, plus rotation delay. A one-off `chain` line names the transforms and the body's interpolation.
+And **`[BillyClubs] HandStrengthScale`** (default 1 = unchanged, live, 0.5-4): scales the shared hand strength (spring and force by x, damper by √x, so it stays
+critically damped). It changes both hands and everything they hold. Test order: (1) play at 1 to see the bare-hand delay and which stage owns it;
+(2) set 2, then 3, and compare delay and feel. Grab Fix is acquisition only (detector spheres, buffered presses); it does not touch how a held item or the hand moves.
+
+## ★ Grab Fix 1.1.1 (Oct 1 2026): enemies only grabbable with the palm right on them — UNTESTED
+
+**Report:** while throwing a fist (Heavy Melee) at a standing enemy, the hand grabbed a downed (ragdoll) enemy lying
+nearby, or the face of the enemy being hit. Cause: the widened local pickup sphere (`NearGrabRadius` 0.12, grown to
+span palm + finger side in Both mode) is the real trigger collider, and enemy limbs are ordinary `HVRGrabbable`s, so any
+fist closing within ~12+ cm of a body part hovered and grabbed it.
+- **Fix:** `GrabFixMod.EnemyPart(g)` (`GetComponentInParent<ANBBasicNPC>`) + `EnemyReachable`: in the `HVRHandGrabber.CanHover`
+  postfix an enemy part stays hoverable only if its collider surface is within **`EnemyGrabRadius` (0.10 m, 0 = off; 0.04 was tested and rejected deliberate grabs, since the palm point cannot get closer than ~10 cm to a body surface) of the
+  palm**. `HVRForceGrabber.CanHover` refuses enemy parts outright (no distance grabs on enemies); `Eligible()` refuses them
+  (no buffered / recent-release grabs). Held loose items and docked-item rules are unchanged.
+- **Test:** punch a standing enemy with a downed one at your feet / hold a fist at a face: no grab. Grab a face or arm on
+  purpose with the palm on it: still works. If too strict raise `EnemyGrabRadius` to 0.06; if still grabbing, lower to 0.02.
+
+### Oct 1 2026 (late): club "spins around my hand" after a fast sideways swing: hypothesis from the numbers, flip trace + knobs built and installed, NOT yet played
+
+Log `26-10-1_23-36-10.log` (HandProbe build, settings untouched). Last swings (23:43:06-13): club twist 160 deg, held at 160 for 350+ ms (`twist 160 -> 160`), then back; controller turn 24-30 rad/s.
+- **Bare hands:** body delay 16-20 ms, glove = body (the glove model follows the body with no extra delay), position lag max 11-26 cm, rotation delay 4-24 ms. Hand body path is `PlayerObject/TechDemoXRRigOpenXR/Physics RightHand`, interpolation None; `target = raw` (no separate PhysicsHandTarget).
+- **With a club** the position delay is the same (12-24 ms) but the **rotation delay of the body is 28-48 ms (empty: 4-24)**, and it is 72-80 ms on a 40 rad/s turn.
+- **Hypothesis (arithmetic, unproven):** the hand's rotation drive is torque spring 500 / damper 50 / **max 75 N*m**, against a club with inertia ~0.14 kg m2 about its centre, 3 kg, centre of mass ~0.2 m from the hand: inertia about the hand ~0.28. Max angular acceleration ~75/0.28 = 270 rad/s2, so stopping a 30-40 rad/s turn takes 1.7-3 rad (100-170 deg) of travel. That matches the 160 deg flip, and it explains why the empty hand (inertia 0.02) is fine. Also the club's rigidbody caps its spin at 30 rad/s while the wrist turns 30-40.
+- **Built (Daredevil, installed):** `FLIP` log line (club > 100 deg off the hand's line: decides "HAND body turned" vs "club slipped in the GRIP", with spin rates, hand gap, whether the grab joint vanished or the hand was "returning to controller", a ~22-row trace, and nearby collisions via a postfix on `ANBSoundPhysicsItem.OnCollisionEnter`). Settings (live, defaults = game values): `HandTorqueScale` (1; try 3), `ClubInertiaScale` (1; try 0.4, mass unchanged, via `ResetInertiaTensor`), `ClubMaxSpin` (30; try 80), `HandStrengthScale` (position, 1). Torque/position scaling edits the shared `HVR_DefaultHandStrength` asset in memory, so it affects both hands and everything held.
+- **Next:** read the FLIP lines (hand-turn vs grip-slip) and compare at HandTorqueScale 3 / ClubInertiaScale 0.4.
+
+**Flip trace result (log `26-10-1_23-56-15.log`, game still running, settings untouched): hypothesis CONFIRMED for the real spins.** R-hand flips at 23:58:56 and 23:58:59: club 159 deg off the hand's line, **hand body 178-179 deg off the controller, grip slip only 5-18 deg** -> the hand turned, not the grip. Club and hand spin are identical (peaks 31-34 rad/s, equal to the club's 30 rad/s cap) while the controller reached 25-41 rad/s. After the controller stops (1-3 rad/s) the hand keeps turning at 14 -> 8 rad/s over ~200 ms (about -100 rad/s2: a constant, saturated torque), goes through the target and ends 178 deg away, then returns (a ring-down 46 -> 75 -> 14 -> 178 -> 0 deg). Collisions did not appear in the trace. The ten `FLIP L` lines (23:57:44-58:05) are a logger artifact: the left hand held the right club as a second hand, so its controller says nothing about the club; fixed in the source (tracking only while exactly one hand holds the club, 2.5 s repeat guard). That build was not deployed (game running, DLL locked).

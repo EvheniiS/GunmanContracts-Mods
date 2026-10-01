@@ -74,6 +74,8 @@ namespace BillyClubs
             public Transform HandT;         // the hand holding it (follow-through)
             public Vector3 HandPrev, HandV;
             public bool HandOk;
+            public SwingTrack Sw;           // swing diagnostics while a hand holds it (SwingLog.cs)
+            public bool InertiaSet;         // ClubInertiaScale has been applied to this club's rigidbody
         }
 
         class Slot
@@ -109,7 +111,7 @@ namespace BillyClubs
             SpawnKey = c.CreateEntry("SpawnKey", "F8", description: "Keyboard key that brings your clubs back into the club holsters (from wherever they are) and spawns new ones if you have fewer than two (Input System key name, e.g. F8, B, Numpad1). Visit The Range once per game start first: the clubs are copied from its crowbar.");
             Length = c.CreateEntry("Length", 0.6f, description: "Club length in metres (visual only; the grip and hit shape stay the crowbar's, about 0.6 m).");
             Radius = c.CreateEntry("Radius", 0.018f, description: "Primitive fallback radius in metres. The custom model uses its authored 34 mm grip diameter.");
-            Mass = c.CreateEntry("Mass", 3f, description: "Club mass in kg (the crowbar is 8).");
+            Mass = c.CreateEntry("Mass", 3f, description: "Club mass in kg (the crowbar is 8). Applies live to every club, including one in your hand.");
             BodyColor = c.CreateEntry("BodyColor", "#5A080A", description: "Primitive fallback body colour as #RRGGBB. The custom model uses its baked burgundy texture.");
             UseCustomModel = c.CreateEntry("UseCustomModel", true, description: "Use the bundled textured billy club model. Off uses the old cylinder visuals. Restart the game after changing this.");
             ThrowSpeed = c.CreateEntry("ThrowSpeed", 18f, description: "Top speed (m/s) of a club the mod steers (throw assist and ricochets). It flies at your throw speed, between MinSteerSpeed and this. Hand throws log 3-12 m/s; the crowbar's own assist used 20. Full damage needs only 3.5.");
@@ -127,6 +129,9 @@ namespace BillyClubs
             InitDamagePrefs(c);
             InitHolsterPrefs(c);
             InitFollowPrefs(c);
+            InitSwingLogPrefs(c);
+            InitHandProbePrefs(c);
+            Mass.OnEntryValueChanged.Subscribe((_, kg) => ApplyMassLive(kg));
             InitArsenal(c);
             Slots[0].Pos = SlotLeft; Slots[1].Pos = SlotRight;
             var saved = SavedSlots.Value ?? "";
@@ -138,6 +143,7 @@ namespace BillyClubs
         public override void OnSceneWasInitialized(int buildIndex, string sceneName)
         {
             PackageScene();
+            HandProbeScene();
             DoorButtonWasDown.Clear();
             // Scenes may load additively: keep whatever is still alive, reset only what died with the old scene.
             for (int i = 0; i < Clubs.Count; i++) if (!Alive(Clubs[i].Go)) Clubs.RemoveAt(i--);
@@ -634,6 +640,25 @@ namespace BillyClubs
             }
         }
 
+        static void ApplyMassLive(float kg)
+        {
+            if (kg < 0.05f) return;
+            int n = 0;
+            if (Alive(Template))
+            {
+                var trb = Template.GetComponent<Rigidbody>(); if (trb != null) trb.mass = kg;
+                var tp = Template.GetComponent<ANBGeneratePhysics>(); if (tp != null) tp.RBMass = kg;
+            }
+            foreach (var k in Clubs)
+            {
+                if (!Alive(k.Go)) continue;
+                if (Alive(k.Rb)) k.Rb.mass = kg;
+                var p = k.Go.GetComponent<ANBGeneratePhysics>(); if (p != null) p.RBMass = kg;
+                n++;
+            }
+            Log.Msg($"club mass {kg:0.##} kg ({n} club(s) updated)");
+        }
+
         static bool ActiveUnder(Transform t, Transform root)
         {
             for (; t != null && t != root; t = t.parent) if (!t.gameObject.activeSelf) return false;
@@ -730,6 +755,7 @@ namespace BillyClubs
                 HideChecks = 10,
             };
             Clubs.Add(k);
+            ApplyInertia(k);
             return k;
         }
 
