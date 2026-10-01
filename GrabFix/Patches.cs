@@ -28,6 +28,13 @@ internal static class HoverPatch
             bool native = true;
             if (Docked(__0)) Safe("docked hover", () => native = Register(__instance).Geometry.NativeContains(__0));
             if (!native) __result = false;
+            // Enemy bodies (standing or ragdolled) need the palm right on them.
+            else
+            {
+                bool reachable = true;
+                Safe("enemy hover", () => reachable = !EnemyPart(__0) || EnemyReachable(__instance, __0));
+                if (!reachable) __result = false;
+            }
             return;
         }
         bool allowed = false;
@@ -45,9 +52,17 @@ internal static class ForceHoverPatch
 {
     static void Postfix(HVRForceGrabber __instance, HVRGrabbable __0, ref bool __result)
     {
-        if (!Active || !__result || !Docked(__0)) return;
+        if (!Active || !__result) return;
         var h = __instance.HandGrabber;
         if (!Alive(h)) return;
+        // Enemies are never distance-grabbed: only the palm-close local grab applies to them.
+        if (Limit(EnemyRadius.Value, .10f, 0, .25f) > 0)
+        {
+            bool enemy = false;
+            Safe("enemy force hover", () => enemy = EnemyPart(__0));
+            if (enemy) { __result = false; return; }
+        }
+        if (!Docked(__0)) return;
         bool native = true;
         Safe("docked force hover", () => native = Register(h).Geometry.NativeContainsFar(__0));
         if (!native) __result = false;

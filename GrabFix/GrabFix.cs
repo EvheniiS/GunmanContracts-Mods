@@ -10,7 +10,7 @@ using MelonLoader;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(GrabFix.GrabFixMod), "Grab Fix", "1.1.0", "Evgeeso")]
+[assembly: MelonInfo(typeof(GrabFix.GrabFixMod), "Grab Fix", "1.1.1", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace GrabFix;
@@ -19,7 +19,7 @@ public sealed class GrabFixMod : MelonMod
 {
     internal static MelonPreferences_Entry<bool> Enabled, BufferPress, RegrabAssist, DebugLog;
     internal static MelonPreferences_Entry<string> Direction;
-    internal static MelonPreferences_Entry<float> NearRadius, PalmOffset, DistanceWidth, BufferSeconds, RegrabRadius, RegrabSeconds, CatchBufferSeconds;
+    internal static MelonPreferences_Entry<float> NearRadius, PalmOffset, DistanceWidth, BufferSeconds, RegrabRadius, RegrabSeconds, CatchBufferSeconds, EnemyRadius;
     internal static MelonLogger.Instance Log;
     static readonly Stopwatch Clock = Stopwatch.StartNew();
     internal static double Now => Clock.Elapsed.TotalSeconds;
@@ -57,9 +57,10 @@ public sealed class GrabFixMod : MelonMod
         RegrabRadius = c.CreateEntry("RecentReleaseRadius", .18f, description: "Metres from the palm to a recently released item's collider surface for a catch (0.05 to 0.3).");
         RegrabSeconds = c.CreateEntry("RecentReleaseSeconds", 15f, description: "How long an item stays eligible after release, in real seconds (0 to 60).");
         CatchBufferSeconds = c.CreateEntry("CatchBufferSeconds", .60f, description: "Real seconds to keep a fresh grip press ready for a recently released nearby item (0 to 1).");
+        EnemyRadius = c.CreateEntry("EnemyGrabRadius", .10f, description: "Enemies and downed (ragdoll) enemies can only be grabbed when their body is within this many metres of your palm, so a fist swung near a face or a lying body does not grab it. No distance grabs and no buffered grabs on enemies. 0 = no extra limit; maximum 0.25.");
         DebugLog = c.CreateEntry("DebugLog", false, description: "Log assisted pickup outcomes and detector setup.");
         wasEnabled = Active; scanAt = Now + 3;
-        Log.Msg($"1.1.0 release candidate - direction={Direction.Value}, wider local sphere, grip buffer, recent-release catches; native grab checks retained.");
+        Log.Msg($"1.1.1 (enemy grab radius {EnemyRadius.Value:0.00} m) - release candidate - direction={Direction.Value}, wider local sphere, grip buffer, recent-release catches; native grab checks retained.");
     }
 
     public override void OnSceneWasInitialized(int buildIndex, string sceneName)
@@ -189,10 +190,31 @@ public sealed class GrabFixMod : MelonMod
     // should place your hand close enough to trigger the game's native, unwidened detection.
     internal static bool Docked(HVRGrabbable g) => Alive(g?.Rigidbody) && g.Rigidbody.isKinematic;
 
+    // A limb or body part of an enemy (standing, stunned or ragdolled). Looked up on demand: the
+    // callers only ask once a hover is already true, and a gun taken from an enemy stops counting
+    // the moment it is reparented.
+    internal static bool EnemyPart(HVRGrabbable g)
+    {
+        try { return Alive(g) && Alive(g.GetComponentInParent<ANBBasicNPC>()); } catch { return false; }
+    }
+
+    // True if an enemy part may be hovered/grabbed by this hand: its collider surface must be within
+    // EnemyGrabRadius of the palm. A fist swung at one enemy brushes the face or body of another
+    // (or of a downed one), and the widened pickup sphere turned every such brush into a grab.
+    internal static bool EnemyReachable(HVRHandGrabber h, HVRGrabbable g)
+    {
+        float r = Limit(EnemyRadius.Value, .10f, 0, .25f);
+        if (r <= 0) return true;
+        float d = SurfaceDistance(g, Palm(h));
+        if (float.IsInfinity(d)) // no usable collider to measure: fall back to the body part's own position
+            d = Vector3.Distance(Palm(h), Alive(g.Rigidbody) ? g.Rigidbody.worldCenterOfMass : g.transform.position);
+        return d <= r;
+    }
+
     static bool Eligible(HVRGrabbable g)
     {
         if (!Alive(g) || !g.isActiveAndEnabled || !g.CanBeGrabbed || g.BeingDestroyed || g.IsBeingHeld || g.IsSocketed ||
-            g.IsBeingForcedGrabbed || g.Stationary || g.RequiresGrabbable || !Alive(g.Rigidbody) || Docked(g)) return false;
+            g.IsBeingForcedGrabbed || g.Stationary || g.RequiresGrabbable || !Alive(g.Rigidbody) || Docked(g) || EnemyPart(g)) return false;
         // Do not turn trigger-only controls, bow strings, body grabs, or support grips
         // into generic loose-prop grabs. Enum values are verified against the interop.
         string control = g.GrabControl.ToString();

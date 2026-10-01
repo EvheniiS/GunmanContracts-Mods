@@ -2303,7 +2303,7 @@ And **`[BillyClubs] HandStrengthScale`** (default 1 = unchanged, live, 0.5-4): s
 critically damped). It changes both hands and everything they hold. Test order: (1) play at 1 to see the bare-hand delay and which stage owns it;
 (2) set 2, then 3, and compare delay and feel. Grab Fix is acquisition only (detector spheres, buffered presses); it does not touch how a held item or the hand moves.
 
-## ★ Grab Fix 1.1.1 (Oct 1 2026): enemies only grabbable with the palm right on them — UNTESTED
+## ★ Grab Fix 1.1.1 (Oct 1 2026): enemies only grabbable with the palm right on them — TESTED, release candidate (Oct 2 2026)
 
 **Report:** while throwing a fist (Heavy Melee) at a standing enemy, the hand grabbed a downed (ragdoll) enemy lying
 nearby, or the face of the enemy being hit. Cause: the widened local pickup sphere (`NearGrabRadius` 0.12, grown to
