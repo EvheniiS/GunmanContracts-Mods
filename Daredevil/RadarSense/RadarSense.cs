@@ -48,7 +48,7 @@ namespace RadarSense
         internal static MelonLogger.Instance Log;
         internal static MelonPreferences_Entry<bool> Enabled, WithDodgeSlowMotion, FocusRevealsAll, ClubHighlight, PerfLog, DebugLog;
         internal static MelonPreferences_Entry<string> ClubColor, LoudSteps, Reveal, ActiveWhen, Color, Style, ShaderName, SkipParts;
-        internal static MelonPreferences_Entry<float> ClubMinDistance, Opacity, Range, StepSpeed, HearDistance, LoudRadius, StepVolume;
+        internal static MelonPreferences_Entry<float> SeenFraction, ClubMinDistance, Opacity, Range, StepSpeed, HearDistance, LoudRadius, StepVolume;
 
         internal static void Init(MelonLogger.Instance log)
         {
@@ -63,6 +63,7 @@ namespace RadarSense
             Style = c.CreateEntry("Style", "Hidden", description: "Hidden (enemies you can see directly get no highlight; the rest show the parts hidden behind something), Behind (every enemy, including ones you can see, shows its hidden parts) or Blocked (the whole body, only on enemies you can't see).");
             Reveal = c.CreateEntry("Reveal", "Moving", description: "Which enemies you haven't seen show. The game hides enemies out of view for a few seconds (no mesh, no animation) to save performance. Awake (only enemies the game still shows: seen recently, or woken up, e.g. shouting), Moving (also enemies walking or running, as if you hear their steps; the default) or All (every enemy in Range; the biggest performance cost).");
             StepSpeed = c.CreateEntry("StepSpeed", 0.5f, description: "For Reveal = Moving: an enemy moving faster than this (m/s) is heard.");
+            SeenFraction = c.CreateEntry("SeenFraction", 0.7f, description: "How much of an enemy you must see for it to count as seen directly (no highlight with Style Hidden/Blocked). The game counts an enemy as in view when ONE of its 14 sight points has a clear line to your head, so a head over a doorframe or counter switched the whole silhouette off. This is the share of sight points that must be clear: 0.7 = 10 of 14. 0 = the game's own rule (one point).");
             Range = c.CreateEntry("Range", 60f, description: "Enemies further away than this (m) don't show.");
             SkipParts = c.CreateEntry("SkipParts", "eye,teeth,tooth,tongue,lash,brow", description: "Body parts left out, by renderer or mesh name (comma separated). Parts inside the head would show through the face.");
             ShaderName = c.CreateEntry("Shader", "Auto", description: "Auto picks the first that loads: Hidden/Internal-Colored, then UI/Default. Or a shader name. Applies after a game restart.");
@@ -101,7 +102,7 @@ namespace RadarSense
         static bool Debug => RadarSenseMod.DebugLog.Value;
 
         class Part { public SkinnedMeshRenderer Src, Copy; }
-        class Enemy { public ANBBasicNPC Npc; public bool Shown; public Vector3 LastPos; public float LastT = -1; public readonly List<Part> Parts = new(); }
+        class Enemy { public ANBBasicNPC Npc; public bool Shown; public Vector3 LastPos; public float LastT = -1; public readonly List<Part> Parts = new(); public int InView = -1, DiagLines; public float NextDiag; }
 
         static readonly Dictionary<IntPtr, Enemy> Enemies = new();
         class MPart { public MeshRenderer Src, Copy; }
@@ -306,7 +307,8 @@ namespace RadarSense
                         if (!n.isInView) kept++;
                         n.outOfViewTime = 0f;   // the game shows it again (or never hides it)
                     }
-                    show = near && (!onlyUnseen || !n.isInView);
+                    show = near && (!onlyUnseen || !SeenDirectly(n, eye));
+                    if (Debug && near) ViewDiag(e, n, eye);
                 }
                 catch { show = false; }
                 if (show) shown++;
@@ -322,6 +324,93 @@ namespace RadarSense
             }
             if (shown > shownPeak) shownPeak = shown;
             KeptNow = kept;
+        }
+
+        // Why does an enemy behind a wall count as "in view" when it is close (the highlight vanishes)? Logs the inputs of
+        // the game's isInView (checkVisibility): VisCheck.isVisible, useRaycastVisCheck, and with it on, which sight dots
+        // (children of HiddenPosCheckDots) have a clear ray from your head (BlockedSight reverse: head -> dot, length
+        // distance - 0.1, viewBlockMask). Own ray head -> body centre says what is really in between.
+        // Lines: every isInView flip within 8 m, and every 1 s while "in view" with a wall in the way within 8 m. 12 per enemy.
+        // The game's isInView with a stricter test: renderer visible and at least SeenFraction of the sight dots clear
+        // from your head (same rays as the game's checkVisibility: head -> dot, length distance - 0.1, viewBlockMask).
+        static bool SeenDirectly(ANBBasicNPC n, Vector3 eye)
+        {
+            if (!n.isInView) return false;
+            float frac = RadarSenseMod.SeenFraction.Value;
+            var root = n.HiddenPosCheckDots;
+            if (frac <= 0f || !n.useRaycastVisCheck || !RadarSenseMod.Alive(root)) return true;
+            int total = root.childCount;
+            if (total == 0) return true;
+            int need = (int)Math.Ceiling(Math.Min(frac, 1f) * total - 1e-4f), clear = 0;
+            var pt = n.Playertarget;
+            Vector3 head = RadarSenseMod.Alive(pt) ? pt.position : eye;
+            int mask = n.viewBlockMask.value;
+            for (int i = 0; i < total; i++)
+            {
+                Vector3 d = root.GetChild(i).position - head;
+                float len = d.magnitude - 0.1f;
+                if (len <= 0f || !Physics.Raycast(head, d.normalized, len, mask)) clear++;
+                if (clear >= need) return true;
+                if (clear + (total - 1 - i) < need) return false;
+            }
+            return false;
+        }
+
+        const float DiagRange = 8f;
+        static bool diagHeader;
+        static string DiagRay(Vector3 from, Vector3 to, int mask)
+        {
+            Vector3 d = to - from;
+            float len = d.magnitude - 0.1f;
+            if (len <= 0f) return "clear(0)";
+            return Physics.Raycast(from, d.normalized, out RaycastHit h, len, mask)
+                ? $"HIT '{h.collider.name}' L{h.collider.gameObject.layer} {h.distance:0.00}/{len + 0.1f:0.00} m"
+                : "clear";
+        }
+
+        static void ViewDiag(Enemy e, ANBBasicNPC n, Vector3 eye)
+        {
+            if (e.DiagLines >= 60) return;
+            Vector3 body = Body(n);
+            float dist = Vector3.Distance(eye, body);
+            bool seen = SeenDirectly(n, eye);       // seen = no highlight
+            int sv = seen ? 1 : 0;
+            if (dist > DiagRange) { e.InView = sv; return; }
+            bool flip = e.InView >= 0 && e.InView != sv;
+            e.InView = sv;
+            float now = Time.unscaledTime;
+            int srcOn = 0, copyOn = 0;
+            foreach (var p in e.Parts)
+            {
+                if (RadarSenseMod.Alive(p.Src) && p.Src.enabled && p.Src.gameObject.activeInHierarchy) srcOn++;
+                if (RadarSenseMod.Alive(p.Copy) && p.Copy.enabled) copyOn++;
+            }
+            bool notDrawn = !seen && srcOn == 0;    // highlight wanted, but the game has the body meshes off
+            var pt = n.Playertarget;
+            Vector3 head = RadarSenseMod.Alive(pt) ? pt.position : eye;
+            int mask = n.viewBlockMask.value;
+            string own = DiagRay(head, body + Vector3.up * 0.2f, mask);
+            bool stuck = seen && own.StartsWith("HIT");     // no highlight although a wall is in the way
+            if (now < e.NextDiag || !(flip || notDrawn || stuck)) return;
+            e.NextDiag = now + (flip ? 0.3f : 1f);
+            e.DiagLines++;
+            if (!diagHeader)
+            {
+                diagHeader = true;
+                W($"view diag: viewBlockMask {mask:X}, useRaycastVisCheck {n.useRaycastVisCheck}, vischeck pulse {n.vischeckPulseRate:0.00} s, VisCheck '{(RadarSenseMod.Alive(n.VisCheck) ? n.VisCheck.name : "null")}'");
+            }
+            string vis = RadarSenseMod.Alive(n.VisCheck) ? (n.VisCheck.isVisible ? "visible" : "NOT visible") : "no renderer";
+            string dots = "";
+            var root = n.HiddenPosCheckDots;
+            if (n.useRaycastVisCheck && RadarSenseMod.Alive(root))
+            {
+                int clear = 0, total = root.childCount;
+                for (int i = 0; i < total; i++)
+                    if (DiagRay(head, root.GetChild(i).position, mask).StartsWith("clear")) clear++;
+                dots = $", dots clear {clear}/{total}";
+            }
+            string kind = notDrawn ? "NOT DRAWN" : flip ? (seen ? "SEEN" : "HIGHLIGHT") : "STAY";
+            W($"view {kind} #{Math.Abs(n.GetInstanceID()) % 100000} d={dist:0.0} m: isInView {n.isInView}, renderer {vis}{dots}, chest {own}, body meshes on {srcOn}/{e.Parts.Count}, copies on {copyOn}, game hid {n.outOfViewObjectsOff}");
         }
 
         // ------------------------------------------------------------------ clubs

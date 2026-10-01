@@ -1,5 +1,14 @@
 # Radar Sense (part of Daredevil)
 
+**Oct 1 2026: outline vanished on close enemies behind walls: FIXED (`SeenFraction`, untested in play).** Cause, from a
+debug session (`view FLIP/STAY` lines, 109 samples): the game's `isInView` is true when the `VisCheck` renderer is on screen
+and **ONE** of the 14 sight dots (`HiddenPosCheckDots`, feet to just above head) has a clear ray from your head
+(`BlockedSight`, reverse, length distance - 0.1, `viewBlockMask`). Enemies behind a doorframe, column, counter or half wall
+nearly always have a head-height dot clear, so `Style = Hidden` treated them as seen and dropped the whole silhouette.
+Wall-blocked enemies had 2-6 of 14 dots clear; really visible ones 11-14. New `SeenFraction` (0.7 = 10 of 14 dots; 0 =
+the game's rule): below it the enemy keeps the highlight, which with the depth test Greater shows only the parts that are
+hidden. Costs up to 14 raycasts per enemy the game calls in view, 10 times a second.
+
 **Sep 28 2026 (Daredevil 0.3.1+): clubs now come from Billy Clubs' own list** (`BillyClubsMod.CopyClubs`, same DLL,
 every 0.5 s) instead of searching every loaded `HVRGrabbable` every 2 s, which had raised the mod's own cost from
 0.125 to 0.23 ms/frame with 3 enemies. **Measured after the fix (13:21 session, 3 enemies, 3 clubs): 0.002-0.005
