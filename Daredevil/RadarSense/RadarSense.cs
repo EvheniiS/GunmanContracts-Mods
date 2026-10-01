@@ -54,8 +54,8 @@ namespace RadarSense
         {
             Log = log;
             var c = MelonPreferences.CreateCategory("RadarSense", "Daredevil: Radar Sense");
-            Enabled = c.CreateEntry("Enabled", true, description: "While slow motion is on, you see enemies through walls.");
-            ActiveWhen = c.CreateEntry("ActiveWhen", "SlowMotion", description: "SlowMotion (the sense is on only while slow motion is) or Always (always on).");
+            Enabled = c.CreateEntry("Enabled", true, description: "Master switch for seeing enemies through walls.");
+            ActiveWhen = c.CreateEntry("ActiveWhen", "Always", description: "SlowMotion (the sense is on only while slow motion is) or Always (always on).");
             FocusRevealsAll = c.CreateEntry("FocusRevealsAll", true, description: "While your own slow motion (focus, right B) is on, every enemy in Range shows, even ones you haven't detected, whatever Reveal is set to.");
             WithDodgeSlowMotion = c.CreateEntry("WithDodgeSlowMotion", true, description: "The brief slow motion on a dodge (Physical Dodge) turns the sense on too, not only your own slow motion.");
             Color = c.CreateEntry("Color", "#FF1010", description: "Colour of the silhouettes.");
@@ -72,8 +72,8 @@ namespace RadarSense
             LoudSteps = c.CreateEntry("LoudSteps", "Always", description: "Louder enemy footsteps, played on each enemy's own sound source so gunfire can't cut them off. Always (all the time), Sense (only while the radar sense is on) or Off (the game's own steps).");
             HearDistance = c.CreateEntry("HearDistance", 30f, description: "Enemy steps are heard up to this far (m). The game plays none beyond its own limit (logged).");
             LoudRadius = c.CreateEntry("LoudRadius", 3f, description: "Steps are at full volume within this distance (m) and fade with distance beyond it. Bigger = louder from far away.");
-            StepVolume = c.CreateEntry("StepVolume", 1f, description: "Step volume, 0 to 1, times the game's sound effects volume.");
-            PerfLog = c.CreateEntry("PerfLog", true, description: "Once a minute, log frame times split by sense off / on / on and keeping unseen enemies shown, plus the mod's own cost. For comparing the Reveal settings.");
+            StepVolume = c.CreateEntry("StepVolume", 3f, description: "Step volume multiplier times the game's sound effects volume. Values above 1 make steps louder than the game's normal effect volume.");
+            PerfLog = c.CreateEntry("PerfLog", false, description: "Once a minute, log frame times split by sense off / on / on and keeping unseen enemies shown, plus the mod's own cost. For comparing the Reveal settings.");
             DebugLog = c.CreateEntry("DebugLog", false, description: "Log which shader is used, each enemy's body parts once, and one line each time the sense turns on/off.");
             Log.Msg("loaded - slow motion shows enemies through walls.");
         }

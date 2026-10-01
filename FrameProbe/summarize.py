@@ -19,6 +19,7 @@ from pathlib import Path
 API = "https://api.typesafe.ai/v1/systemone"
 PERF = re.compile(r"\b(perf|frame.?time|fps|gpu|cpu|render|draw calls?|reproject|stutter|spike|instanc)\b", re.I)
 ISSUE = re.compile(r"\b(warn(?:ing)?|error|exception|fail(?:ed|ure)?|timeout)\b", re.I)
+GPU_FPS = re.compile(r"\[GPUInstancer\].*\[Perf\].*Avg FPS:\s*([\d.]+).*1% Low FPS:\s*([\d.]+)", re.I)
 
 
 def number(row, key):
@@ -43,6 +44,26 @@ def compare(current, baseline):
                 item[field + "_delta"] = round(statistics.median(current_values) - statistics.median(baseline_values), 3)
         comparisons.append(item)
     return comparisons
+
+
+def compact_performance_lines(lines):
+    """Keep extremes and recent samples from the repetitive GPUInstancer FPS log."""
+    gpu = []
+    other = []
+    for item in lines:
+        match = GPU_FPS.search(item["text"])
+        if match:
+            gpu.append((item, float(match.group(1)), float(match.group(2))))
+        else:
+            other.append(item)
+    selected = {item["line"]: item for item in other[-40:]}
+    for item, _, _ in sorted(gpu, key=lambda value: value[1])[:5]:
+        selected[item["line"]] = item
+    for item, _, _ in sorted(gpu, key=lambda value: value[2])[:5]:
+        selected[item["line"]] = item
+    for item, _, _ in gpu[-3:]:
+        selected[item["line"]] = item
+    return list(selected.values())
 
 
 def jev_batch(lines, key):
@@ -112,16 +133,16 @@ def main():
         report["notes"].append("Comparison deltas are current minus baseline, using the median of each scene's window p95 values. Match headset and game settings before interpreting them.")
 
     if args.log:
-        obvious = deque(maxlen=80)
+        obvious = deque(maxlen=2000)
         ambiguous = deque(maxlen=40)
         with args.log.open(encoding="utf-8", errors="replace") as source:
             for line_no, line in enumerate(source, 1):
                 line = line.strip()[:600]
-                if PERF.search(line):
-                    obvious.append({"line": line_no, "text": line, "reason": "performance keyword"})
-                elif ISSUE.search(line):
+                if ISSUE.search(line):
                     ambiguous.append({"line": line_no, "text": line})
-        kept = list(obvious)
+                elif PERF.search(line):
+                    obvious.append({"line": line_no, "text": line, "reason": "performance keyword"})
+        kept = compact_performance_lines(obvious)
         if args.jev:
             tokens = {"input_tokens": 0, "output_tokens": 0}
             jev_failed = False

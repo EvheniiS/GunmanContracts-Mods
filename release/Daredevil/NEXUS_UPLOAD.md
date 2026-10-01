@@ -17,8 +17,8 @@ Throw Assist's prepared package is **0.2.2**.
 
 | File | What |
 |---|---|
-| `Daredevil-1.0.0.zip` | current upload candidate: contains only `Mods/Daredevil.dll`; 3,661,584 bytes; sha256 `AC5C57743C4BC78DF7C193CBEE35E4CB1049D637FA1E83A99F45229FEDA62E95` |
-| `Daredevil.dll` | current 1.0.0 build, 4,240,384 bytes; sha256 `32CAEF4843244CA7F79FAE025ACD91D0F12422ADA335211675451CF356723C0D` |
+| `Daredevil-1.0.0.zip` | rebuilt upload candidate: contains only `Mods/Daredevil.dll`; 3,661,623 bytes; sha256 `2783A56A3DC2FD2A6608D120C02054B69D808E1281332EE86548EBB16834D1A6` |
+| `Daredevil.dll` | rebuilt 1.0.0 package DLL, 4,240,896 bytes; sha256 `34C8BD846996E29F0855266E3538B961472A077DBFA4B873A3DF1A063EFDF8C6` |
 | `NEXUS_DESCRIPTION.txt` | the page text (BBCode), already links Mod Settings (mods/28) and Weapon Framework (mods/29) |
 | `NEXUS_REQUIREMENTS_DRAFT.md` | which companion mods are required vs. optional, and artwork copy notes |
 

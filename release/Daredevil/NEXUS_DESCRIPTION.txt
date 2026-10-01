@@ -5,9 +5,10 @@ Fight with a pair of [b]billy clubs[/b], send them into [b]ricochet throws[/b], 
 [size=4][b]Billy clubs[/b][/size]
 [list]
 [*]A pair of custom burgundy-and-metal clubs, with dedicated belt holsters. Release a club near an empty holster to snap it into place.
+[*]Your Range loadout is saved across contracts. Drawing or losing a club does not change the saved pair; deaths and retries recall loose clubs to the saved holsters.
 [*]Swing, throw, or bounce a club off a wall or floor toward an enemy. Assisted throws keep real physics and collisions.
 [*]Choose tip-first throws, natural hand spin, or end-over-end spinning. Enemy-to-enemy ricochets are optional and off by default.
-[*]Club hits to the legs drop enemies to one knee. Thrown body hits also make them kneel by default; choose a standing stun, knockdown, or the game's short flinch instead.
+[*]Club hits to the legs drop enemies to one knee. Thrown body hits knock enemies down by default; choose a standing stun, a kneel, or the game's short flinch instead.
 [*]Body hits can knock an enemy out when their health runs out.
 [*]Press F8 to recall the pair into your club holsters, replacing missing clubs.
 [*]While holding a club, press A on the right controller or X on the left to kick open a doorway. Aim your controller knuckle at the marked kick point; the game's VR door-kick setting and range apply.
@@ -15,10 +16,10 @@ Fight with a pair of [b]billy clubs[/b], send them into [b]ricochet throws[/b], 
 
 [size=4][b]Radar sense[/b][/size]
 [list]
-[*]Activate your normal focus / slow motion with right B to reveal enemies through walls as red silhouettes.
+[*]Radar Sense is on by default and reveals enemies through walls as red silhouettes. Set it to SlowMotion if you prefer it active only during focus.
 [*]By default, directly visible enemies are not painted red: radar highlights what is hidden.
 [*]Your own focus reveals all enemies within the configured range. Outside that override, the default reveal mode also picks up moving enemies, as if you hear their steps.
-[*]Set radar to Always if you prefer to keep it active outside slow motion.
+[*]Radar runs all the time by default. Set it to SlowMotion if you prefer it active only during focus.
 [*]Louder, directional enemy footsteps help you locate people by sound. Footsteps stay on all the time by default and can be limited to radar sense or switched off.
 [*]Dropped or thrown clubs glow yellow through obstacles, making them easier to find. Clubs within two metres of your head are excluded by default.
 [/list]
@@ -88,7 +89,7 @@ sure you picked [i]GunmanContracts.exe[/i].
 [*]Press F8 to spawn or recall your clubs, or retrieve them from the arsenal panel with [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/29]Weapon Framework[/url].
 [*]Draw from the club holsters on your belt. Release near a free holster to put a club away; holstered clubs carry across scene loads.
 [*]Enable the game's assisted-throw option for target-assisted throws. Throw toward an enemy, or aim down at the floor for a bouncing floor shot.
-[*]Use right B for focus and radar sense. Retrieve a lost club by following its yellow highlight or pressing F8.
+[*]Use right B for focus. Radar Sense is on by default; retrieve a lost club by following its yellow highlight or pressing F8.
 [*]Open [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28]Mod Settings[/url] and look for [b]Daredevil: Clubs[/b] and [b]Daredevil: Radar Sense[/b].
 [/list]
 
@@ -145,8 +146,8 @@ WallShift                = "0,0,0"   # Moves the pair on the arsenal wall, in me
 [/code]
 [b]Radar sense — section [RadarSense][/b]
 [code]
-Enabled                  = true   # While slow motion is on, you see enemies through walls.
-ActiveWhen               = "SlowMotion"   # SlowMotion (the sense is on only while slow motion is) or Always (always on).
+Enabled                  = true   # Master switch for seeing enemies through walls.
+ActiveWhen               = "Always"   # SlowMotion (the sense is on only while slow motion is) or Always (always on).
 FocusRevealsAll          = true   # While your own slow motion (focus, right B) is on, every enemy in Range shows, even ones you haven't detected, whatever Reveal is set to.
 WithDodgeSlowMotion      = true   # The brief slow motion on a dodge (Physical Dodge) turns the sense on too, not only your own slow motion.
 Color                    = "#FF1010"   # Colour of the silhouettes.
@@ -163,8 +164,8 @@ ClubMinDistance          = 2   # A club closer to your head than this (m) isn't 
 LoudSteps                = "Always"   # Louder enemy footsteps, played on each enemy's own sound source so gunfire can't cut them off. Always (all the time), Sense (only while the radar sense is on) or Off (the game's own steps).
 HearDistance             = 30   # Enemy steps are heard up to this far (m). The game plays none beyond its own limit (logged).
 LoudRadius               = 3   # Steps are at full volume within this distance (m) and fade with distance beyond it. Bigger = louder from far away.
-StepVolume               = 1   # Step volume, 0 to 1, times the game's sound effects volume.
-PerfLog                  = true   # Once a minute, log frame times split by sense off / on / on and keeping unseen enemies shown, plus the mod's own cost. For comparing the Reveal settings.
+StepVolume               = 3   # Step volume multiplier times the game's sound effects volume; values above 1 make steps louder.
+PerfLog                  = false   # Once a minute, log frame times split by sense off / on / on and keeping unseen enemies shown, plus the mod's own cost. For comparing the Reveal settings.
 DebugLog                 = false   # Log which shader is used, each enemy's body parts once, and one line each time the sense turns on/off.
 [/code]
 Reveal = All keeps more unseen enemies active and can cost more performance. Moving is the default.

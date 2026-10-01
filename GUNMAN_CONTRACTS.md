@@ -9,6 +9,14 @@ release DLL + Nexus BBCode in `release/BetterBow/` (see Source control).
 Engine: **Unity 6000.0.41f1, IL2CPP** (metadata v31), built on the **HurricaneVR** framework.
 Developer string: `ANB_Seth`. Game logic lives in `HurricaneVR.Framework.dll` (classes prefixed `ANB*`).
 
+## Frame Probe log review (Oct 1 2026)
+
+FrameProbe 0.1.0 was built and installed Sep 30, then used in game. The current installed game reported version 0.3.1.0 in the Oct 1 00:39 MelonLoader bootstrap. The full 120 Hz FrameProbe session started Oct 1 00:25 and ended 00:38 (local time), but its matching MelonLoader text log is no longer available, so its exact mod set and game version cannot be independently verified from that session.
+
+- In the 120 Hz CSV, full 30-second Range windows had median effective 119.8 frames/s and median window p95 frame delta 9.442 ms. The Warehouse contract had median effective 118.6 frames/s and median window p95 9.656 ms across 15 windows. Two later 30-second Warehouse windows fell to 106.9 and 106.4 frames/s, with p95 14.482 and 14.418 ms (00:34:25 and 00:37:25 local). The scene-entry window at 00:31:25 was slower. The CSV does not mark loading screens, menus, checkpoints, or active play, so none of these slow windows can be classified as gameplay drops from this file alone. These are Unity frame counts and `Time.unscaledDeltaTime`, not headset reprojection statistics.
+- Every CPU/GPU timing field was blank and `gpu_missing` equaled the sample count. A matching earlier 90 Hz run (Sep 30 18:58, game 0.3.1.0, 19 loaded mods including GPUInstancer 1.3.7) logged `ProfilerRecorder` failing to start the draw-call counter because its native constructor was unavailable. The same CSV fields were blank in that run. Jev filtered its warning lines and assigned the FrameProbe warning 0.77 possible performance relevance; this is a relevance judgment, not a diagnosis of the game slowdown.
+- These runs do not establish a per-mod performance hit or CPU-vs-GPU bottleneck. A probe-only run with matching settings and VR runtime CPU/GPU/reprojection readings is still needed.
+
 ## Daredevil 1.0.0 first-release package (Sep 30 2026)
 
 The 0.4.0 source was renamed to 1.0.0 for the first public release. A Release build using the

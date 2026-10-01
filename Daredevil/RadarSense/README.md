@@ -48,17 +48,17 @@ faded a few seconds after you looked away. Now the sense keeps the game from hid
 
 0.1.0 test (Sep 28 2026, `ActiveWhen = Always`): both eyes, shader picked right, "really gives you the Daredevil feeling".
 
-Daredevil's radar sense. While slow motion is on, you see enemies through walls as red silhouettes. This covers your
-own right-B slow motion and, by default, the brief slow motion Physical Dodge starts on a dodge. `ActiveWhen = Always`
-keeps it on all the time.
+Daredevil's radar sense. When enabled, you see enemies through walls as red silhouettes. It is enabled by default.
+`ActiveWhen = Always` keeps it on all the time rather than limiting it to slow motion.
 
 ## Settings (`[RadarSense]`)
 
-- `ActiveWhen`: `SlowMotion` (default) or `Always`.
+- `Enabled` (true): master switch for showing enemies through walls.
+- `ActiveWhen`: `Always` (current default) or `SlowMotion`.
 - `WithDodgeSlowMotion` (true): the dodge slow motion turns it on too.
 - `Reveal`: `Awake`, `Moving` (default) or `All`: which unseen enemies the game is kept from hiding (see below). Each
   kept enemy keeps its mesh and animation, which costs performance. `StepSpeed` (0.5 m/s) for `Moving`.
-- `PerfLog` (true): one line a minute, e.g. `perf 60 s (median 11.1 ms): off 2100 fr avg 11.1 p95 11.4 max 24 ms,
+- `PerfLog` (false): one line a minute, e.g. `perf 60 s (median 11.1 ms): off 2100 fr avg 11.1 p95 11.4 max 24 ms,
   slow 0.4% | keeping unseen 3300 fr avg 11.3 p95 12.0 max 30 ms, slow 1.2%, 4.2 kept | mod 0.020 ms/frame`.
   In VR the frame time is locked to the headset refresh, so the cost shows up as **slow** frames (over 1.4× the
   minute's median, i.e. missed refreshes), not a higher average. `kept` = unseen enemies held visible per frame.
@@ -68,7 +68,7 @@ keeps it on all the time.
   them within X m`); the mod never lowers it.
 - `LoudRadius` (3 m): full volume within this distance, then logarithmic falloff. **The main loudness knob**: double it
   and a step at any distance is twice as loud (+6 dB).
-- `StepVolume` (1): 0 to 1, times the game's sound-effects volume.
+- `StepVolume` (3): multiplier times the game's sound-effects volume; values above 1 make steps louder than the normal effect volume.
 - `Color` (`#FF1010`), `Opacity` (0.6), `Range` (60 m).
 - `Style`: `Hidden` (default: enemies you can see directly get no highlight, the rest show the parts hidden behind
   something), `Behind` (every enemy shows its hidden parts, so visible enemies can get red patches where their own
