@@ -9,6 +9,32 @@ release DLL + Nexus BBCode in `release/BetterBow/` (see Source control).
 Engine: **Unity 6000.0.41f1, IL2CPP** (metadata v31), built on the **HurricaneVR** framework.
 Developer string: `ANB_Seth`. Game logic lives in `HurricaneVR.Framework.dll` (classes prefixed `ANB*`).
 
+## Game-update recovery audit (Oct 1 2026)
+
+The Sep 27 recovery entry below is superseded by [Tools/UPDATE_RECOVERY.md](Tools/UPDATE_RECOVERY.md).
+Current source has 17 projects, dynamic targets and shared dependencies; compilation and clean logs cannot prove
+that hooks execute or that asset/scene/save assumptions still hold. The new local `Tools/Update-Triage.ps1` workflow
+backs up preferences, enables installed repository diagnostics with reviewed category mappings, collects logs and
+source/core/reference/DLL hashes, and restores only its own preference changes. It does not build or repair mods.
+Research maps now reject unsupported metadata/layouts, use content-keyed caches, validate registration discovery,
+and preserve overload addresses. `il2cpp_tools/snapshot.py` captures/diffs structural maps for selective research.
+
+Observed existing evidence: `MelonLoader/Latest.log`, bootstrap Oct 1 01:19:59 local, game 0.3.1.0,
+Unity 6000.0.41f1, MelonLoader 0.7.3. It already contains repeated native trampoline exceptions through
+`ANBNpcSpawner.spawnPointValidation` → `outOfSight` → `ANBEncounterSystem.BlockedSight` → `Transform.get_position`
+around 01:23:36, plus Frame Probe's unavailable draw-counter constructor. These predate any hypothetical update;
+neither a responsible mod nor a new game regression was established. Gameplay source/DLLs were not changed by this
+audit. The current game's metadata/registration map was successfully captured; future-build compatibility remains
+untested. See the workflow's verification section for tool tests and limitations.
+
+Verification completed: 12 focused tool tests passed; dump/disassembly/slot/caller commands ran against the installed
+game. The research baseline includes 625 scoped/nested types and 5,711 method entries, with a self-diff returning no
+structural changes. The current native binary and metadata are archived under git-ignored `feature/update-triage/`.
+`Prepare` was applied while the game was closed, with its backup and plan in `feature/update-triage/ready-20261001`:
+exactly 14 diagnostic keys changed, other preference bytes preserved, and a Restore dry run passed. Radar Sense's
+gameplay toggle and Frame Probe remain disabled. Grab Log is not installed, so no DLL was added. No new game session,
+gameplay verification, mod build or DLL deployment was performed by this audit.
+
 ## Frame Probe log review (Oct 1 2026)
 
 FrameProbe 0.1.0 was built and installed Sep 30, then used in game. The current installed game reported version 0.3.1.0 in the Oct 1 00:39 MelonLoader bootstrap. The full 120 Hz FrameProbe session started Oct 1 00:25 and ended 00:38 (local time), but its matching MelonLoader text log is no longer available, so its exact mod set and game version cannot be independently verified from that session.
@@ -1319,6 +1345,10 @@ Quick field-usage search: grep the disassembly for `+ 0x<offset>]`.
   Raw MonoBehaviour layout: GO pptr 12, enabled 4, script pptr 12, name string; **every bool is 4-byte aligned**.
 
 ### ★★ What a game update breaks, and the recovery order (Sep 27 2026)
+
+**Historical plan — superseded by the [Oct 1 audit and workflow](Tools/UPDATE_RECOVERY.md).**
+The mod count, universal compile-error guarantee, unconditional regeneration assumption and repair-time estimates
+below must not be used as current instructions.
 
 **The mods bind to the game by NAME only.** All 7 mods hook through ~40 `[HarmonyPatch(typeof(X), nameof(X.M))]`
 targets on the generated interop assemblies. There are no hard-coded offsets, RVAs or byte patterns in any `.cs`

@@ -3,6 +3,8 @@
 Game code is in the 'il2cpp' PE section, engine code in '.text': both are scanned. Only direct
 E8 (call) and E9 (jmp) rel32 are found - calls through vtables, delegates, UnityEvents or
 coroutine MoveNext state machines won't show (0 hits does NOT mean "never called").
+Byte scanning can also find E8/E9 inside another instruction: results are candidates,
+not verified call sites. Confirm each important site with disassembly.
 """
 import sys, bisect, numpy as np
 from il2 import *
@@ -14,7 +16,7 @@ for s in pe.sections:
         continue
     t0 = s.PointerToRawData; tn = s.SizeOfRawData; tva = base + s.VirtualAddress
     buf = np.frombuffer(data, dtype=np.uint8, count=tn, offset=t0)
-    idx = np.nonzero((buf[:-5] == 0xE8) | (buf[:-5] == 0xE9))[0]
+    idx = np.nonzero((buf[:-4] == 0xE8) | (buf[:-4] == 0xE9))[0]
     rel = (buf[idx+1].astype(np.int64) | (buf[idx+2].astype(np.int64) << 8)
            | (buf[idx+3].astype(np.int64) << 16) | (buf[idx+4].astype(np.int64) << 24))
     rel = np.where(rel >= 1 << 31, rel - (1 << 32), rel)
@@ -29,4 +31,5 @@ for name in sys.argv[1:]:
         for tva, h, kind in hits:
             va = tva + h
             i = bisect.bisect_right(addrs, va) - 1
-            print(f"   {kind:4} {va:#x}  in {addr2name[addrs[i]]}+{va - addrs[i]:#x}")
+            owner = f'{addr2name[addrs[i]]}+{va - addrs[i]:#x}' if i >= 0 else '(before first known method)'
+            print(f"   {kind:4} candidate {va:#x}  near {owner}")

@@ -62,6 +62,6 @@ def decode(va):
 # At the end, so the CLI uses the decode above (generic methods resolved); it used to run before it was defined.
 if __name__ == '__main__':
     for a in sys.argv[1:]:
-        va = name2addr[a][0] if a in name2addr else int(a, 16)
-        seen = {}
-        for k, v in lits(va).items(): print(hex(k), v)
+        for va in name2addr[a] if a in name2addr else [int(a, 16)]:
+            print(f'== {a} @ {va:#x} (check overload signature with dumpt.py)')
+            for k, v in lits(va).items(): print(hex(k), v)

@@ -1,6 +1,7 @@
 import struct, sys, re
 import os
 from gamedir import game_dir
+from metadata_layout import header
 P = os.path.join(game_dir(), "GunmanContracts_Data", "il2cpp_data", "Metadata", "global-metadata.dat")
 d = open(P, 'rb').read()
 names = ["stringLiteral","stringLiteralData","string","events","properties","methods",
@@ -9,9 +10,7 @@ names = ["stringLiteral","stringLiteralData","string","events","properties","met
  "interfaces","vtableMethods","interfaceOffsets","typeDefinitions","images","assemblies","fieldRefs",
  "referencedAssemblies","attributeData","attributeDataRange","unresolvedIndirectCallParameterTypes",
  "unresolvedIndirectCallParameterRanges","windowsRuntimeTypeNames","windowsRuntimeStrings","exportedTypeDefinitions"]
-H = {}
-for i, n in enumerate(names):
-    H[n] = struct.unpack_from('<II', d, 8 + i*8)
+H = header(d)
 sOff = H['string'][0]
 def S(i):
     e = d.index(b'\0', sOff+i); return d[sOff+i:e].decode('utf8','replace')

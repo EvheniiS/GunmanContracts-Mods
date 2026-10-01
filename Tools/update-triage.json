@@ -1,0 +1,19 @@
+{
+  "BetterBow": {"debug": [["BetterBow", "DebugLog"]], "categories": ["BetterBow"]},
+  "ChallengeNpcLimit": {"debug": [], "categories": ["ChallengeNpcLimit"]},
+  "Daredevil": {"debug": [["BillyClubs", "DebugLog"], ["RadarSense", "DebugLog"]], "categories": ["BillyClubs", "RadarSense"], "companions": ["Gloves", "ThrowAssist", "ModSettings", "WeaponFramework", "VRHolsterCustomization"]},
+  "EnemyAwarenessFix": {"debug": [["EnemyAwarenessFix", "DebugLog"]], "categories": ["EnemyAwarenessFix"]},
+  "EnemyAwarenessLog": {"debug": [["EnemyAwarenessLog", "Enabled"]], "categories": ["EnemyAwarenessLog"]},
+  "FireSelector": {"debug": [["FireSelector", "DebugLog"]], "categories": ["FireSelector"]},
+  "FrameProbe": {"debug": [], "categories": ["FrameProbe"]},
+  "Gloves": {"debug": [], "categories": ["Gloves"]},
+  "GrabFix": {"debug": [["GrabFix", "DebugLog"]], "categories": ["GrabFix"]},
+  "GrabLog": {"debug": [["GrabLog", "Enabled"]], "categories": ["GrabLog"]},
+  "HeavyMelee": {"debug": [["HeavyMelee", "DebugLog"]], "categories": ["HeavyMelee"]},
+  "KneeShotStun": {"debug": [["KneeShotStun", "DebugLog"]], "categories": ["KneeShotStun"]},
+  "ModSettings": {"debug": [["ModSettings", "DebugLog"]], "categories": ["ModSettings"]},
+  "PhysicalDodge": {"debug": [["PhysicalDodge", "DebugLog"]], "categories": ["PhysicalDodge"]},
+  "ThrowAssist": {"debug": [["ThrowAssist", "DebugLog"]], "categories": ["ThrowAssist"]},
+  "VRHolsterCustomization": {"debug": [["VRHolsters", "DebugLog"]], "categories": ["VRHolsters", "VRHolsters_BackSlots", "VRHolsters_Positions", "VRHolsters_Visual", "VRHolsters_Adjustment"]},
+  "WeaponFramework": {"debug": [["WeaponFramework", "DebugLog"]], "categories": ["WeaponFramework"]}
+}

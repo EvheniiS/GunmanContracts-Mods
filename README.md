@@ -25,6 +25,11 @@ of the others (see [Mod structure](#mod-structure)).
 
 Settings for each mod are in `UserData\MelonPreferences.cfg`, one section per mod, and on the in-VR Mod Settings board.
 
+For game updates, use the [recovery workflow](Tools/UPDATE_RECOVERY.md):
+`./Tools/Update-Triage.ps1 Prepare`, play the smoke checklist, then `Collect -Session <printed folder>` and
+`Restore -Session <printed folder>`. It backs up preferences, enables installed mods' diagnostics, preserves session
+evidence and helps choose selective repairs. Use `Snapshot` now to retain a pre-update baseline.
+
 ## Mod structure
 
 **Daredevil** is one package and the only place its features are built:

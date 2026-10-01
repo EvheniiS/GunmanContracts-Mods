@@ -45,4 +45,6 @@ def dis(va):
 
 if __name__ == '__main__':
     a = sys.argv[1]
-    dis(name2addr[a][0] if a in name2addr else int(a, 16))
+    for address in name2addr[a] if a in name2addr else [int(a, 16)]:
+        print(f'== {a} @ {address:#x} (check overload signature with dumpt.py)')
+        dis(address)

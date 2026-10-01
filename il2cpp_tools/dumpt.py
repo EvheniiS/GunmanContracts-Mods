@@ -7,5 +7,5 @@ for nm in sys.argv[1:]:
         for k in range(types[t]['mc']):
             mm = method(types[t]['mStart']+k)
             full = tname(t)+'::'+mm['name']
-            a = name2addr.get(full, [None])[0]
+            a = method_addrs.get(types[t]['mStart']+k)
             print('   M', sig(types[t]['mStart']+k), hex(a) if a else '')

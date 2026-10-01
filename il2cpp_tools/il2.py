@@ -1,17 +1,13 @@
 """Minimal IL2CPP v31 metadata + GameAssembly mapper: method addresses, field offsets, field types."""
 import struct, pefile, pickle, os, bisect
 from gamedir import game_dir
+from metadata_layout import header, cache_key
 G = game_dir()
 MD = G + r"\GunmanContracts_Data\il2cpp_data\Metadata\global-metadata.dat"
 GA = G + r"\GameAssembly.dll"
 d = open(MD, 'rb').read()
-names = ["stringLiteral","stringLiteralData","string","events","properties","methods",
- "parameterDefaultValues","fieldDefaultValues","fieldAndParameterDefaultValueData","fieldMarshaledSizes",
- "parameters","fields","genericParameters","genericParameterConstraints","genericContainers","nestedTypes",
- "interfaces","vtableMethods","interfaceOffsets","typeDefinitions","images","assemblies","fieldRefs",
- "referencedAssemblies","attributeData","attributeDataRange","unresolvedIndirectCallParameterTypes",
- "unresolvedIndirectCallParameterRanges","windowsRuntimeTypeNames","windowsRuntimeStrings","exportedTypeDefinitions"]
-H = {n: struct.unpack_from('<II', d, 8 + i*8) for i, n in enumerate(names)}
+H = header(d)
+names = list(H)
 sOff = H['string'][0]
 def S(i):
     e = d.index(b'\0', sOff+i); return d[sOff+i:e].decode('utf8', 'replace')
@@ -46,72 +42,123 @@ def field(fi):
 
 # ---- PE
 pe = pefile.PE(GA, fast_load=True)
+if pe.FILE_HEADER.Machine != 0x8664:
+    raise ValueError('Mapper supports x64 GameAssembly only; review the binary architecture.')
 base = pe.OPTIONAL_HEADER.ImageBase
 data = pe.__data__
 secs = [(s.Name.rstrip(b'\0').decode(), s.VirtualAddress, s.Misc_VirtualSize, s.PointerToRawData, s.SizeOfRawData) for s in pe.sections]
 def va2off(va):
     rva = va - base
     for n, v, vs, p, ps in secs:
-        if v <= rva < v + max(vs, ps): return p + rva - v
+        # Virtual zero-fill has no bytes on disk. Never map it into a following section.
+        if v <= rva < v + ps and p + rva - v < len(data): return p + rva - v
     return None
 def off2va(off):
     for n, v, vs, p, ps in secs:
         if p <= off < p + ps: return base + v + off - p
-def rq(va): return struct.unpack_from('<Q', data, va2off(va))[0]
-def rd(va): return struct.unpack_from('<I', data, va2off(va))[0]
-def ri(va): return struct.unpack_from('<i', data, va2off(va))[0]
+def read_at(fmt, va):
+    offset = va2off(va)
+    if offset is None or va2off(va + struct.calcsize(fmt) - 1) != offset + struct.calcsize(fmt) - 1:
+        raise ValueError(f'Unmapped/truncated binary read at {va:#x}. Registration layout may have changed.')
+    return struct.unpack_from(fmt, data, offset)[0]
+
+def rq(va): return read_at('<Q', va)
+def rd(va): return read_at('<I', va)
+def ri(va): return read_at('<i', va)
 
 CACHE = os.path.join(os.path.dirname(__file__), 'il2map.pkl')
 # Keyed on the game files so a game update rebuilds the map instead of returning old-build addresses.
-KEY = tuple((os.path.getsize(f), int(os.path.getmtime(f))) for f in (GA, MD))
-cached = pickle.load(open(CACHE, 'rb')) if os.path.exists(CACHE) else None
-if cached and len(cached) == 5 and cached[0] == KEY:
-    _, addr2name, name2addr, fieldoffs_ptr, types_ptr = cached
+KEY = cache_key(data, d)
+cached = None
+try:
+    with open(CACHE, 'rb') as stream:
+        cached = pickle.load(stream)
+except (OSError, EOFError, pickle.UnpicklingError, ValueError, AttributeError, ImportError, IndexError):
+    pass
+if isinstance(cached, tuple) and len(cached) == 6 and cached[0] == KEY:
+    _, addr2name, name2addr, fieldoffs_ptr, types_ptr, method_addrs = cached
 else:
     import re
-    addr2name = {}; name2addr = {}
+    addr2name = {}; name2addr = {}; method_addrs = {}
     tn = [tname(t) for t in range(NT)]
     NI = len(images)
     mods = None
+    candidates = []
+    expected_images = {image[0] for image in images}
     for m in re.finditer(re.escape(struct.pack('<Q', NI)), data):
         o = m.start()
-        if o % 8: continue
+        if o % 8 or o + 16 > len(data): continue
         arr = struct.unpack_from('<Q', data, o+8)[0]
         if va2off(arr) is None: continue
         try:
             p0 = rq(arr); s = rq(p0); so = va2off(s)
-            if so is not None and data[so:so+64].split(b'\0')[0].endswith(b'.dll'):
-                mods = arr; break
-        except Exception: pass
+            if so is not None and data[so:so+200].split(b'\0')[0].endswith(b'.dll'):
+                found = set()
+                for i in range(NI):
+                    module = rq(arr + i*8)
+                    name_offset = va2off(rq(module))
+                    if name_offset is None: raise ValueError('Invalid module name pointer')
+                    found.add(data[name_offset:name_offset+200].split(b'\0')[0].decode())
+                if found == expected_images: candidates.append(arr)
+        except (ValueError, struct.error, UnicodeError): pass
+    candidates = sorted(set(candidates))
+    if len(candidates) != 1:
+        raise ValueError(f'Expected one validated codegen module table, found {len(candidates)}. Review registration discovery.')
+    mods = candidates[0]
     print('codegen modules at', hex(mods))
     bym = {}
     for i in range(NI):
         p = rq(mods + i*8); so = va2off(rq(p))
         bym[data[so:so+200].split(b'\0')[0].decode()] = p
     for (iname, tS, tC) in images:
-        p = bym[iname]; arr = rq(p+16)
+        p = bym[iname]; arr = rq(p+16); method_count = rq(p+8)
         for t in range(tS, tS+tC):
             for k in range(types[t]['mc']):
                 mm = method(types[t]['mStart'] + k)
                 rid = mm['token'] & 0xFFFFFF
                 if not arr: continue
+                if not 1 <= rid <= method_count:
+                    raise ValueError(f'Method token out of bounds in {iname}: {rid}/{method_count}.')
                 fp = rq(arr + (rid-1)*8)
+                method_addrs[types[t]['mStart'] + k] = fp
                 full = tn[t] + '::' + mm['name']
                 if fp:
+                    if va2off(fp) is None:
+                        raise ValueError(f'Method pointer for {full} is not backed by binary bytes.')
                     addr2name.setdefault(fp, full)
                     name2addr.setdefault(full, []).append(fp)
     # metadata registration: fieldOffsetsCount == typeDefinitionsSizesCount == NT
     pat = struct.pack('<Q', NT)
     fieldoffs_ptr = types_ptr = None
+    candidates = []
     for m in re.finditer(re.escape(pat), data):
         o = m.start()
-        if o % 8: continue
+        if o % 8 or o < 32 or o + 24 > len(data): continue
         if struct.unpack_from('<Q', data, o+16)[0] == NT:
-            fieldoffs_ptr = struct.unpack_from('<Q', data, o+8)[0]
-            # types are 4 pairs before: typesCount/types at o-32
-            types_ptr = struct.unpack_from('<Q', data, o-32+8)[0]
-            break
-    pickle.dump((KEY, addr2name, name2addr, fieldoffs_ptr, types_ptr), open(CACHE, 'wb'))
+            fields_candidate = struct.unpack_from('<Q', data, o+8)[0]
+            types_candidate = struct.unpack_from('<Q', data, o-24)[0]
+            types_count = struct.unpack_from('<Q', data, o-32)[0]
+            try:
+                if types_count <= max(t['byval'] for t in types): continue
+                rq(fields_candidate + (NT-1)*8)
+                rq(types_candidate + (types_count-1)*8)
+                # Check every referenced field-offset row and typedef type pointer before caching.
+                for type_index, ty in enumerate(types):
+                    rq(rq(types_candidate + ty['byval']*8))
+                    if ty['fc']:
+                        row = rq(fields_candidate + type_index*8)
+                        if row: ri(row + (ty['fc']-1)*4)
+                candidates.append((fields_candidate, types_candidate))
+            except (ValueError, struct.error): pass
+    candidates = sorted(set(candidates))
+    if len(candidates) != 1:
+        raise ValueError(f'Expected one validated metadata registration, found {len(candidates)}. Review registration discovery.')
+    fieldoffs_ptr, types_ptr = candidates[0]
+    import tempfile
+    with tempfile.NamedTemporaryFile(dir=os.path.dirname(CACHE), delete=False) as stream:
+        temporary = stream.name
+        pickle.dump((KEY, addr2name, name2addr, fieldoffs_ptr, types_ptr, method_addrs), stream)
+    os.replace(temporary, CACHE)
 
 sorted_addrs = sorted(addr2name)
 def nearest(va):
