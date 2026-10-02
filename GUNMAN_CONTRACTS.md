@@ -2401,3 +2401,9 @@ Request: store the katana (and knives) in the back slots. Built, 0 warnings, ins
 
 **Open questions for the test:** do contracts have knife spots (debug line `knife spots: N (…)` ~10 s after load)?
 Does a slow knife release near the shoulder (game throw gate ~3.5 m/s, our snap limit 5 m/s) dock instead of throwing?
+**0.3.1 (Oct 3 2026, built + installed `2318B579`, untested):** first report: with the katana in the left back slot
+and the bow in the right, the bow caught on the katana when drawn. Back-slot items were docked kinematic but still
+solid. Now every back-slot item is non-solid while holstered (solid colliders → triggers, re-asserted every frame in
+case a knife's `switchCollisions` flips them; concave mesh colliders skipped), restored on draw. Same approach as
+Daredevil's belt clubs (`SetGhost`) and the game's own socketed guns (`HVRSocket.DisableCollision` →
+`HVRGrabbable.SetAllToTrigger`). Debug line: `'<item>': N collider(s) non-solid while holstered`.

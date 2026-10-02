@@ -55,6 +55,7 @@ namespace VRHolsterCustomization
         static readonly List<GameObject> tracked = new();   // items whose release this mod watches
         static readonly List<GameObject> drawn = new();     // back items that may still exist after a checkpoint reset
         static readonly Dictionary<IntPtr, bool> wasHeld = new();
+        static readonly Dictionary<IntPtr, List<Collider>> ghosted = new(); // per holstered item: colliders we made non-solid
 
         static MelonPreferences_Entry<bool> Enabled;
         static MelonPreferences_Entry<int> Out, Up, Back, Drop, Tilt, Lean, Spin, Snap, DrawReach, BladeGrip, BladeTilt, BladeLean, BladeSpin;
@@ -180,6 +181,7 @@ namespace VRHolsterCustomization
             checkpointRestoreAt = float.PositiveInfinity;
             drawn.Clear();
             ignoresPlayer.Clear();
+            ghosted.Clear();
         }
 
         internal static void PlayerLoadoutReset(ANBGameLogic game)
@@ -220,6 +222,7 @@ namespace VRHolsterCustomization
                 if (!VRHolsterCustomizationMod.Alive(s.Socket) || Dock.IsHeld(s.Item)) continue;
                 if (!s.Item.activeSelf) s.Item.SetActive(true);
                 if (s.Kind != null && s.Kind.Blade) BackBlades.KeepDocked(s.Item);
+                KeepGhost(s.Item);
                 PinIn(s);
             }
 
@@ -248,6 +251,7 @@ namespace VRHolsterCustomization
                 var item = s.Item; var kind = s.Kind;
                 if (!drawn.Exists(go => VRHolsterCustomizationMod.Alive(go) && go.Pointer == item.Pointer)) drawn.Add(item);
                 s.Item = null; s.Kind = null;
+                Ghost(item, false);
                 Dock.Unpin(item);
                 HolsterLog.ModHolster(s.Name, Label(kind, item), false);
                 Save();
@@ -475,6 +479,7 @@ namespace VRHolsterCustomization
             var ato = item.GetComponent<Il2Cpp.ANBAssistedThrowingObject>();
             if (ato != null) { ato.StopAllCoroutines(); ato.homingTarget = null; }
             IgnorePlayer(item, s.Socket.transform.root);
+            Ghost(item, true);
             PinIn(s);
         }
 
@@ -552,6 +557,40 @@ namespace VRHolsterCustomization
                 if (modItem) continue;
                 foreach (var c in mine) Physics.IgnoreCollision(c, pc, true);
             }
+        }
+
+        // A holstered item collides with nothing, like the game's socketed guns (HVRSocket.DisableCollision ->
+        // HVRGrabbable.SetAllToTrigger): its solid colliders become triggers, so a gun or bow drawn from the other
+        // shoulder passes through it (Oct 3 2026: the bow on the right caught on a katana on the left). The draw assist
+        // and the hand's grab bag still find it. Drawn again: exactly those colliders turn solid. Same as Daredevil's belt clubs.
+        static void Ghost(GameObject item, bool on)
+        {
+            if (!VRHolsterCustomizationMod.Alive(item)) return;
+            if (!on)
+            {
+                if (ghosted.TryGetValue(item.Pointer, out var list))
+                    foreach (var c in list) if (VRHolsterCustomizationMod.Alive(c)) c.isTrigger = false;
+                ghosted.Remove(item.Pointer);
+                return;
+            }
+            if (!ghosted.TryGetValue(item.Pointer, out var mine)) ghosted[item.Pointer] = mine = new List<Collider>();
+            foreach (var c in item.GetComponentsInChildren<Collider>(true))
+            {
+                if (c.isTrigger) continue;
+                var mesh = c.TryCast<MeshCollider>();
+                if (mesh != null && !mesh.convex) continue; // a concave mesh can't be a trigger
+                c.isTrigger = true;
+                if (!mine.Exists(x => x.Pointer == c.Pointer)) mine.Add(c);
+            }
+            if (VRHolsterCustomizationMod.DebugOn && mine.Count > 0)
+                VRHolsterCustomizationMod.Log.Msg($"'{item.name}': {mine.Count} collider(s) non-solid while holstered");
+        }
+
+        // The item's own scripts may turn a collider solid again (a knife's switchCollisions): re-assert, cheaply.
+        static void KeepGhost(GameObject item)
+        {
+            if (!ghosted.TryGetValue(item.Pointer, out var list)) return;
+            foreach (var c in list) if (VRHolsterCustomizationMod.Alive(c) && !c.isTrigger) c.isTrigger = true;
         }
 
         // ---------- save / restore ----------

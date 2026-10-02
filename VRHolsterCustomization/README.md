@@ -1,4 +1,4 @@
-# VR Holster Customization 0.3.0 (built, untested; 0.2.2 is the release candidate)
+# VR Holster Customization 0.3.1 (built, untested; 0.2.2 is the release candidate)
 
 This MelonLoader mod customizes the game's hip, knife, and back holsters and requires Mod Settings. It also owns the back slots for mod items, their grab and draw behavior, and their saved state. Weapon Framework uses its docking API for wall items and its back slot API for the test crowbar. Daredevil uses the back slot API for clubs.
 
@@ -61,6 +61,9 @@ The game's katanas and knives fit the two back slots too, one item per side, lik
   release is a throw and stays a throw. Draw it with the same grip press as a crowbar (`DrawCm`).
 - It hangs by its grip end, the flat of the blade against your back: `BladeGripCm` (grip below the holster point),
   `BladeTiltDeg` (35 = diagonal), `BladeLeanDeg`, `BladeSpinDeg`. `OutCm`, `UpCm` and `BackCm` are shared with mod items.
+- **0.3.1:** anything in a back slot (blade, crowbar, club) is non-solid while it is holstered, like the game's own
+  holstered guns: its solid colliders become triggers, so a bow or gun drawn from the other shoulder passes through it.
+  They turn solid again when you draw it.
 - The game sends a dropped knife back to its holster or wall spot after a few seconds. That timer is held at zero while
   the blade is on your back.
 - Saved like a mod item (`Knife-<id>` in `SavedBackHolsters`, The Range only). After a scene load or a checkpoint
