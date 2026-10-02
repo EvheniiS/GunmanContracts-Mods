@@ -1,6 +1,6 @@
 # Daredevil: Nexus upload sheet
 
-**Status: 1.0.0 package includes the same-scene checkpoint loadout fix and A/X club door kick; both tested in game. Not uploaded.**
+**Status: 1.1.0 package built Oct 2 2026 from `dev` (commit after f838f9f); all 1.1.0 changes tested in game. Not uploaded.** 1.0.0 was never uploaded, so 1.1.0 is the first public version.
 
 The source, installed test DLL and current ZIP keep club belt loadout persistence in The Range and
 recall loose clubs when the game's player loadout resets within the contract scene.
@@ -17,14 +17,15 @@ Throw Assist's prepared package is **0.2.2**.
 
 | File | What |
 |---|---|
-| `Daredevil-1.0.0.zip` | rebuilt upload candidate: contains only `Mods/Daredevil.dll`; 3,661,623 bytes; sha256 `2783A56A3DC2FD2A6608D120C02054B69D808E1281332EE86548EBB16834D1A6` |
-| `Daredevil.dll` | rebuilt 1.0.0 package DLL, 4,240,896 bytes; sha256 `34C8BD846996E29F0855266E3538B961472A077DBFA4B873A3DF1A063EFDF8C6` |
+| `Daredevil-1.1.0.zip` | upload candidate: contains only `Mods/Daredevil.dll`; 3,672,124 bytes; sha256 `2460971F1B1D521A718142FD5DD15BCFC0B2AAF9C1D1C5189F9D49D272940C47` |
+| `Daredevil.dll` | 1.1.0 package DLL, 4,280,832 bytes; sha256 `0CF36AD85C2FDC10066019A1965480366A03FDF5F3E2747B9FAF81794AD0AC76` (same file installed in the game) |
+| `Daredevil-1.0.0.zip` | old, never uploaded; kept for reference |
 | `NEXUS_DESCRIPTION.txt` | the page text (BBCode), already links Mod Settings (mods/28) and Weapon Framework (mods/29) |
 | `NEXUS_REQUIREMENTS_DRAFT.md` | which companion mods are required vs. optional, and artwork copy notes |
 
 Rebuild:
 ```powershell
-dotnet build Daredevil/Daredevil.csproj -c Release -o feature/Daredevil-1.0.0-release-build --no-restore
+dotnet build Daredevil/Daredevil.csproj -c Release -o feature/Daredevil-1.1.0-release-build --no-restore
 ```
 then copy the DLL here and zip it as `Mods/Daredevil.dll`.
 
@@ -34,7 +35,7 @@ then copy the DLL here and zip it as `Mods/Daredevil.dll`.
 |---|---|
 | Mod name | `Daredevil` |
 | Author | `Evgeeso` |
-| Version | `1.0.0` |
+| Version | `1.1.0` |
 | Category | Gameplay |
 | Language | English |
 | Tags | VR, Weapons, Melee, Gameplay |
@@ -43,6 +44,19 @@ then copy the DLL here and zip it as `Mods/Daredevil.dll`.
 | File name / category | `Daredevil` / Main files |
 | File description | `Extract into the game folder. Needs MelonLoader 0.7.x, Gloves, Throw Assist and Mod Settings.` |
 | Images | `Daredevil-Nexus-thumbnail-v2.png`, `Daredevil-Nexus-header-draft.png` (see `Daredevil-Nexus-imagegen-prompts.txt` for the prompts behind them) |
+
+## Changelog (Nexus "Changelog" field)
+
+1.1.0
+- Radar Sense: fixed silhouettes disappearing (or only a vest showing) on enemies that respawned.
+- Radar Sense: enemies peeking over cover keep their outline (SeenFraction).
+- Radar Sense: unseen enemies standing still now show as a dim silhouette (ShowStill, StillBrightness).
+- Radar Sense: new Brightness and Detail settings; darker default look without bloom aura.
+- Billy Clubs: snappier club in the hand (HandTorqueScale 1.6, ClubMaxSpin 80); Mass applies live.
+- Billy Clubs: thrown body-hit stun 1 s (ChestStunSeconds, was 3).
+
+Full notes: top of `Daredevil/README.md`. The page's settings tables were regenerated from source defaults
+(this also corrected `ThrowReaction`, which the page listed as Kneel; the default is Knockdown).
 
 ## Before uploading
 
@@ -59,6 +73,6 @@ then copy the DLL here and zip it as `Mods/Daredevil.dll`.
 - [ ] **Confirm or upload Throw Assist first** (or in the same sitting), then add its real Nexus
       link to `NEXUS_DESCRIPTION.txt` and mark it as an on-site requirement.
 - [ ] Check the optional VR Holster Customization link and requirement status when its Nexus page exists.
-- [ ] Tag: `git tag daredevil-v1.0.0` and push the tag.
+- [ ] Tag: `git tag daredevil-v1.1.0` and push the tag.
 - [ ] README status → released, with the Nexus link; add the link to the table in
       `release/NEXUS_TEMPLATE.txt`.

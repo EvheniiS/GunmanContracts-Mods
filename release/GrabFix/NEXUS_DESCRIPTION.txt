@@ -13,6 +13,7 @@ and [b]easier catches[/b] for items you just released. [b]Holstered items keep t
 [/list]
 
 [size=4][b]Holsters and deliberate grabs[/b][/size]
+[b]Enemies need your palm on them:[/b] standing, stunned and downed enemies are only grabbed when your palm is within 10 cm of their body, and never from a distance. A punch that brushes a face or a body at your feet no longer grabs it.
 Holstered, socketed and wall-mounted items use their original grab zones, so the wider pickup area and palm targeting do not extend their reach. Recently holstered items are excluded from catch assistance.
 You still press grip deliberately; holding it indefinitely does not keep retrying. The mod uses the game's normal grab checks and distance-grab controls. It changes pickup detection, not how a held item sits in your hand.
 [size=4][b]Install[/b][/size]
@@ -36,7 +37,7 @@ game folder, and if Windows asks, choose to replace / merge.
 You should end up with: [i]Gunman Contracts - Stand Alone\Mods\GrabFix.dll[/i]
 
 [b]4. Check it works[/b]
-Start the game. The MelonLoader console lists [b]Grab Fix v1.1.0[/b] among the loaded mods.
+Start the game. The MelonLoader console lists [b]Grab Fix v1.1.1[/b] among the loaded mods.
 
 [b]Not working?[/b]
 [list]
@@ -62,6 +63,7 @@ RecentReleaseAssist    = true    extra catch tolerance for recently released loo
 RecentReleaseRadius    = 0.18    palm-to-item surface catch distance, metres (0.05-0.3)
 RecentReleaseSeconds   = 15      eligibility after release in real seconds (0-60)
 CatchBufferSeconds     = 0.60    fresh grip press catch window in real seconds (0-1)
+EnemyGrabRadius        = 0.10    palm-to-enemy distance for grabbing enemies, metres (0-0.25; 0 = no limit)
 DebugLog               = false   log assisted pickups and detector setup
 [/code]
 Or change these live in-VR with [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28][b]Mod Settings[/b][/url] (optional) — no restart, no text editor.
