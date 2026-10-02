@@ -2326,3 +2326,38 @@ Log `26-10-1_23-36-10.log` (HandProbe build, settings untouched). Last swings (2
 - **Next:** read the FLIP lines (hand-turn vs grip-slip) and compare at HandTorqueScale 3 / ClubInertiaScale 0.4.
 
 **Flip trace result (log `26-10-1_23-56-15.log`, game still running, settings untouched): hypothesis CONFIRMED for the real spins.** R-hand flips at 23:58:56 and 23:58:59: club 159 deg off the hand's line, **hand body 178-179 deg off the controller, grip slip only 5-18 deg** -> the hand turned, not the grip. Club and hand spin are identical (peaks 31-34 rad/s, equal to the club's 30 rad/s cap) while the controller reached 25-41 rad/s. After the controller stops (1-3 rad/s) the hand keeps turning at 14 -> 8 rad/s over ~200 ms (about -100 rad/s2: a constant, saturated torque), goes through the target and ends 178 deg away, then returns (a ring-down 46 -> 75 -> 14 -> 178 -> 0 deg). Collisions did not appear in the trace. The ten `FLIP L` lines (23:57:44-58:05) are a logger artifact: the left hand held the right club as a second hand, so its controller says nothing about the club; fixed in the source (tracking only while exactly one hand holds the club, 2.5 s repeat guard). That build was not deployed (game running, DLL locked).
+
+## Close Eyes (Oct 2 2026): dead enemies close their eyes; RELEASE CANDIDATE (0.5.0, tested 0.4.0 behaviour)
+- **Enemy faces are Synty Sidekick meshes** (`CC_Combined_LOD0`-`LOD4`, found in `resources.assets`): 147 blend shapes =
+  the full ARKit set (`eyeBlinkLeft/Right`, `jawOpen`, `eyeLookDown*`...) + Sidekick `shp_*`/`mod_*`/`body_*` shape keys.
+  The game never drives the face shapes, so corpses stare. The same shapes could do other face work later (jaw slack on
+  death, pain squint on hits).
+- **★ The game rewrites face blend shapes EVERY frame** (`ANBBasicNPC.faceAnimator` + `ANBBlendShapeSync`, which copies
+  `mainMesh` = `CC_Combined_LOD0` onto the other face/beard meshes in `UpdateExec`). Measured: 232/232 frames overwritten.
+  So any face-shape mod must write every frame (LateUpdate + an `UpdateExec` postfix); 0.1.0's one-time set did nothing.
+- 0.2.0: `KillNPC` postfix + `isDead` poll; writes `eyeBlinkLeft/Right` (indices 19/82) every frame on the sync meshes
+  and every child mesh that has them (face LOD0-2, beards); restores on pool revive. LOD3/4 faces have no shapes.
+- **0.3.0 optimisation:** `UpdateExec` has one caller, `checkVisibilityRelatedActions` (per enemy), and copies all
+  147 weights main -> others each call. When closing starts the mod stops the corpse's `faceAnimator` and skips its
+  `UpdateExec` (prefix), writes the eyelids, then only reads one weight per corpse per frame (rewrites if changed).
+  Corpses end up cheaper than vanilla. Tested with 0.4.0 ("works great").
+- **★ "Lying in pain" = the TWITCHER state, and `isDead` is already TRUE in it** (checked in game code). `TakeDamage`
+  sets `isTwitcher` on a lethal hit when `combatModeActive`, not a headshot, `torsoHit <= 2`, `chestHit <= 1` (so
+  most body-shot kills in combat). `startTwitcher` (after `ANBPM.twitcherWaitTime`) needs `isTwitcher && isDead`:
+  twitcher anim + `PlayFaceAnim("face_twitcher")` + `PlaySoundTwitcher`. `ANBBasicNPC.UpdateExec` ends it when
+  `killedTimer > twitcherSurvivalTime` (Random `twitcherTimeTillDeathMin..Max`) or `outOfViewTime >
+  killTwitcherAfterOutOfSightTime`; `TakeDamage`/`ExplosionDamage` end it on another hit. `killTwitcher`:
+  `twitcherKill` anim, body animator off, `isTwitcher`/`isKillingTwitcher` cleared, `PlayFaceAnim("face_death")`.
+  `ANBPM.forcedTwitcher` 2 = force, 1 = never. Flags: `isTwitcher` 0x9b3, `isTwitcherStarted` 0x9b4,
+  `isKillingTwitcher` 0x9b5. Close Eyes 0.4.0 waits while `isTwitcher` is set (`WaitForTwitch`).
+- **★ Twitchers writhe FOREVER in play (Oct 2 2026), and leg shots are ignored BY DESIGN.** `TakeDamage` on a
+  twitcher (killedTimer >= 1.75): limb hit -> only `AddForceAtPosition` + `PlaySoundHurt`; non-limb -> `killTwitcher`.
+  The bleed-out check runs only in `ANBBasicNPC.UpdateExec`, which `ANBUpdateCentral.UpdateCalls` calls only for
+  `encounterSystem.allNpcs` entries with `NPCSpawned` (0xb06) && `NPCFullySetup` (0xb03); why it never fires is open
+  (Close Eyes 0.5.0 logs the game's numbers on its first 3 forced bleed-outs per level). 0.5.0 enforces it:
+  `forcePuppetMasterActive(1, false)` + `ANBPM.StartCoroutine(killTwitcher(true))` past `twitcherSurvivalTime`
+  (or `MaxPainSeconds`); any `TakeDamage` that leaves it writhing -> `killTwitcher(false)`. **Both opt-in
+  (`BleedOut`, `AnyHitEndsPain`, default off, untested)**: Evhenii prefers no extra load over the timeout; the RC is the
+  tested 0.4.0 behaviour.
+  Details: `CloseEyes/README.md`.
+

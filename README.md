@@ -22,6 +22,7 @@ of the others (see [Mod structure](#mod-structure)).
 | [Gloves](Gloves/README.md) | Recolours the player's gloves: dark red by default, any colour from the Mod Settings board, applied at once | 0.1.0, released on [Nexus](https://www.nexusmods.com/gunmancontractsstandalone/mods/32); required by Daredevil |
 | [Weapon Framework](WeaponFramework/README.md) | Adds mod weapons to the arsenal panel in The Range; uses VR Holster Customization for item docking and test crowbar back slots. Guide: [MODDING_GUIDE.md](WeaponFramework/MODDING_GUIDE.md) | 0.3.0 on dev; requires VR Holster Customization |
 | [VR Holster Customization](VRHolsterCustomization/README.md) | Adjust game holsters on three axes or move empty slots by hand; hologram colors and mod-item back slots | 0.2.2 packaged release candidate; back-slot checkpoint reset tested; requires Mod Settings |
+| [Close Eyes](CloseEyes/README.md) | Dead enemies close their eyes (the faces' own ARKit blink shapes, eased shut a moment after death; corpse faces cost less than vanilla); enemies writhing in pain keep their pain face until they die. Optional, experimental: bleed-out and any hit finishes them | 0.5.0 release candidate (tested behaviour; experimental options off, untested) |
 
 Settings for each mod are in `UserData\MelonPreferences.cfg`, one section per mod, and on the in-VR Mod Settings board.
 
@@ -79,7 +80,7 @@ Or put your path in `<ModFolder>/GameDir.local.props` (git-ignored):
 ## Repository layout
 
 - `BetterBow/`, `KneeShotStun/`, `FireSelector/`, `HeavyMelee/`, `PhysicalDodge/`, `EnemyAwarenessFix/`, `ChallengeNpcLimit/`,
-  `EnemyAwarenessLog/`, `ThrowAssist/`, `ModSettings/`, `Gloves/`, `WeaponFramework/`, `VRHolsterCustomization/`, `GrabLog/`, `GrabFix/`, `FrameProbe/`: one
+  `EnemyAwarenessLog/`, `ThrowAssist/`, `ModSettings/`, `Gloves/`, `WeaponFramework/`, `VRHolsterCustomization/`, `GrabLog/`, `GrabFix/`, `FrameProbe/`, `CloseEyes/`: one
   folder per mod, source and its own project.
 - `Daredevil/`: the package project, with `BillyClubs/` and `RadarSense/` source folders and `Tests/` (the model
   loader test). There are no separate `BillyClubs/` or `RadarSense/` projects any more.
