@@ -2407,3 +2407,13 @@ solid. Now every back-slot item is non-solid while holstered (solid colliders â†
 case a knife's `switchCollisions` flips them; concave mesh colliders skipped), restored on draw. Same approach as
 Daredevil's belt clubs (`SetGhost`) and the game's own socketed guns (`HVRSocket.DisableCollision` â†’
 `HVRGrabbable.SetAllToTrigger`). Debug line: `'<item>': N collider(s) non-solid while holstered`.
+
+**0.3.2 (Oct 3 2026, built + installed `2EB8D749`, untested):** second report: a katana thrown after drawing it from the
+back auto-returned to the belt knife holster. Cause, from `ANBKnife.returnKnife`: it only knows `savedHolster` (the belt
+knife holster, if that holster's loadout string is `none`, i.e. empty: `ForceUnstab(false)`, `socketed = 1`, holster
+`TryGrab`) or else `myWallSpot` (`inWall = 1`); if the holster is full it re-arms the timer from
+`ANBGameLogic.autoReturnKnifeAfter`. Fix: a `returnKnife` prefix sends a blade last drawn from the back to its back side
+(else the other free side, else the game's return), after `ForceUnstab(false)` + `abortHoming()`. "Home" is forgotten
+when the knife is taken out of a socket (HVR `HVRGrabbable.IsSocketed`) or put in a belt knife holster
+(`ANBGameLogic.holsterKnife` postfix). **`ANBKnife.socketed` / `inWall` are NOT reliable:** `grabKnife` / `releaseKnife`
+only write `isHeld`, so those flags stay stale after a draw.

@@ -56,6 +56,7 @@ namespace VRHolsterCustomization
         static readonly List<GameObject> drawn = new();     // back items that may still exist after a checkpoint reset
         static readonly Dictionary<IntPtr, bool> wasHeld = new();
         static readonly Dictionary<IntPtr, List<Collider>> ghosted = new(); // per holstered item: colliders we made non-solid
+        static readonly Dictionary<IntPtr, bool> home = new(); // blade last drawn from the back: true = left side
 
         static MelonPreferences_Entry<bool> Enabled;
         static MelonPreferences_Entry<int> Out, Up, Back, Drop, Tilt, Lean, Spin, Snap, DrawReach, BladeGrip, BladeTilt, BladeLean, BladeSpin;
@@ -182,6 +183,7 @@ namespace VRHolsterCustomization
             drawn.Clear();
             ignoresPlayer.Clear();
             ghosted.Clear();
+            home.Clear();
         }
 
         internal static void PlayerLoadoutReset(ANBGameLogic game)
@@ -249,6 +251,7 @@ namespace VRHolsterCustomization
             {
                 if (!VRHolsterCustomizationMod.Alive(s.Item) || !t.IsChildOf(s.Item.transform)) continue;
                 var item = s.Item; var kind = s.Kind;
+                if (kind != null && kind.Blade) home[item.Pointer] = s.Left;
                 if (!drawn.Exists(go => VRHolsterCustomizationMod.Alive(go) && go.Pointer == item.Pointer)) drawn.Add(item);
                 s.Item = null; s.Kind = null;
                 Ghost(item, false);
@@ -474,6 +477,7 @@ namespace VRHolsterCustomization
         static void Put(Slot s, GameObject item, HolsterKind kind)
         {
             s.Item = item; s.Kind = kind;
+            home.Remove(item.Pointer);
             Dock.Unhang(item);
             Dock.Manage(item);
             var ato = item.GetComponent<Il2Cpp.ANBAssistedThrowingObject>();
@@ -591,6 +595,29 @@ namespace VRHolsterCustomization
         {
             if (!ghosted.TryGetValue(item.Pointer, out var list)) return;
             foreach (var c in list) if (VRHolsterCustomizationMod.Alive(c) && !c.isTrigger) c.isTrigger = true;
+        }
+
+        // The game's knife auto-return (ANBKnife.returnKnife) only knows the belt knife holster and the wall spot. A blade
+        // last drawn from the back goes back there instead: its own side if free, else the other free side, else the
+        // game's return. True = it is on the back now.
+        internal static bool ReturnHome(GameObject item)
+        {
+            if (Enabled == null || !Enabled.Value || !VRHolsterCustomizationMod.Alive(item) || !home.TryGetValue(item.Pointer, out bool left)) return false;
+            var kind = KindOf(item);
+            if (kind == null) return false;
+            var s = left ? slots[0] : slots[1];
+            if (!Free(s)) s = left ? slots[1] : slots[0];
+            if (!Free(s)) return false;
+            Put(s, item, kind);
+            HolsterLog.ModHolster(s.Name, Label(kind, item) + " (returned)", true);
+            Save();
+            return true;
+        }
+
+        // Taken from somewhere else (the belt knife holster, the wall): the game's return applies again.
+        internal static void ForgetHome(GameObject item)
+        {
+            if (VRHolsterCustomizationMod.Alive(item)) home.Remove(item.Pointer);
         }
 
         // ---------- save / restore ----------

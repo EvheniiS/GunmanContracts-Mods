@@ -69,6 +69,10 @@ namespace VRHolsterCustomization
             if (Mode == null || Mode.Value == "Off" || !VRHolsterCustomizationMod.Alive(g) || grabber == null || grabber.TryCast<HVRHandGrabber>() == null) return;
             var knife = g.GetComponentInParent<ANBKnife>();
             if (!VRHolsterCustomizationMod.Alive(knife)) return;
+            // Taken out of a socket (the belt knife holster, its wall spot), not from our back or caught in the air.
+            // HVR's IsSocketed, not ANBKnife.socketed/inWall: grabKnife never clears those, so they go stale.
+            var main = knife.GrabbableScript;
+            if (g.IsSocketed || (VRHolsterCustomizationMod.Alive(main) && main.IsSocketed)) Holsters.ForgetHome(knife.gameObject);
             var i = InfoOf(knife.gameObject);
             if (i == null || !Fits(i)) return;
             Register(i.Id);
@@ -80,6 +84,21 @@ namespace VRHolsterCustomization
         {
             var knife = item.GetComponent<ANBKnife>();
             if (knife != null && knife.autoReturnAfterCurrent != 0f) knife.autoReturnAfterCurrent = 0f;
+        }
+
+        // ANBKnife.returnKnife (auto-return after a throw or a drop): a blade drawn from the back goes back there.
+        // returnKnife itself unstabs (HVRStabber.ForceUnstab(false)) before its holster grab; so do we.
+        internal static bool ReturnToBack(ANBKnife knife)
+        {
+            if (Mode == null || Mode.Value == "Off" || !VRHolsterCustomizationMod.Alive(knife) || knife.isHeld) return false;
+            var go = knife.gameObject;
+            if (InfoOf(go) == null) return false;
+            var stabber = knife.Stabber;
+            if (VRHolsterCustomizationMod.Alive(stabber) && stabber.IsStabbing) stabber.ForceUnstab(false);
+            knife.abortHoming();
+            if (!Holsters.ReturnHome(go)) return false;
+            knife.autoReturnAfterCurrent = 0f;
+            return true;
         }
 
         static void Register(string id)
@@ -152,6 +171,26 @@ namespace VRHolsterCustomization
             var b = new StringBuilder(s.Length);
             foreach (var c in s) if (char.IsLetterOrDigit(c) || c == '-' || c == '_') b.Append(c);
             return b.ToString();
+        }
+    }
+
+    [HarmonyLib.HarmonyPatch(typeof(ANBKnife), nameof(ANBKnife.returnKnife))]
+    static class KnifeReturnPatch
+    {
+        static bool Prefix(ANBKnife __instance)
+        {
+            try { return !BackBlades.ReturnToBack(__instance); }
+            catch (Exception e) { VRHolsterCustomizationMod.Log.Warning($"knife return: {e.Message}"); return true; }
+        }
+    }
+
+    // The player put the knife in a belt knife holster: from now on the game's return (to that holster) applies.
+    [HarmonyLib.HarmonyPatch(typeof(ANBGameLogic), nameof(ANBGameLogic.holsterKnife))]
+    static class KnifeHolsteredPatch
+    {
+        static void Postfix(ANBKnife knf)
+        {
+            try { if (VRHolsterCustomizationMod.Alive(knf)) Holsters.ForgetHome(knf.gameObject); } catch { }
         }
     }
 }
