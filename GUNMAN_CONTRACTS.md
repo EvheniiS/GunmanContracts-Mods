@@ -9,6 +9,8 @@ release DLL + Nexus BBCode in `release/BetterBow/` (see Source control).
 Engine: **Unity 6000.0.41f1, IL2CPP** (metadata v31), built on the **HurricaneVR** framework.
 Developer string: `ANB_Seth`. Game logic lives in `HurricaneVR.Framework.dll` (classes prefixed `ANB*`).
 
+**Sound (how the game plays it, clip arrays, ways to add custom sounds): [SOUND.md](SOUND.md).**
+
 ## Game-update recovery audit (Oct 1 2026)
 
 The Sep 27 recovery entry below is superseded by [Tools/UPDATE_RECOVERY.md](Tools/UPDATE_RECOVERY.md).
@@ -2327,7 +2329,7 @@ Log `26-10-1_23-36-10.log` (HandProbe build, settings untouched). Last swings (2
 
 **Flip trace result (log `26-10-1_23-56-15.log`, game still running, settings untouched): hypothesis CONFIRMED for the real spins.** R-hand flips at 23:58:56 and 23:58:59: club 159 deg off the hand's line, **hand body 178-179 deg off the controller, grip slip only 5-18 deg** -> the hand turned, not the grip. Club and hand spin are identical (peaks 31-34 rad/s, equal to the club's 30 rad/s cap) while the controller reached 25-41 rad/s. After the controller stops (1-3 rad/s) the hand keeps turning at 14 -> 8 rad/s over ~200 ms (about -100 rad/s2: a constant, saturated torque), goes through the target and ends 178 deg away, then returns (a ring-down 46 -> 75 -> 14 -> 178 -> 0 deg). Collisions did not appear in the trace. The ten `FLIP L` lines (23:57:44-58:05) are a logger artifact: the left hand held the right club as a second hand, so its controller says nothing about the club; fixed in the source (tracking only while exactly one hand holds the club, 2.5 s repeat guard). That build was not deployed (game running, DLL locked).
 
-## Close Eyes (Oct 2 2026): dead enemies close their eyes; RELEASE CANDIDATE (0.5.0, tested 0.4.0 behaviour)
+## Death Details (was Close Eyes, Oct 2 2026): dead enemies close their eyes; 0.7.1 RELEASE CANDIDATE (tested Oct 2 2026)
 - **Enemy faces are Synty Sidekick meshes** (`CC_Combined_LOD0`-`LOD4`, found in `resources.assets`): 147 blend shapes =
   the full ARKit set (`eyeBlinkLeft/Right`, `jawOpen`, `eyeLookDown*`...) + Sidekick `shp_*`/`mod_*`/`body_*` shape keys.
   The game never drives the face shapes, so corpses stare. The same shapes could do other face work later (jaw slack on
@@ -2349,15 +2351,30 @@ Log `26-10-1_23-36-10.log` (HandProbe build, settings untouched). Last swings (2
   killTwitcherAfterOutOfSightTime`; `TakeDamage`/`ExplosionDamage` end it on another hit. `killTwitcher`:
   `twitcherKill` anim, body animator off, `isTwitcher`/`isKillingTwitcher` cleared, `PlayFaceAnim("face_death")`.
   `ANBPM.forcedTwitcher` 2 = force, 1 = never. Flags: `isTwitcher` 0x9b3, `isTwitcherStarted` 0x9b4,
-  `isKillingTwitcher` 0x9b5. Close Eyes 0.4.0 waits while `isTwitcher` is set (`WaitForTwitch`).
+  `isKillingTwitcher` 0x9b5. Death Details 0.4.0 waits while `isTwitcher` is set (`WaitForTwitch`).
 - **★ Twitchers writhe FOREVER in play (Oct 2 2026), and leg shots are ignored BY DESIGN.** `TakeDamage` on a
   twitcher (killedTimer >= 1.75): limb hit -> only `AddForceAtPosition` + `PlaySoundHurt`; non-limb -> `killTwitcher`.
   The bleed-out check runs only in `ANBBasicNPC.UpdateExec`, which `ANBUpdateCentral.UpdateCalls` calls only for
   `encounterSystem.allNpcs` entries with `NPCSpawned` (0xb06) && `NPCFullySetup` (0xb03); why it never fires is open
-  (Close Eyes 0.5.0 logs the game's numbers on its first 3 forced bleed-outs per level). 0.5.0 enforces it:
+  (Death Details 0.5.0 logs the game's numbers on its first 3 forced bleed-outs per level). 0.5.0 enforces it:
   `forcePuppetMasterActive(1, false)` + `ANBPM.StartCoroutine(killTwitcher(true))` past `twitcherSurvivalTime`
   (or `MaxPainSeconds`); any `TakeDamage` that leaves it writhing -> `killTwitcher(false)`. **Both opt-in
   (`BleedOut`, `AnyHitEndsPain`, default off, untested)**: Evhenii prefers no extra load over the timeout; the RC is the
   tested 0.4.0 behaviour.
-  Details: `CloseEyes/README.md`.
+- **0.6.0 `JawOpen` (tested; 0.1 looks best = default):** the open mouth on corpses is the game's `face_death` face (jawOpen
+  shape), not the ragdoll. Evhenii wants it slightly parted: when the face freezes, `jawOpen` eases from where
+  `face_death` had it to `JawOpen` (face LOD0-2 + beards), once. -1 = leave the game's jaw.
+- **★ Melee never reaches a dead body, but its collision event does.** `ANBBodyMeleeCollision.OnCollisionEnter`
+  tail-jumps to `ANBBodyMeleeCollisionManager.collisionEnter` unconditionally; the game's handler checks `isDead`
+  inside (and Heavy Melee / Daredevil skip dead too). So a club or pistol whip to a writhing enemy's head did
+  nothing. Death Details 0.7.0 (`HeadHitEndsPain`, tested): `collisionEnter` postfix, `bmc.isHead` + player
+  hitter (`ANBBluntWeapon` / held gun or bow / `HVRHandGrabber`) at `HeadHitSpeed` -> `killTwitcher(false)`.
+  Cost: one lookup per contact in a table of currently writhing bodies.
+- **★ The game's melee hit SOUNDS (for any future custom-SFX work):** clip arrays on `ANBGameLogic`: `BluntHit`
+  (0x1000), `BluntHitHead` (0x1008), `FleshKnifeHit` (0xff0), `FleshKnifeSlashHit` (0xff8), `WoodHit` (0x1010).
+  `TakeBluntWeaponDamage` and `TakeMeleeDamage` (living targets only) play `Random` from `BluntHit` with
+  `ANBGameLogic.PlayAudioClip(clip, part.transform.position, false, "default", false, -1, -1)` (pitch/volume -1 =
+  the game's defaults). Death Details 0.7.1 plays `BluntHitHead` that way on the finishing head hit (tested: sounds
+  right). Replacing or adding clips = swap entries in these arrays at runtime.
+  Details: `DeathDetails/README.md`.
 

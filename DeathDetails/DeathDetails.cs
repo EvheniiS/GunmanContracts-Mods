@@ -1,15 +1,21 @@
 using System;
 using System.Collections.Generic;
 using Il2Cpp;
+using Il2CppHurricaneVR.Framework.Core;
+using Il2CppHurricaneVR.Framework.Core.Grabbers;
+using Il2CppHurricaneVR.Framework.Weapons;
+using Il2CppHurricaneVR.Framework.Weapons.Bow;
+using Il2CppHurricaneVR.Framework.Weapons.Guns;
 using MelonLoader;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(CloseEyes.CloseEyesMod), "Close Eyes", "0.5.0", "Evgeeso")]
+[assembly: MelonInfo(typeof(DeathDetails.DeathDetailsMod), "Death Details", "0.7.1", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
-namespace CloseEyes
+namespace DeathDetails
 {
-    // Dead enemies close their eyes.
+    // Death Details (was Close Eyes): dead enemies close their eyes, keep a slightly parted mouth, and enemies writhing
+    // in pain keep their pain face until they die; a melee hit to the head finishes them.
     //
     // The faces carry ARKit blend shapes (eyeBlinkLeft / eyeBlinkRight close the eyelids). The game rewrites face
     // shapes every frame (0.2.0 log: 232/232 frames): ANBBasicNPC.faceAnimator animates the sync's mainMesh
@@ -18,8 +24,9 @@ namespace CloseEyes
     //
     // So when the eyelids start to close, the mod switches that corpse's face animator off and skips its sync
     // (UpdateExec prefix). It eases the eyelids shut on every face mesh, then leaves them: nothing rewrites them any
-    // more. Per frame a frozen corpse costs one weight read on its main face; if something did change it, the mod
-    // writes the eyelids again. A corpse costs less than in the vanilla game, which keeps animating and syncing
+    // more. The jaw (jawOpen) eases to JawOpen the same way, from where the game's death face had it. Per frame a
+    // frozen corpse costs one weight read on its main face; if something did change it, the mod writes the eyelids
+    // again. A corpse costs less than in the vanilla game, which keeps animating and syncing
     // every dead face.
     //
     // Death is caught at KillNPC (postfix) and by polling isDead. Enemies are pooled: when one is alive again, its
@@ -39,13 +46,13 @@ namespace CloseEyes
     // ends the pain itself, the way the game would: past the game's own random time (or MaxPainSeconds) it calls
     // forcePuppetMasterActive(1, false) + killTwitcher(noHit: true) like UpdateExec; a hit that leaves it writhing
     // calls killTwitcher(false) like a torso shot.
-    public class CloseEyesMod : MelonMod
+    public class DeathDetailsMod : MelonMod
     {
         internal static MelonLogger.Instance Log;
-        static MelonPreferences_Entry<bool> Enabled, WaitForTwitch, BleedOut, AnyHitEndsPain, DebugLog;
-        static MelonPreferences_Entry<float> EyesClosed, CloseSeconds, Delay, MaxPainSeconds;
+        static MelonPreferences_Entry<bool> Enabled, WaitForTwitch, BleedOut, AnyHitEndsPain, HeadHitEndsPain, HeadHitSfx, DebugLog;
+        static MelonPreferences_Entry<float> EyesClosed, JawOpen, CloseSeconds, Delay, MaxPainSeconds, HeadHitSpeed;
 
-        class Face { public SkinnedMeshRenderer R; public int L, Rt; public float Full, OrigL, OrigR; }
+        class Face { public SkinnedMeshRenderer R; public int L, Rt, J = -1; public float Full, OrigL, OrigR, JawFull, OrigJ, JawFrom; }
 
         class Body
         {
@@ -59,11 +66,13 @@ namespace CloseEyes
             public IntPtr Sync;
             public int Rewrites;
             public bool PainEnded;
+            public IntPtr Mgr;
             public bool Detailed;
         }
 
         static readonly Dictionary<IntPtr, Body> Bodies = new();
         static readonly HashSet<IntPtr> SkippedSyncs = new();
+        static readonly Dictionary<IntPtr, Body> Writhing = new();   // body manager -> body writhing right now
         static float nextPoll;
         static int detailedLeft, painLogLeft;
         static bool warned;
@@ -72,13 +81,17 @@ namespace CloseEyes
         public override void OnInitializeMelon()
         {
             Log = LoggerInstance;
-            var c = MelonPreferences.CreateCategory("CloseEyes", "Close Eyes");
+            var c = MelonPreferences.CreateCategory("DeathDetails", "Death Details");
             Enabled = c.CreateEntry("Enabled", true, description: "Dead enemies close their eyes.");
             WaitForTwitch = c.CreateEntry("WaitForTwitch", true, description: "An enemy killed by a body shot can lie writhing in pain before it dies for good. On: its face stays animated (pain face) and the eyes close when it stops. Off: the eyes close right away like any other death.");
+            HeadHitEndsPain = c.CreateEntry("HeadHitEndsPain", true, description: "A melee hit to the head of an enemy writhing in pain finishes it, like a headshot: clubs, bats and the crowbar (swung or thrown), a pistol or rifle swung with Heavy Melee, the bow, a fist. The game ignores melee hits on dead bodies.");
+            HeadHitSfx = c.CreateEntry("HeadHitSfx", true, description: "Play the game's own blunt head-hit sound on that finishing hit (the game plays none on a dead body).");
+            HeadHitSpeed = c.CreateEntry("HeadHitSpeed", 2f, description: "With HeadHitEndsPain: how fast (m/s) the weapon or hand must hit the head. Lower = a light tap counts.");
             BleedOut = c.CreateEntry("BleedOut", false, description: "Experimental, untested. Enemies writhing in pain on the floor die after a while (the game has a bleed-out time but often never applies it, so they writhe forever). Off = the game's behaviour.");
             MaxPainSeconds = c.CreateEntry("MaxPainSeconds", 0f, description: "With BleedOut: longest an enemy writhes, in seconds after death. 0 = the game's own random bleed-out time.");
             AnyHitEndsPain = c.CreateEntry("AnyHitEndsPain", false, description: "Experimental, untested. Any hit on an enemy writhing in pain finishes it, leg shots included (the game only reacts to torso and head shots).");
             EyesClosed = c.CreateEntry("EyesClosed", 1.0f, description: "How far the eyelids close: 1 = fully shut, 0.8 = a slit left open.");
+            JawOpen = c.CreateEntry("JawOpen", 0.1f, description: "How far a dead enemy's mouth stays open, set together with the eyes: 0 = closed, 0.1 = slightly parted (default), 1 = fully open. -1 = leave it to the game's death face (often wide open).");
             CloseSeconds = c.CreateEntry("CloseSeconds", 0.6f, description: "Seconds the eyelids take to close.");
             Delay = c.CreateEntry("Delay", 0.3f, description: "Seconds after death before the eyelids start to close (the face keeps its expression until then).");
             DebugLog = c.CreateEntry("DebugLog", false, description: "One line per death and one when the eyes are shut. The first 3 deaths of each level also list every mesh with blend shapes.");
@@ -89,6 +102,7 @@ namespace CloseEyes
         {
             Bodies.Clear();
             SkippedSyncs.Clear();
+            Writhing.Clear();
             detailedLeft = DetailedDeaths;
             painLogLeft = 3;
             warned = false;
@@ -150,7 +164,7 @@ namespace CloseEyes
                 catch (Exception ex) { Log.Warning($"enemy list: {ex.Message}"); }
 
             foreach (var b in Bodies.Values)
-                if (b.Dead && !b.PainEnded && Enabled.Value && BleedOut.Value)
+                if (b.Dead && !b.PainEnded && Enabled.Value && (BleedOut.Value || HeadHitEndsPain.Value))
                     try { Pain(b); } catch (Exception ex) { Log.Warning($"pain: {ex.Message}"); b.PainEnded = true; }
 
             // Pooled enemies come back alive (and may have left the list while dead). Switching the mod off
@@ -185,6 +199,7 @@ namespace CloseEyes
         {
             b.Dead = b.Closing = b.Frozen = b.Twitching = false;
             SkippedSyncs.Remove(b.Sync);
+            Unregister(b);
             try { if (b.Anim != null && !b.Anim.WasCollected && b.AnimWasOn) b.Anim.enabled = true; } catch { }
             b.Anim = null;
             if (b.Faces != null)
@@ -194,6 +209,7 @@ namespace CloseEyes
                         if (f.R == null || f.R.WasCollected) continue;
                         f.R.SetBlendShapeWeight(f.L, f.OrigL);
                         f.R.SetBlendShapeWeight(f.Rt, f.OrigR);
+                        if (f.J >= 0) f.R.SetBlendShapeWeight(f.J, f.OrigJ);
                     }
                     catch { }
             b.Faces = null;   // a pooled enemy can come back with a different face
@@ -219,7 +235,13 @@ namespace CloseEyes
             }
             float t = CloseSeconds.Value <= 0f ? 1f : Mathf.Clamp01((Time.time - b.DiedAt - Delay.Value) / CloseSeconds.Value);
             if (Time.time - b.DiedAt < Delay.Value) return;
-            if (!b.Closing) { b.Closing = true; StopFace(b); }
+            if (!b.Closing)
+            {
+                b.Closing = true;
+                StopFace(b);
+                foreach (var f in b.Faces)   // the jaw eases from where the game's death face has it now
+                    if (f.R != null && f.J >= 0) f.JawFrom = f.R.GetBlendShapeWeight(f.J);
+            }
             Write(b, t * t * (3f - 2f * t));
             if (t < 1f) return;
             b.Frozen = true;
@@ -263,6 +285,8 @@ namespace CloseEyes
                 float target = Target(f);
                 f.R.SetBlendShapeWeight(f.L, Mathf.Lerp(f.OrigL, target, k));
                 f.R.SetBlendShapeWeight(f.Rt, Mathf.Lerp(f.OrigR, target, k));
+                if (f.J >= 0 && JawOpen.Value >= 0f)
+                    f.R.SetBlendShapeWeight(f.J, Mathf.Lerp(f.JawFrom, f.JawFull * Mathf.Clamp01(JawOpen.Value), k));
             }
         }
 
@@ -270,15 +294,26 @@ namespace CloseEyes
 
         // ------------------------------------------------------------------ pain (twitcher)
 
+        // Every 0.1 s per dead body until its pain is over: register writhing bodies for the head-hit check, and
+        // (BleedOut) end the pain past its time. A body that is not writhing 1 s after death is done for good.
         static void Pain(Body b)
         {
             var n = b.Npc;
-            if (n == null || n.WasCollected || !n.isTwitcher || n.isKillingTwitcher) return;
+            if (n == null || n.WasCollected) { Unregister(b); b.PainEnded = true; return; }
+            bool writhing = n.isTwitcher && n.isTwitcherStarted && !n.isKillingTwitcher;
+            if (!n.isTwitcher)
+            {
+                Unregister(b);
+                if (Time.time - b.DeathAt > 1f) b.PainEnded = true;   // not writhing (any more)
+                return;
+            }
+            if (HeadHitEndsPain.Value && writhing) Register(b); else Unregister(b);
+            if (!BleedOut.Value || !writhing) return;
             var pm = n.ANBPM;
             if (pm == null) return;
             float since = Time.time - b.DeathAt;
             float limit = MaxPainSeconds.Value > 0f ? MaxPainSeconds.Value : pm.twitcherSurvivalTime;
-            if (!n.isTwitcherStarted || since < limit + 0.5f) return;
+            if (since < limit + 0.5f) return;
             if (painLogLeft > 0 || DebugLog.Value)
             {
                 if (painLogLeft > 0) painLogLeft--;
@@ -292,13 +327,90 @@ namespace CloseEyes
             End(b, true);
         }
 
+        static void Register(Body b)
+        {
+            if (b.Mgr != IntPtr.Zero) return;
+            var m = b.Npc.bodyManager;
+            if (m == null) return;
+            b.Mgr = m.Pointer;
+            Writhing[b.Mgr] = b;
+        }
+
+        static void Unregister(Body b)
+        {
+            if (b.Mgr == IntPtr.Zero) return;
+            Writhing.Remove(b.Mgr);
+            b.Mgr = IntPtr.Zero;
+        }
+
         static void End(Body b, bool noHit)
         {
             b.PainEnded = true;
+            Unregister(b);
             var n = b.Npc;
             var pm = n.ANBPM;
             if (noHit) n.forcePuppetMasterActive(1f, false);
             pm.StartCoroutine(pm.killTwitcher(noHit));
+        }
+
+        // collisionEnter postfix (every melee contact on an enemy body part, dead or alive; the game's own handler
+        // ignores dead bodies). Only bodies writhing right now are in Writhing, so any other contact costs one lookup.
+        // A head contact from the player's blunt weapon (clubs, bats, crowbar, swung or thrown), held gun or bow, or
+        // hand, at HeadHitSpeed or faster, finishes it like a headshot does.
+        internal static void AfterBodyCollision(ANBBodyMeleeCollisionManager mgr, ANBBodyMeleeCollision bmc, Collision collision)
+        {
+            if (Writhing.Count == 0 || mgr == null || !Writhing.TryGetValue(mgr.Pointer, out var b)) return;
+            try
+            {
+                if (bmc == null || !bmc.isHead || collision == null) return;
+                float speed = collision.relativeVelocity.magnitude;
+                if (speed < HeadHitSpeed.Value) return;
+                var col = collision.collider;
+                if (col == null || col.attachedRigidbody == null) return;
+                string what = PlayerHitter(col.gameObject);
+                if (what == null) return;
+                string sound = HeadHitSound(bmc);
+                if (DebugLog.Value) Log.Msg($"{b.Npc.name}: {what} to the head at {speed:0.0} m/s while in pain, finishing it{sound}");
+                End(b, false);
+            }
+            catch (Exception ex) { Log.Warning($"head hit: {ex.Message}"); Unregister(b); }
+        }
+
+        static string PlayerHitter(GameObject go)
+        {
+            var blunt = go.GetComponentInParent<ANBBluntWeapon>();
+            if (blunt != null) return blunt.name;
+            if (go.GetComponentInParent<HVRHandGrabber>() != null) return "hand";
+            var gun = go.GetComponentInParent<ANBHVRGunBase>();
+            if (gun != null) return gun.EnemyGun || !(Held(gun.Grabbable) || Held(gun.StabilizerGrabbable)) ? null : gun.name;
+            var bow = go.GetComponentInParent<HVRBowBase>();
+            if (bow != null && Held(go.GetComponentInParent<HVRGrabbable>())) return bow.name;
+            return null;
+        }
+
+        static bool Held(HVRGrabbable g) => g != null && g.IsHandGrabbed;
+
+        // The game's own melee hit sound never plays on a dead body: TakeBluntWeaponDamage picks a random
+        // ANBGameLogic.BluntHit clip and plays it with PlayAudioClip(clip, part position, false, "default", false, -1, -1)
+        // only for a living target. Same call here, with the BluntHitHead set (BluntHit if that is empty).
+        static string HeadHitSound(ANBBodyMeleeCollision bmc)
+        {
+            if (!HeadHitSfx.Value) return "";
+            try
+            {
+                var g = ANBStaticGameManager.ANBmain;
+                if (g == null) return ", no sound (no game)";
+                var clips = g.BluntHitHead;
+                string set = "BluntHitHead";
+                if (clips == null || clips.Length == 0) { clips = g.BluntHit; set = "BluntHit"; }
+                if (clips == null || clips.Length == 0) return ", no sound (no clips)";
+                var clip = clips[UnityEngine.Random.Range(0, clips.Length)];
+                if (clip == null) return ", no sound (empty clip)";
+                Vector3 pos = bmc.myCol != null ? bmc.myCol.transform.position : bmc.transform.position;
+                g.PlayAudioClip(clip, pos, false, "default", false, -1f, -1f);
+                return $", sound {set}/{clip.name}";
+            }
+            catch (Exception ex) { return $", no sound ({ex.Message})"; }
         }
 
         // TakeDamage postfix: the game ends the pain on a torso or head hit (it sets isKillingTwitcher); anything else
@@ -352,7 +464,15 @@ namespace CloseEyes
                     diag.Add($"{r.name}{(isMain ? "*" : "")} '{m?.name}' {count} shapes, blink {l}/{rt}{(r.gameObject.activeInHierarchy && r.enabled ? "" : " (off)")}");
                 if (l < 0 || rt < 0) return;
                 float full = m.GetBlendShapeFrameWeight(l, m.GetBlendShapeFrameCount(l) - 1);
-                faces.Add(new Face { R = r, L = l, Rt = rt, Full = full, OrigL = r.GetBlendShapeWeight(l), OrigR = r.GetBlendShapeWeight(rt) });
+                var face = new Face { R = r, L = l, Rt = rt, Full = full, OrigL = r.GetBlendShapeWeight(l), OrigR = r.GetBlendShapeWeight(rt) };
+                int j = m.GetBlendShapeIndex("jawOpen");
+                if (j >= 0)
+                {
+                    face.J = j;
+                    face.JawFull = m.GetBlendShapeFrameWeight(j, m.GetBlendShapeFrameCount(j) - 1);
+                    face.OrigJ = r.GetBlendShapeWeight(j);
+                }
+                faces.Add(face);
             }
 
             if (diag != null)
@@ -368,13 +488,20 @@ namespace CloseEyes
     [HarmonyLib.HarmonyPatch(typeof(ANBBasicNPC), nameof(ANBBasicNPC.KillNPC))]
     internal static class KillPatch
     {
-        static void Postfix(ANBBasicNPC __instance) => CloseEyesMod.OnKill(__instance);
+        static void Postfix(ANBBasicNPC __instance) => DeathDetailsMod.OnKill(__instance);
+    }
+
+    [HarmonyLib.HarmonyPatch(typeof(ANBBodyMeleeCollisionManager), nameof(ANBBodyMeleeCollisionManager.collisionEnter))]
+    internal static class BodyCollisionPatch
+    {
+        static void Postfix(ANBBodyMeleeCollisionManager __instance, ANBBodyMeleeCollision bmc, Collision collision) =>
+            DeathDetailsMod.AfterBodyCollision(__instance, bmc, collision);
     }
 
     [HarmonyLib.HarmonyPatch(typeof(ANBBasicNPC), nameof(ANBBasicNPC.TakeDamage))]
     internal static class DamagePatch
     {
-        static void Postfix(ANBBasicNPC __instance, float damage) => CloseEyesMod.AfterDamage(__instance, damage);
+        static void Postfix(ANBBasicNPC __instance, float damage) => DeathDetailsMod.AfterDamage(__instance, damage);
     }
 
     // A corpse whose eyes are closing or shut: the sync would copy the (stopped) main mesh onto the other meshes
@@ -382,6 +509,6 @@ namespace CloseEyes
     [HarmonyLib.HarmonyPatch(typeof(ANBBlendShapeSync), nameof(ANBBlendShapeSync.UpdateExec))]
     internal static class SyncPatch
     {
-        static bool Prefix(ANBBlendShapeSync __instance) => !CloseEyesMod.SyncSkipped(__instance);
+        static bool Prefix(ANBBlendShapeSync __instance) => !DeathDetailsMod.SyncSkipped(__instance);
     }
 }
