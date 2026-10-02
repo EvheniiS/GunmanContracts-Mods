@@ -42,6 +42,45 @@ namespace VRHolsterCustomization
             return true;
         }
 
+        // A blade's shape from ALL its solid box colliders together: the game's katana has its blade in two boxes and a
+        // 40 cm handle box, so the longest single box (Measure) would be the handle. Item-local bounds of every box
+        // corner; the longest side is the axis (pointing away from the grip, as in Measure), the shortest is `flat`
+        // (the side of the blade).
+        public static bool MeasureBlade(GameObject go, out Vector3 center, out Vector3 axis, out float length, out Vector3 flat)
+        {
+            center = Vector3.zero; axis = Vector3.forward; length = 0.5f; flat = Vector3.right;
+            if (!VRHolsterCustomizationMod.Alive(go)) return false;
+            var root = go.transform;
+            Vector3 lo = Vector3.positiveInfinity, hi = Vector3.negativeInfinity;
+            foreach (var bc in go.GetComponentsInChildren<BoxCollider>(true))
+            {
+                if (bc.isTrigger) continue;
+                var bt = bc.transform;
+                for (int i = 0; i < 8; i++)
+                {
+                    var c = bc.center + Vector3.Scale(bc.size * 0.5f, new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
+                    var p = root.InverseTransformPoint(bt.TransformPoint(c));
+                    lo = Vector3.Min(lo, p); hi = Vector3.Max(hi, p);
+                }
+            }
+            if (lo.x > hi.x) return Measure(go, out center, out axis, out length);
+            var size = hi - lo;
+            int big = size.x >= size.y && size.x >= size.z ? 0 : size.y >= size.z ? 1 : 2;
+            int small = size.x <= size.y && size.x <= size.z ? 0 : size.y <= size.z ? 1 : 2;
+            axis = big == 0 ? Vector3.right : big == 1 ? Vector3.up : Vector3.forward;
+            flat = small == 0 ? Vector3.right : small == 1 ? Vector3.up : Vector3.forward;
+            length = size[big];
+            center = (lo + hi) * 0.5f;
+            Transform grip = null;
+            foreach (var t in go.GetComponentsInChildren<Transform>(true))
+                if (t.name == "GrabPoint_Base" || t.name == "GrabPointNormal") { grip = t; break; }
+            if (grip == null)
+                foreach (var t in go.GetComponentsInChildren<Transform>(true))
+                    if (t.name.StartsWith("GrabPoint")) { grip = t; break; }
+            if (grip != null && Vector3.Dot(root.InverseTransformPoint(grip.position) - center, axis) > 0) axis = -axis;
+            return true;
+        }
+
         // The direction across `axis` in which the item's meshes reach furthest (a crowbar's hook, a blade's edge),
         // pointing to the side the bulk sticks out to. Item-local. Lay it along a wall to hang the item flat.
         public static Vector3 Widest(GameObject go, Vector3 axis)

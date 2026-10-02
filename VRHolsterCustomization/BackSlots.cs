@@ -20,6 +20,7 @@ namespace VRHolsterCustomization
         public string Id;                     // saved in the cfg; letters and digits
         public Func<GameObject, bool> IsMine; // is this object one of yours
         public Func<GameObject> Spawn;        // a new item for a restore; null if you can't make one now
+        public bool Blade;                    // a sword or knife: hangs by its grip end in the blade pose (Blade* settings)
     }
 
     // Back holsters for mod items (Sep 29 2026, first version).
@@ -38,7 +39,7 @@ namespace VRHolsterCustomization
     {
         static readonly List<HolsterKind> kinds = new();
         static readonly Dictionary<string, Shape> shapes = new();
-        struct Shape { public Vector3 Center, Axis; public float Length; }
+        struct Shape { public Vector3 Center, Axis, Flat; public float Length; }
 
         sealed class Slot
         {
@@ -56,7 +57,7 @@ namespace VRHolsterCustomization
         static readonly Dictionary<IntPtr, bool> wasHeld = new();
 
         static MelonPreferences_Entry<bool> Enabled;
-        static MelonPreferences_Entry<int> Out, Up, Back, Drop, Tilt, Lean, Spin, Snap, DrawReach;
+        static MelonPreferences_Entry<int> Out, Up, Back, Drop, Tilt, Lean, Spin, Snap, DrawReach, BladeGrip, BladeTilt, BladeLean, BladeSpin;
         static MelonPreferences_Entry<string> Saved;
         static MelonPreferences_Category cat;
 
@@ -82,6 +83,13 @@ namespace VRHolsterCustomization
             Snap = cat.CreateEntry("SnapCm", 30, description: "Let go of a mod item within this distance of a free back holster (slowly) and it goes in (cm).");
             DrawReach = cat.CreateEntry("DrawCm", 20, description: "Press grip with your hand within this distance of a mod item on your back and it comes out (cm). You can't see behind you, so this is wider than a normal grab.");
             Saved = cat.CreateEntry("SavedBackHolsters", "", description: "Managed by the mod: which mod item is in which back holster (L=kind;R=kind). Restored after every scene load.");
+            // Blades hang by the grip end, so one pose fits a katana and a short knife; the anchor (OutCm, UpCm,
+            // BackCm) is shared with the mod items. Default: grip where the crowbar's grip sits, diagonal across the back.
+            BladeGrip = cat.CreateEntry("BladeGripCm", 0, description: "How far a katana's or knife's grip end hangs below the back holster point (cm). Negative = above it.");
+            BladeTilt = cat.CreateEntry("BladeTiltDeg", 35, description: "Tilts a blade's tip towards the spine (degrees). 0 = straight down, 45 = diagonal across the back.");
+            BladeLean = cat.CreateEntry("BladeLeanDeg", 10, description: "Leans a blade's tip back, away from your body (degrees).");
+            BladeSpin = cat.CreateEntry("BladeSpinDeg", 0, description: "Turns a blade around its own length (degrees). 0 = the flat of the blade against your back.");
+            BackBlades.Init(cat, Saved.Value);
         }
 
         public static void RegisterKind(HolsterKind k)
@@ -211,6 +219,7 @@ namespace VRHolsterCustomization
                 if (!VRHolsterCustomizationMod.Alive(s.Item)) { s.Item = null; s.Kind = null; Save(); continue; }
                 if (!VRHolsterCustomizationMod.Alive(s.Socket) || Dock.IsHeld(s.Item)) continue;
                 if (!s.Item.activeSelf) s.Item.SetActive(true);
+                if (s.Kind != null && s.Kind.Blade) BackBlades.KeepDocked(s.Item);
                 PinIn(s);
             }
 
@@ -475,15 +484,28 @@ namespace VRHolsterCustomization
             var parent = s.Socket.transform.parent;
             if (parent == null) return;
             var sh = ShapeOf(s.Kind, s.Item);
+            bool blade = s.Kind != null && s.Kind.Blade;
             float sign = s.Left ? -1f : 1f;
             Vector3 outDir = Vector3.right * sign, up = Vector3.up, back = Vector3.back;
-            float tilt = Tilt.Value * Mathf.Deg2Rad, lean = Lean.Value * Mathf.Deg2Rad;
+            float tilt = (blade ? BladeTilt.Value : Tilt.Value) * Mathf.Deg2Rad, lean = (blade ? BladeLean.Value : Lean.Value) * Mathf.Deg2Rad;
             var tip = -up * Mathf.Cos(tilt) - outDir * Mathf.Sin(tilt);        // down, towards the spine
             tip = (tip * Mathf.Cos(lean) + back * Mathf.Sin(lean)).normalized;  // and away from the body
             var anchor = s.Socket.transform.localPosition + (outDir * Out.Value + up * Up.Value + back * Back.Value) / 100f;
-            var rot = Quaternion.AngleAxis(Spin.Value * sign, tip) * Quaternion.FromToRotation(sh.Axis, tip);
-            var center = anchor + tip * (Drop.Value / 100f);
-            Dock.Pin(s.Item, parent, center - rot * sh.Center, rot);
+            if (!blade)
+            {
+                var rot = Quaternion.AngleAxis(Spin.Value * sign, tip) * Quaternion.FromToRotation(sh.Axis, tip);
+                var center = anchor + tip * (Drop.Value / 100f);
+                Dock.Pin(s.Item, parent, center - rot * sh.Center, rot);
+                return;
+            }
+            // Blade: grip end at the anchor (+ BladeGripCm along the blade), the flat of the blade against the back.
+            var r0 = Quaternion.FromToRotation(sh.Axis, tip);
+            float flat = Vector3.SignedAngle(Vector3.ProjectOnPlane(r0 * sh.Flat, tip), Vector3.ProjectOnPlane(back, tip), tip);
+            var brot = Quaternion.AngleAxis(flat + BladeSpin.Value * sign, tip) * r0;
+            var scale = s.Item.transform.localScale;
+            float half = Vector3.Scale(scale, sh.Axis * sh.Length).magnitude * 0.5f;
+            var bcenter = anchor + tip * (BladeGrip.Value / 100f + half);
+            Dock.Pin(s.Item, parent, bcenter - brot * Vector3.Scale(scale, sh.Center), brot);
         }
 
         static Vector3 AnchorWorld(Slot s)
@@ -644,7 +666,8 @@ namespace VRHolsterCustomization
 
         static bool Available(GameObject item, HolsterKind kind)
         {
-            if (!VRHolsterCustomizationMod.Alive(item) || Holds(item)) return false;
+            // Not one the game (a knife holster, a wall spot) or a hand holds.
+            if (!VRHolsterCustomizationMod.Alive(item) || Holds(item) || Dock.IsHeld(item)) return false;
             try { return kind.IsMine(item); } catch { return false; }
         }
 
@@ -670,8 +693,10 @@ namespace VRHolsterCustomization
         static Shape ShapeOf(HolsterKind kind, GameObject item)
         {
             if (kind != null && shapes.TryGetValue(kind.Id, out var s)) return s;
-            ItemShape.Measure(item, out var c, out var a, out var l);
-            s = new Shape { Center = c, Axis = a, Length = l };
+            Vector3 c, a, f = Vector3.forward; float l;
+            if (kind != null && kind.Blade) ItemShape.MeasureBlade(item, out c, out a, out l, out f);
+            else ItemShape.Measure(item, out c, out a, out l);
+            s = new Shape { Center = c, Axis = a, Flat = f, Length = l };
             if (kind != null)
             {
                 shapes[kind.Id] = s;

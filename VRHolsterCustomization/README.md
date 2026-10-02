@@ -1,4 +1,4 @@
-# VR Holster Customization 0.2.2 (release candidate)
+# VR Holster Customization 0.3.0 (built, untested; 0.2.2 is the release candidate)
 
 This MelonLoader mod customizes the game's hip, knife, and back holsters and requires Mod Settings. It also owns the back slots for mod items, their grab and draw behavior, and their saved state. Weapon Framework uses its docking API for wall items and its back slot API for the test crowbar. Daredevil uses the back slot API for clubs.
 
@@ -50,6 +50,22 @@ and spawns one only if the original is gone. The user confirmed this fix in game
 `[VRHolsters_BackSlots]` controls the pose, snap distance, and draw reach for non-game items registered through `Holsters.RegisterKind`. `SavedBackHolsters` is managed by the mod. Mods can call `Holsters.TryHolster(item)` when releasing an item, or `Holsters.Watch(item)` to have the mod watch for its release. `Holsters.Holds(item)` checks whether it is on the back.
 
 These settings moved from `[WeaponFrameworkHolsters]`. Existing tuned values can be copied into the new category in `UserData/MelonPreferences.cfg` while the game is closed. The old category is no longer used.
+
+## Katana and knives on the back (0.3.0, untested)
+
+The game's katanas and knives fit the two back slots too, one item per side, like a mod item.
+
+- `[VRHolsters_BackSlots] BackBlades`: `All` (katanas and knives, default), `Katana` (katanas only) or `Off`.
+  Arrows and pens are never accepted.
+- Take a blade in your hand, bring it over a shoulder (the hand buzzes over a free slot) and let go slowly. A fast
+  release is a throw and stays a throw. Draw it with the same grip press as a crowbar (`DrawCm`).
+- It hangs by its grip end, the flat of the blade against your back: `BladeGripCm` (grip below the holster point),
+  `BladeTiltDeg` (35 = diagonal), `BladeLeanDeg`, `BladeSpinDeg`. `OutCm`, `UpCm` and `BackCm` are shared with mod items.
+- The game sends a dropped knife back to its holster or wall spot after a few seconds. That timer is held at zero while
+  the blade is on your back.
+- Saved like a mod item (`Knife-<id>` in `SavedBackHolsters`, The Range only). After a scene load or a checkpoint
+  reset the blade is taken from the scene's knife wall, exactly as the game fills its knife holsters. If that knife
+  is already in a knife holster, the back side stays empty.
 
 ## Build
 

@@ -2378,3 +2378,26 @@ Log `26-10-1_23-36-10.log` (HandProbe build, settings untouched). Last swings (2
   right). Replacing or adding clips = swap entries in these arrays at runtime.
   Details: `DeathDetails/README.md`.
 
+
+## VR Holster Customization 0.3.0: katana and knives on the back (Oct 3 2026, built + installed, untested)
+
+Request: store the katana (and knives) in the back slots. Built, 0 warnings, installed with the game closed
+(backup of the 0.2.2 DLL + `MelonPreferences.cfg` in `feature/backup-before-VRHC-0.3.0-20261003-0215`);
+`[VRHolsters] DebugLog` switched on for the test. Settings and behaviour: `VRHolsterCustomization/README.md`.
+
+**Game facts (read from the binary this session):**
+- The katana is an `ANBKnife` like every knife (`Knife-Katana`, `Knife-Katana-double` and the combat/kitchen knives are
+  prefabs in `sharedassets2`). Arrows (`isArrow`) and pens (`isPen`) are `ANBKnife` too: excluded.
+- **Knife auto-return:** `ANBKnife.Update → checkAutoReturn`: while `ANBGameLogic.gameStarted`, a knife that is neither
+  held (`isHeld` 0x98) nor socketed (`socketed` 0x12c) counts `autoReturnAfterCurrent` (0x128, set by `releaseKnife`)
+  down, then `returnKnife()` sends it to `savedHolster` or its wall spot. A knife docked by a mod is neither, so the mod
+  must keep the timer at 0.
+- **Knives are moved, never instantiated, on load:** `ANBGameLogic.LoadContractHolsterKnife` loops
+  `ANBdataCollection.allKnifeSpots` (`List<ANBGunwallSpot>`), matches `SlotID == knifeID`, takes `spot.mygun`, releases
+  it from `spot.Hanger` (virtual call) and grabs it with the holster socket, then sets `knife.savedHolster`.
+- **Katana colliders:** blade split into two boxes (0.38 + 0.34) plus a 0.40 handle box, so "longest box collider"
+  (`ItemShape.Measure`, fine for crowbar/clubs) picks the handle. Blades use `ItemShape.MeasureBlade` (bounds of all
+  solid boxes, ~0.76 m incl. the 0.95 prefab scale). Grip point is `GrabPointNormal`, not `GrabPoint_Base`.
+
+**Open questions for the test:** do contracts have knife spots (debug line `knife spots: N (…)` ~10 s after load)?
+Does a slow knife release near the shoulder (game throw gate ~3.5 m/s, our snap limit 5 m/s) dock instead of throwing?
