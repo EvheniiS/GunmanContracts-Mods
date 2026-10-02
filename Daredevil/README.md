@@ -1,4 +1,36 @@
-# Daredevil 1.0.0
+# Daredevil 1.1.0
+
+## 1.1.0 release notes (release candidate on `dev`, tested Oct 2 2026; not on Nexus yet)
+
+**Radar Sense**
+- **Fixed: silhouettes disappearing on close enemies, or only a floating vest showing.** The game reuses enemies and
+  gives each respawn a brand-new body. Radar Sense kept outlining the old, destroyed one. It now notices the new body
+  and outlines it. A full wave session after the fix logged no missing silhouettes (the run before: 563).
+- **Fixed: enemies behind a doorframe, counter or half wall losing their outline** when only their head showed over
+  it. New `SeenFraction` (0.7): how much of an enemy you must see before it counts as "seen" and drops the outline.
+- **New: standing enemies show too, dimmed.** `ShowStill` (on) and `StillBrightness` (0.35): an enemy you haven't
+  seen that stands still now shows as a dim silhouette instead of nothing. Moving enemies, and every enemy while
+  you focus, stay at full brightness.
+- **New: `Brightness` (0.6)** darkens the silhouette colour so it stays below the game's bloom (no red aura merging
+  neighbouring enemies). **`Detail`** (Core / Body / Clothes / Full, default Body) picks how much of the body is
+  outlined: fewer meshes, cleaner look, less work. All three apply live from the Mod Settings board.
+- `IncludeLods` (off): outlines lower-detail body meshes too. Leave it off: it draws every detail level on top of
+  each other (about 4x the meshes) and fixes nothing.
+- Cost measured in a full wave session: 0.02-0.05 ms per frame for the mod's own work.
+
+**Billy Clubs**
+- **Snappier club in the hand.** The physics hand now turns toward your controller 1.6x as hard
+  (`HandTorqueScale`), and a held club may spin up to 80 rad/s (`ClubMaxSpin`, the game's limit is 30), so fast
+  wrist flicks no longer leave the club lagging behind.
+- `ClubInertiaScale` and `HandStrengthScale` (both 1 = game default) for further tuning; `Mass` now applies live,
+  even to a club in your hand.
+- A thrown club to the body stuns for 1 s (`ChestStunSeconds`, was 3).
+- Diagnostics (off by default): `SwingLog` logs how far the club tip lags your hand per swing.
+
+**Upgrading from 1.0.0:** the new settings arrive with the values above. `ChestStunSeconds` already existed, so a
+saved 3 stays 3: set it to 1 on the board (or delete its line from `MelonPreferences.cfg`) for the new default.
+
+## 1.0.0
 
 Version 1.0.0 saves the club belt loadout in The Range. Drawing or losing clubs during a
 contract changes the live holsters but should not change the loadout restored on a death/retry.
