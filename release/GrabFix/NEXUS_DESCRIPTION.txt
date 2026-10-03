@@ -14,7 +14,7 @@ and [b]easier catches[/b] for items you just released. [b]Holstered items keep t
 
 [size=4][b]Holsters and deliberate grabs[/b][/size]
 [b]Enemies need your palm on them:[/b] standing, stunned and downed enemies are only grabbed when your palm is within 10 cm of their body, and never from a distance. A punch that brushes a face or a body at your feet no longer grabs it.
-Holstered, socketed and wall-mounted items use their original grab zones, so the wider pickup area and palm targeting do not extend their reach. Recently holstered items are excluded from catch assistance.
+Holstered, socketed and wall-mounted items use their original grab zones, so the wider pickup area and palm targeting do not extend their reach. Recently holstered items are excluded from catch assistance. [b]Holstered items stay drawable even when another mod makes them non-solid[/b] (for example Daredevil 1.1.1 clubs on your belt): the reach check counts their colliders either way.
 You still press grip deliberately; holding it indefinitely does not keep retrying. The mod uses the game's normal grab checks and distance-grab controls. It changes pickup detection, not how a held item sits in your hand.
 [size=4][b]Install[/b][/size]
 Takes about 5 minutes the first time. Steps 1 and 2 are needed only once, for all MelonLoader mods.
@@ -37,7 +37,7 @@ game folder, and if Windows asks, choose to replace / merge.
 You should end up with: [i]Gunman Contracts - Stand Alone\Mods\GrabFix.dll[/i]
 
 [b]4. Check it works[/b]
-Start the game. The MelonLoader console lists [b]Grab Fix v1.1.1[/b] among the loaded mods.
+Start the game. The MelonLoader console lists [b]Grab Fix v1.1.2[/b] among the loaded mods.
 
 [b]Not working?[/b]
 [list]
@@ -71,7 +71,7 @@ Or change these live in-VR with [url=https://www.nexusmods.com/gunmancontractsst
 
 [size=4][b]Compatibility[/b][/size]
 Made for VR hand pickups. No other gameplay mod is required.
-[url=https://github.com/EvheniiS/GunmanContracts-Mods]Daredevil[/url] club holsters and [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/29]Weapon Framework[/url] wall mounts are covered by the docked-item checks: mounted items retain native detection limits.
+[url=https://github.com/EvheniiS/GunmanContracts-Mods]Daredevil[/url] club holsters and [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/29]Weapon Framework[/url] wall mounts are covered by the docked-item checks: mounted items retain native detection limits. [b]Daredevil 1.1.1 or newer requires Grab Fix 1.1.2 or newer[/b] (older Grab Fix cannot measure a holstered club whose colliders are triggers, so it could not be drawn).
 Other mods that replace hand-grab checks or change the same pickup detectors may conflict.
 
 [size=4][b]Uninstall[/b][/size]

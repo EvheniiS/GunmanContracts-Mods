@@ -13,7 +13,7 @@ More forgiving VR hand pickups, with normal grip controls and native grab eligib
 Requires MelonLoader; built for game 0.3.1.0 and MelonLoader 0.7.3. No gameplay mod dependencies.
 Settings are in `[GrabFix]` in `UserData/MelonPreferences.cfg`; all defaults are listed in the [Nexus description](../release/GrabFix/NEXUS_DESCRIPTION.txt).
 
-## 1.1.2 (built Oct 3 2026, untested)
+## 1.1.2 (built Oct 3 2026, untested; release docs prepared)
 
 - The holstered-item reach check now counts an item's solid colliders even while they are switched to triggers
   (the game and Daredevil 1.1.1 do that to holstered items). Before, such an item had no measurable distance and
@@ -21,7 +21,7 @@ Settings are in `[GrabFix]` in `UserData/MelonPreferences.cfg`; all defaults are
 
 ## Release
 
-Version 1.1.1 is a playtested release candidate (1.1.0 plus the enemy grab radius, tested Oct 2 2026). See the [upload sheet](../release/GrabFix/NEXUS_UPLOAD.md) for the package, checksum and validation scope.
+Version 1.1.2 is built and untested (1.1.1 plus the holstered-item reach fix that Daredevil 1.1.1 needs; 1.1.1's enemy grab radius was tested Oct 2 2026). Release docs are prepared. Package, checksum and live version: `Tools/Pack-Release.ps1 -Mod GrabFix`, `Tools/Check-Nexus.ps1 -Mod GrabFix`.
 
 ```powershell
 dotnet build GrabFix/GrabFix.csproj -c Release -o feature/GrabFix-1.1.0
