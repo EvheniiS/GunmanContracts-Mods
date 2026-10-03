@@ -13,7 +13,12 @@ namespace VRHolsterCustomization
     {
         // The item's long axis, measured on its longest (non-trigger) box collider: the grip end is the one nearer its
         // main grab point, `axis` points to the other end (a crowbar's hook, a club's tip). Item-local space.
-        public static bool Measure(GameObject go, out Vector3 center, out Vector3 axis, out float length)
+        public static bool Measure(GameObject go, out Vector3 center, out Vector3 axis, out float length) =>
+            Measure(go, out center, out axis, out length, null);
+
+        // `solid` overrides "non-trigger": a holstered item's colliders are triggers while it is docked (BackSlots.Ghost),
+        // and measuring then found nothing (0.3.1: a katana restored onto the back got the default axis, through the chest).
+        public static bool Measure(GameObject go, out Vector3 center, out Vector3 axis, out float length, Func<Collider, bool> solid)
         {
             center = Vector3.zero; axis = Vector3.forward; length = 0.5f;
             if (!VRHolsterCustomizationMod.Alive(go)) return false;
@@ -21,7 +26,7 @@ namespace VRHolsterCustomization
             BoxCollider shaft = null;
             foreach (var bc in go.GetComponentsInChildren<BoxCollider>(true))
             {
-                if (bc.isTrigger) continue;
+                if (solid != null ? !solid(bc) : bc.isTrigger) continue;
                 var bt = bc.transform;
                 for (int i = 0; i < 3; i++)
                 {
@@ -46,7 +51,10 @@ namespace VRHolsterCustomization
         // 40 cm handle box, so the longest single box (Measure) would be the handle. Item-local bounds of every box
         // corner; the longest side is the axis (pointing away from the grip, as in Measure), the shortest is `flat`
         // (the side of the blade).
-        public static bool MeasureBlade(GameObject go, out Vector3 center, out Vector3 axis, out float length, out Vector3 flat)
+        public static bool MeasureBlade(GameObject go, out Vector3 center, out Vector3 axis, out float length, out Vector3 flat) =>
+            MeasureBlade(go, out center, out axis, out length, out flat, null);
+
+        public static bool MeasureBlade(GameObject go, out Vector3 center, out Vector3 axis, out float length, out Vector3 flat, Func<Collider, bool> solid)
         {
             center = Vector3.zero; axis = Vector3.forward; length = 0.5f; flat = Vector3.right;
             if (!VRHolsterCustomizationMod.Alive(go)) return false;
@@ -54,7 +62,7 @@ namespace VRHolsterCustomization
             Vector3 lo = Vector3.positiveInfinity, hi = Vector3.negativeInfinity;
             foreach (var bc in go.GetComponentsInChildren<BoxCollider>(true))
             {
-                if (bc.isTrigger) continue;
+                if (solid != null ? !solid(bc) : bc.isTrigger) continue;
                 var bt = bc.transform;
                 for (int i = 0; i < 8; i++)
                 {
@@ -63,7 +71,7 @@ namespace VRHolsterCustomization
                     lo = Vector3.Min(lo, p); hi = Vector3.Max(hi, p);
                 }
             }
-            if (lo.x > hi.x) return Measure(go, out center, out axis, out length);
+            if (lo.x > hi.x) return Measure(go, out center, out axis, out length, solid);
             var size = hi - lo;
             int big = size.x >= size.y && size.x >= size.z ? 0 : size.y >= size.z ? 1 : 2;
             int small = size.x <= size.y && size.x <= size.z ? 0 : size.y <= size.z ? 1 : 2;

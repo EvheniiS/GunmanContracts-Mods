@@ -2417,3 +2417,13 @@ knife holster, if that holster's loadout string is `none`, i.e. empty: `ForceUns
 when the knife is taken out of a socket (HVR `HVRGrabbable.IsSocketed`) or put in a belt knife holster
 (`ANBGameLogic.holsterKnife` postfix). **`ANBKnife.socketed` / `inWall` are NOT reliable:** `grabKnife` / `releaseKnife`
 only write `isHeld`, so those flags stay stale after a draw.
+
+**0.3.3 (Oct 3 2026, built, not yet installed: game was running):** third report: a katana restored onto the left
+back slot pointed sideways through the chest. Log (`26-10-3_2-57-59.log`): `'Knife-Katana' shape: 0.50 m long, centre
+(0,0,0), far end (0,0,1)` = the fallback defaults. Cause: 0.3.1's ghosting ran in `Put` before the first `ShapeOf`, so
+`ItemShape` (solid boxes only) found nothing, and the default shape was cached for the session (draw-assist misses
+"32 in" from the grip came from the same wrong shape). A manual put measured fine because `TryHolster` measures before
+`Put`. Fix: `ItemShape.Measure`/`MeasureBlade` overloads take a `solid` predicate; the back slots count their own
+ghosted colliders as solid, and log a warning if nothing measurable is found. Same session: the `HeadRelativeInventory`
+frame read `up (-0.49,0.65,0.58)` at calibration (it follows head pitch), and The Range logged all 10 knife spots
+including `Katana2`; the main menu has none (`knife spots: 0`, back-left `waits`).

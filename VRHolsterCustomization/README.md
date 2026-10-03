@@ -1,4 +1,4 @@
-# VR Holster Customization 0.3.2 (built, untested; 0.2.2 is the release candidate)
+# VR Holster Customization 0.3.3 (built, untested; 0.2.2 is the release candidate)
 
 This MelonLoader mod customizes the game's hip, knife, and back holsters and requires Mod Settings. It also owns the back slots for mod items, their grab and draw behavior, and their saved state. Weapon Framework uses its docking API for wall items and its back slot API for the test crowbar. Daredevil uses the back slot API for clubs.
 

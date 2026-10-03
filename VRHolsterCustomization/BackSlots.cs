@@ -760,8 +760,11 @@ namespace VRHolsterCustomization
         {
             if (kind != null && shapes.TryGetValue(kind.Id, out var s)) return s;
             Vector3 c, a, f = Vector3.forward; float l;
-            if (kind != null && kind.Blade) ItemShape.MeasureBlade(item, out c, out a, out l, out f);
-            else ItemShape.Measure(item, out c, out a, out l);
+            ghosted.TryGetValue(item.Pointer, out var ghost);
+            Func<Collider, bool> solid = col => !col.isTrigger || (ghost != null && ghost.Exists(x => x.Pointer == col.Pointer));
+            bool ok = kind != null && kind.Blade ? ItemShape.MeasureBlade(item, out c, out a, out l, out f, solid)
+                : ItemShape.Measure(item, out c, out a, out l, solid);
+            if (!ok) VRHolsterCustomizationMod.Log.Warning($"'{Label(kind, item)}': no solid box collider to measure, using a default shape");
             s = new Shape { Center = c, Axis = a, Flat = f, Length = l };
             if (kind != null)
             {
