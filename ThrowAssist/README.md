@@ -23,10 +23,11 @@ Sense). Moved out of Billy Clubs 0.10.x.
 
 Assisted knives are steered by their **tip** (`ANBKnife.StabOrient`, measured along the stab line at release),
 not their centre of mass, and steering stops once the steered point is within 0.3 m of the aim point or has
-passed it. The item then flies straight on its own momentum. Before this, a katana (tip ~0.5 m ahead of its
-middle) reached the body point first, steering kept pulling the middle onto the aim point, reversed inside the
-body, and `BladeFirst` turned the blade round in there. The 2026-10-03 log showed three such katana throws: no
-stab, no body collision, 4 s timeout, and 30-35 m/s at the end (steering never exceeds 17).
+passed it. The item then flies straight on its own momentum, and steering can never reverse inside a body.
+
+**Correction (same night):** this was built for katanas that went through enemies and flew off, but the 0.2.3 test
+showed the real cause: every failing katana had been auto-returned to the back by VR Holster Customization, which
+left it non-solid. Fixed there in 0.3.5. The tip steering stays; it tested fine (closest approach 0.19-0.28 m).
 
 The flight summary now ends with `top <speed>` and, for steered throws,
 `steering: <why it stopped> at <s>, closest <m>`; the release line says `by the tip (<m> ahead)` for knives.

@@ -92,3 +92,11 @@ check compares against the steered direction) and `BladeFirst` turned the blade 
 Steering caps at 17 m/s, so 30+ m/s came from physics depenetration. 0.2.3 steers by the tip and stops
 steering at 0.3 m or once past the aim point. Test: katana and double katana throws at chest, head and
 knee; expect stabs, `steering: reached the aim point`, and `top` near 17 m/s.
+
+**0.2.3 test (03:34–03:35) disproved that cause.** Steering behaved (`reached the aim point` at 0.06–0.12 s,
+closest 0.19–0.28 m), yet the single katana still failed 3 times: no body collision, 4 s timeout, top 38–42 m/s
+(about 4 s of free fall: through the enemy, the wall and the floor). Every failure in both sessions came after
+VR Holster Customization logged `(returned)` for that blade; no success did. The return docks the knife while its
+colliders are already triggers, so the holster recorded none and the draw restored none. Fixed in VR Holster
+Customization 0.3.5. Lesson: "no body collision" plus a top speed far above the steer speed = a non-solid item;
+check its colliders before the flight code.

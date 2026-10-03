@@ -67,6 +67,11 @@ The game's katanas and knives fit the two back slots too, one item per side, lik
 - **0.3.2:** a blade you drew from your back returns to your back after a throw or a drop (its own side if free,
   else the other free side), not to the belt knife holster. Taken from the belt holster or the wall, or put in the belt
   holster, the game's own return applies again. If both back sides are full, the game's return applies.
+- **0.3.5 fix:** a blade auto-returned to the back could arrive already non-solid (the game makes a knife's colliders
+  triggers while it flies or sticks in an enemy). Only solid colliders were recorded, so nothing turned solid on the
+  draw, and every katana thrown after a return flew through enemies, walls and the floor (Oct 3 2026 logs: no body
+  collision, then ~40 m/s = falling out of the map). The knife's own list of normally solid colliders
+  (`ANBKnife.nonTriggerColliders`) is now restored on the draw too; the log line says `(N already were, solid again on the draw)`.
 - The game sends a dropped knife back to its holster or wall spot after a few seconds. That timer is held at zero while
   the blade is on your back.
 - Saved like a mod item (`Knife-<id>` in `SavedBackHolsters`, The Range only). After a scene load or a checkpoint
