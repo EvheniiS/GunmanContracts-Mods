@@ -1,6 +1,6 @@
 # Sound Probe (diagnostic, 0.1.0)
 
-Tested: none
+Tested: 0.1.0 (2026-10-03)
 
 Lists every sound the game plays, by clip name, so you can find which clip a holster, a wall pickup, a hit or a footstep makes. A mod can then play that clip by name (VR Holster Customization's `HolsterInSound` / `HolsterOutSound` do), or an audio replacer (AudioReplacer, installed) can swap it for your own file with a matching name. It changes nothing in the game.
 
