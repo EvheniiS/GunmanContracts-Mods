@@ -2427,3 +2427,58 @@ back slot pointed sideways through the chest. Log (`26-10-3_2-57-59.log`): `'Kni
 ghosted colliders as solid, and log a warning if nothing measurable is found. Same session: the `HeadRelativeInventory`
 frame read `up (-0.49,0.65,0.58)` at calibration (it follows head pitch), and The Range logged all 10 knife spots
 including `Katana2`; the main menu has none (`knife spots: 0`, back-left `waits`).
+
+## ★ Knife unlocks and the double katana (Oct 3 2026, game 0.3.1.1, from the game code + scene files)
+
+**Knives unlock by kills, not credits.** `ANBKnife.registerKnifeKill`: each kill with a knife counts its
+`killsNeededToUnlock` down; at 0 it calls `makePurchase(knifeID, 0)` and adds the Steam stat `Knifecollector`.
+The Range knife wall (`ANBGunwallSpot.checkKeepExec`) sets the spot's `ANBWeaponType.PurchaseID = knifeID`, then
+`checkPurchaseDataWeapon`: ID in `purchasedContentWeapons` → shown; else `WeaponPrice > 0` → hidden; price 0 → free
+(auto-purchased). Free from the start: `CombatKnife_v2`, `CombatKnife_v3` (price 0). Everything else has price 3
+and needs kills. Contract maps place knives in the scene; `ANBKnife.checkSpawnConversion` →
+`ANBObjectSpawner.convertWeapon` swaps each for the master prefab with the same name (not a random pick).
+
+**`Knife-Katana-double` (knifeID `Katana2`) is not double-bladed.** It is an exact copy of `Knife-Katana` (same
+`wakizashi_bohi` mesh, same components), meant as the second sword for dual wielding. Its wall spot is
+`KinfeWall / KinfeTable / KnifeSlot_10`, next to the katana's `KnifeSlot_9`.
+
+**It is unobtainable in 0.3.1.1:** no contract map places a `Katana2`. Knives per map (scene build order: level3
+Warehouse, level4 Restaurant, level5 Outpost): Warehouse none; Restaurant kitchen knives, pens, `CombatKnife_v3`;
+**Outpost has the only katana (`Katana`, one copy)**. With no `Katana2` instance to kill with, `Katana2` can never
+reach the purchase list, so `KnifeSlot_10` stays empty. Possibly unfinished or planned content.
+
+**Built: Melee Unlocks 0.1.0 (Oct 3 2026, built + installed, untested).** Prefix on `ANBGunwallSpot.checkKeep`
+(called once per spot from `ANBGameLogic` LoadAssetLoop on scene load) calls `makePurchase(knifeID, 0)` for the IDs in
+`[MeleeUnlocks] Unlock` (default `Katana2`, or `All`). `makePurchase` skips IDs already owned, subtracts the price via
+`substractCoins` (0 here) and calls `ANBSaveData.SavePurchases`: the same end state as the last kill, minus the Steam
+`Knifecollector` stat. Must run before the wall check because a locked spot's knife is **destroyed**
+(`Object.Destroy(mygun)`), not hidden; calling `checkKeep` again later would not bring it back. Save backed up first
+to `%USERPROFILE%\AppData\LocalLow\ANB_Seth\GunmanContracts\Data.bak-before-meleeunlocks-20261003`.
+Both katanas use the same mesh (`wakizashi_bohi`) and material (`mat_sword_wakizashi`): they look identical.
+**Test:** load The Range, look for the second katana next to the first on the knife wall, log line `unlocked 'Katana2'`.
+
+### Melee Unlocks 0.1.0 FAILED in game, 0.2.0 built (Oct 3 2026)
+
+0.1.0 loaded but logged nothing and unlocked nothing. Cause: `ANBGunwallSpot.checkKeep` is only
+`StartCoroutine("checkKeepExec")` **by name**, and a scan for that string literal found a second starter,
+`<initSlot2>d__33::MoveNext`: the knife spots run the check from `initSlot` → `initSlot2`, never through `checkKeep`
+(only `ANBGameLogic` LoadAssetLoop calls `checkKeep`). **Lesson: before hooking a method that starts a coroutine by
+name, scan for every reference to that name string.** 0.2.0 hooks `ANBDataCollection.checkPurchaseDataWeapon`
+instead (prefix; knives only, recognised by `ANBKnife` on the weapon), which every path asks. `initSlot` =
+`Instantiate(WeaponPrefab)` + `initSlot2`, so it refills a spot whose knife was destroyed; used on setting change.
+Also: Mod Settings only shows a string as a selector when the description lists the options in a shape it parses
+(`Name (…)`, `A or B`); 0.1.0's did not. VR Holster Customization logged `knife spots: 10 (CombatKnife_v1-v4,
+KitchenKnife_v1, v2, v4, KitchenPen_v1, Katana, Katana2)` in The Range, so `allKnifeSpots` includes locked spots.
+**0.2.0 built + installed (hash verified), untested.**
+
+### Melee Unlocks 0.2.0 ran but the purchase did not stick; 0.2.1 installed (Oct 3 2026)
+
+0.2.0 log: `unlocked 'Katana2'` at Range load, then the summary still listed `Katana2` as locked. Cause, from the
+full `makePurchase` disassembly: it starts with **`if (!ANBGameLogic.gameStarted) return;`** (field 0x1329), and
+`gameStarted` is false while The Range loads and the wall runs its checks. So makePurchase is a no-op there (real kills
+happen in play, gate open). The same gate silently skips the free-knife auto-purchase inside
+`checkPurchaseDataWeapon` (it still returns true). **Lesson: log what a game call actually changed, not that it was
+called.** 0.2.1: gate closed → add the id to `purchasedContentWeapons` in memory (wall check passes, knife stays),
+then call `makePurchase` once `gameStarted` is true (checked each second), which saves. **0.2.1 TESTED Oct 3 2026: works.** Log: `unlocked 'Katana2' ... in memory` at
+Range load (03:09:05), `saved 'Katana2' to the game's purchases` 4 s later (so `gameStarted` does turn true in The
+Range), wall summary no longer lists it. The double katana hangs next to the katana and dual wielding works.

@@ -19,6 +19,7 @@ of the others (see [Mod structure](#mod-structure)).
 | [Challenge NPC Limit](ChallengeNpcLimit/README.md) | Raises the selectable enemy count in takedown challenges above the game's 30 limit (60 by default) | 0.1.0, built and installed for local testing; in-game verification pending |
 | [Grab Fix](GrabFix/GrabFix.cs) | Finger + palm-aimed pickup together (wider near sphere, grip buffer, thrown-item catch), so more grabs land without accidental grabs (grip is still a deliberate button) | 0.2.0, in testing |
 | [Daredevil](Daredevil/README.md) | Billy clubs, belt holsters, arsenal panel entry with Weapon Framework, radar sense, and club door kicks. Club back slots use VR Holster Customization. | 1.0.0 packaged release candidate; checkpoint and door kick tested in game |
+| [Melee Unlocks](MeleeUnlocks/README.md) | Unlocks knives on The Range knife wall as if you had made the kills; by default the double katana (second katana for dual wielding), which no contract places. `All` unlocks every knife. Saved in the game save | 0.2.1, tested Oct 3 2026 (double katana unlocked and saved; `All` untested) |
 | [Gloves](Gloves/README.md) | Recolours the player's gloves: dark red by default, any colour from the Mod Settings board, applied at once | 0.1.0, released on [Nexus](https://www.nexusmods.com/gunmancontractsstandalone/mods/32); required by Daredevil |
 | [Weapon Framework](WeaponFramework/README.md) | Adds mod weapons to the arsenal panel in The Range; uses VR Holster Customization for item docking and test crowbar back slots. Guide: [MODDING_GUIDE.md](WeaponFramework/MODDING_GUIDE.md) | 0.3.0 on dev; requires VR Holster Customization |
 | [VR Holster Customization](VRHolsterCustomization/README.md) | Adjust game holsters on three axes or move empty slots by hand; hologram colors and mod-item back slots | 0.2.2 packaged release candidate; back-slot checkpoint reset tested; requires Mod Settings |
@@ -81,7 +82,7 @@ Or put your path in `<ModFolder>/GameDir.local.props` (git-ignored):
 ## Repository layout
 
 - `BetterBow/`, `KneeShotStun/`, `FireSelector/`, `HeavyMelee/`, `PhysicalDodge/`, `EnemyAwarenessFix/`, `ChallengeNpcLimit/`,
-  `EnemyAwarenessLog/`, `ThrowAssist/`, `ModSettings/`, `Gloves/`, `WeaponFramework/`, `VRHolsterCustomization/`, `GrabLog/`, `GrabFix/`, `FrameProbe/`, `DeathDetails/`: one
+  `EnemyAwarenessLog/`, `ThrowAssist/`, `ModSettings/`, `Gloves/`, `WeaponFramework/`, `VRHolsterCustomization/`, `GrabLog/`, `MeleeUnlocks/`, `GrabFix/`, `FrameProbe/`, `DeathDetails/`: one
   folder per mod, source and its own project.
 - `Daredevil/`: the package project, with `BillyClubs/` and `RadarSense/` source folders and `Tests/` (the model
   loader test). There are no separate `BillyClubs/` or `RadarSense/` projects any more.
