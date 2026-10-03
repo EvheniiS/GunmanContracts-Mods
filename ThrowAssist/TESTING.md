@@ -77,3 +77,18 @@ behavior across the cases below.
   should not start a new kneel. Held-item contacts should not trigger this feature.
 - Turn off the game's assist and land an actual leg hit with a tracked free throw. Confirm that the reaction
   works without steering. Verify Billy Clubs still use their own settings.
+
+## Katana throws failing — 2026-10-03 03:23–03:24 (fixed in 0.2.3, untested)
+
+Source: `MelonLoader/Latest.log`, Throw Assist 0.2.2 at The Range, `DebugLog` switched on at 03:23:24.
+Six assisted katana throws (`Knife-Katana`, `Knife-Katana-double`): the first four stabbed (spine, two
+legs with kneel, head). The last three (03:24:12, :20, :26; 2.1–3.1 m) logged `no stab; no body collision
+observed; 4 s timeout` with last speeds 30.0, 35.3 and 12.0 m/s and the tip 56/40/116 degrees off the
+flight path. The player saw the blade stuck and thrashing inside the enemy, then flying off.
+
+Cause from the code: steering aimed the centre of mass, so the 1 m blade's tip was ~0.5 m into the body
+before the middle arrived; past the aim point steering reversed (not detected as an impact, since the
+check compares against the steered direction) and `BladeFirst` turned the blade round inside the body.
+Steering caps at 17 m/s, so 30+ m/s came from physics depenetration. 0.2.3 steers by the tip and stops
+steering at 0.3 m or once past the aim point. Test: katana and double katana throws at chest, head and
+knee; expect stabs, `steering: reached the aim point`, and `top` near 17 m/s.

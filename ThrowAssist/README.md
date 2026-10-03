@@ -1,4 +1,4 @@
-# Throw Assist 0.2.2
+# Throw Assist 0.2.3
 
 Throw assist with real physics, and thrown pistols that hurt. Required by the Daredevil package (Billy Clubs + Radar
 Sense). Moved out of Billy Clubs 0.10.x.
@@ -18,6 +18,18 @@ Sense). Moved out of Billy Clubs 0.10.x.
   but those items have not been broadly tested. There is no need to test props to validate knife throwing.
 - **Billy Clubs** fly their own club flight (ricochets, spin styles, floor shots): objects named `BillyClub-*` are left
   to that mod, so the two never steer the same throw.
+
+## 0.2.3: long blades (built Oct 3 2026, untested)
+
+Assisted knives are steered by their **tip** (`ANBKnife.StabOrient`, measured along the stab line at release),
+not their centre of mass, and steering stops once the steered point is within 0.3 m of the aim point or has
+passed it. The item then flies straight on its own momentum. Before this, a katana (tip ~0.5 m ahead of its
+middle) reached the body point first, steering kept pulling the middle onto the aim point, reversed inside the
+body, and `BladeFirst` turned the blade round in there. The 2026-10-03 log showed three such katana throws: no
+stab, no body collision, 4 s timeout, and 30-35 m/s at the end (steering never exceeds 17).
+
+The flight summary now ends with `top <speed>` and, for steered throws,
+`steering: <why it stopped> at <s>, closest <m>`; the release line says `by the tip (<m> ahead)` for knives.
 
 ## Settings (`[ThrowAssist]`)
 

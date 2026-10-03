@@ -7,7 +7,7 @@ using MelonLoader;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(ThrowAssist.ThrowAssistMod), "Throw Assist", "0.2.2", "Evgeeso")]
+[assembly: MelonInfo(typeof(ThrowAssist.ThrowAssistMod), "Throw Assist", "0.2.3", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace ThrowAssist
@@ -34,6 +34,11 @@ namespace ThrowAssist
     // Knives (anything with an ANBKnife) fly like the game's own knife assist: at least the item's own assist speed
     // (17 m/s for combat knives) and blade first. Each step the knife is turned so its stab line (HVRStabber,
     // base to tip) faces the flight direction, spin removed, so it lands point first and the stabber stabs.
+    // A knife is steered by its TIP, not its centre of mass: a katana's middle is ~0.5 m behind the point, so
+    // steering the middle to the aim point drove the blade through the body first. Steering stops once the tip
+    // is within SteerStopDistance of the aim point or has passed it; the item then flies straight. Before 0.2.3
+    // it kept steering, reversed inside the body, BladeFirst spun the 1 m blade around in there, and the physics
+    // depenetration threw it away at 30+ m/s with no stab and no body collision logged.
     public class ThrowAssistMod : MelonMod
     {
         internal static MelonLogger.Instance Log;
@@ -84,6 +89,7 @@ namespace ThrowAssist
         static void W(string s) => ThrowAssistMod.Log.Msg(s);
         static bool Alive(Object o) => ThrowAssistMod.Alive(o);
         const float MinThrowSpeed = 2.5f;
+        const float SteerStopDistance = 0.3f;   // stop steering this close to the aim point (m)
 
         internal enum AimRegion { Chest, Head, Knee }
 
@@ -100,6 +106,9 @@ namespace ThrowAssist
             public string Stab, EndInfo, Impact;
             public float LastTip = -1f;
             public float Start, Speed, SteerAt, Until, EndedAt = -1f;
+            public float Reach;                         // knife: centre of mass to tip along the stab line (m)
+            public float Closest = -1f, TopSpeed;       // closest steered approach to the aim point; top physics speed
+            public string SteerEnd;
             public Vector3 Dir;
             public ANBBasicNPC Target;
             public Transform AimT;
@@ -191,11 +200,12 @@ namespace ThrowAssist
                 f.SteerAt = Mathf.Clamp(sp, min, Mathf.Max(ThrowAssistMod.MaxSpeed.Value, min));
                 if (knife != null) f.SteerAt = Mathf.Max(f.SteerAt, ato.speed * Mathf.Max(0.1f, ThrowAssistMod.KnifeSpeedMultiplier.Value));
                 f.Until = Time.time + ThrowAssistMod.MaxFlyDistance.Value / f.SteerAt + 0.3f;
-                var to = (npc != null ? AimPoint(npc, f) : target.position) - rb.worldCenterOfMass;
+                if (knife != null) f.Reach = TipReach(knife, rb);
+                var to = (npc != null ? AimPoint(npc, f) : target.position) - Lead(f);
                 f.Dir = to.normalized; f.Speed = f.SteerAt;
                 rb.linearVelocity = f.Dir * f.SteerAt;
                 if (knife != null) BladeFirst(f);
-                assist = $"{(npc != null ? "enemy" : "target")} '{(npc != null ? npc.name : target.name)}' {to.magnitude:0.0} m, steered at {f.SteerAt:0} m/s";
+                assist = $"{(npc != null ? "enemy" : "target")} '{(npc != null ? npc.name : target.name)}' {to.magnitude:0.0} m, steered at {f.SteerAt:0} m/s{(f.Reach > 0f ? $" by the tip ({f.Reach:0.00} m ahead)" : "")}";
             }
             else assist = pistol && !ThrowAssistMod.PistolAssist.Value ? "none (PistolAssist off)" : NoAssist(sp, knife != null, pistol);
             if (ThrowAssistMod.Dbg) W($"{(pistol ? "pistol" : knife != null ? "knife" : "item")} '{f.Name}' released at {sp:0.0} m/s, assist: {assist}; game threshold {GameThreshold():0.0}, item speed {ato.speed:0.0}, spin {preW.magnitude:0.0} rad/s, aim {f.Aim}");
@@ -318,6 +328,29 @@ namespace ThrowAssist
             f.Rb.angularVelocity = Vector3.zero;
         }
 
+        // Distance from the centre of mass to the knife's tip (ANBKnife.StabOrient), along the stab line.
+        static float TipReach(ANBKnife knife, Rigidbody rb)
+        {
+            try
+            {
+                var tip = knife.StabOrient; var st = knife.Stabber;
+                if (!Alive(tip) || !Alive(st)) return 0f;
+                var line = st.StabLineWorld;
+                if (line.sqrMagnitude < 1e-6f) return 0f;
+                return Mathf.Max(0f, Vector3.Dot(tip.position - rb.worldCenterOfMass, line.normalized));
+            }
+            catch { return 0f; }
+        }
+
+        // The point steered onto the aim point: the tip of a blade-first knife, else the centre of mass.
+        static Vector3 Lead(Flight f) => f.Rb.worldCenterOfMass + f.Dir * f.Reach;
+
+        static void StopSteer(Flight f, string reason, float age)
+        {
+            f.Target = null; f.AimT = null;
+            f.SteerEnd = $"{reason} at {age:0.00} s";
+        }
+
         static float TipOff(Flight f)
         {
             try
@@ -433,6 +466,8 @@ namespace ThrowAssist
             f.Target = null; f.AimT = null;
             f.EndInfo = $"{reason}, {f.EndedAt - f.Start:0.00} s, last speed {f.Speed:0.0} m/s";
             if (f.Knife != null) f.EndInfo += $", tip {f.LastTip:0} deg off flight";
+            f.EndInfo += $", top {f.TopSpeed:0.0} m/s";
+            if (f.SteerAt > 0f) f.EndInfo += $"; steering: {f.SteerEnd ?? "ran to the end"}, closest {f.Closest:0.00} m";
             if (!Alive(f.Rb)) return;
             f.Rb.collisionDetectionMode = f.OldMode;
             if (Alive(f.Ato)) { f.Ato.StopAllCoroutines(); f.Ato.homingTarget = null; }
@@ -460,16 +495,27 @@ namespace ThrowAssist
                 if (held && age > 0.2f) { End(f, "grabbed"); continue; }
                 var v = rb.linearVelocity;
                 float sp = v.magnitude;
+                if (sp > f.TopSpeed) f.TopSpeed = sp;
                 // Impact: the velocity turns hard or loses a lot of speed in one step.
                 if (age > 0.05f && sp > 0.01f && (Vector3.Angle(v, f.Dir) > 50f || sp < f.Speed * 0.6f)) { End(f, $"impact-like velocity change ({sp:0.0} m/s, turn {Vector3.Angle(v, f.Dir):0} deg)"); continue; }
                 if (sp < 2f || age > 4f) { End(f, sp < 2f ? "slowed below 2 m/s" : "4 s timeout"); continue; }
                 if (f.Target != null || f.AimT != null)
                 {
-                    if (Time.time > f.Until || (f.Target != null && (!Alive(f.Target) || f.Target.isDead)) || (f.Target == null && !Alive(f.AimT)))
-                    { f.Target = null; f.AimT = null; }
+                    string stop = Time.time > f.Until ? "max fly time"
+                        : f.Target != null && (!Alive(f.Target) || f.Target.isDead) ? "target down"
+                        : f.Target == null && !Alive(f.AimT) ? "target gone" : null;
+                    var to = Vector3.zero;
+                    if (stop == null)
+                    {
+                        to = (f.Target != null ? AimPoint(f.Target, f) : f.AimT.position) - Lead(f);
+                        float dist = to.magnitude;
+                        if (f.Closest < 0f || dist < f.Closest) f.Closest = dist;
+                        // Never turn back toward a point already passed: that reversal happens inside the body.
+                        stop = dist < SteerStopDistance ? "reached the aim point" : Vector3.Dot(to, f.Dir) <= 0f ? "passed the aim point" : null;
+                    }
+                    if (stop != null) StopSteer(f, stop, age);
                     else
                     {
-                        var to = (f.Target != null ? AimPoint(f.Target, f) : f.AimT.position) - rb.worldCenterOfMass;
                         v = to.normalized * f.SteerAt;
                         rb.linearVelocity = v; sp = f.SteerAt;
                     }
