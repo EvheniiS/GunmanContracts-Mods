@@ -2418,7 +2418,7 @@ when the knife is taken out of a socket (HVR `HVRGrabbable.IsSocketed`) or put i
 (`ANBGameLogic.holsterKnife` postfix). **`ANBKnife.socketed` / `inWall` are NOT reliable:** `grabKnife` / `releaseKnife`
 only write `isHeld`, so those flags stay stale after a draw.
 
-**0.3.3 (Oct 3 2026, built, not yet installed: game was running):** third report: a katana restored onto the left
+**0.3.3 (Oct 3 2026, built + installed `90BA105B`, untested):** third report: a katana restored onto the left
 back slot pointed sideways through the chest. Log (`26-10-3_2-57-59.log`): `'Knife-Katana' shape: 0.50 m long, centre
 (0,0,0), far end (0,0,1)` = the fallback defaults. Cause: 0.3.1's ghosting ran in `Put` before the first `ShapeOf`, so
 `ItemShape` (solid boxes only) found nothing, and the default shape was cached for the session (draw-assist misses
