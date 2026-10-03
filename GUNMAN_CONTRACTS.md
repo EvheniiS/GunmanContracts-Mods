@@ -2482,3 +2482,13 @@ called.** 0.2.1: gate closed → add the id to `purchasedContentWeapons` in memo
 then call `makePurchase` once `gameStarted` is true (checked each second), which saves. **0.2.1 TESTED Oct 3 2026: works.** Log: `unlocked 'Katana2' ... in memory` at
 Range load (03:09:05), `saved 'Katana2' to the game's purchases` 4 s later (so `gameStarted` does turn true in The
 Range), wall summary no longer lists it. The double katana hangs next to the katana and dual wielding works.
+
+**0.3.4 (Oct 3 2026, built + installed `457E4996`, untested):** fourth report: two katanas (`Knife-Katana` left,
+`Knife-Katana2` right) on the back in The Range did not come into the Warehouse contract. Log `26-10-3_3-8-24.log`:
+`back holsters restored: … 'Knife-Katana2' waits …, 'Knife-Katana' waits …` and `knife spots: 0` in the contract.
+**Contracts have no knife wall.** `LoadContractHolsterKnife` branches on `ANBGameLogic.IsRangeScene` (0x95): Range =
+take `spot.mygun` from `allKnifeSpots`; otherwise loop `ANBDataCollection.allOthers` (0x58, `GameObject[]` prefabs),
+match `GetComponent<ANBKnife>().knifeID`, `checkPurchaseDataWeapon`, `Object.Instantiate(prefab)`. The back-slot
+restore now does the same (and skips `IsMainMenuScene`). Same log: 0.3.3's shape fix confirmed (`'Knife-Katana' shape:
+0.80 m long, centre (-0.18,0.01,0), far end (-1,-0,-0)`), dual katanas drawn and re-holstered together repeatedly with
+the draw assist at 1-5 cm.

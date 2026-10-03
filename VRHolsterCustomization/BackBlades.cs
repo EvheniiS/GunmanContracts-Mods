@@ -17,9 +17,9 @@ namespace VRHolsterCustomization
     // - ANBKnife.checkAutoReturn: while the game runs, a knife that is neither held nor socketed counts
     //   autoReturnAfterCurrent (set on release) down and then returnKnife() sends it to its holster or wall spot. A knife
     //   docked on our back is neither, so the timer is kept at 0 while it is there.
-    // - ANBGameLogic.LoadContractHolsterKnife takes the knife from the scene's wall spot (ANBdataCollection.allKnifeSpots,
-    //   SlotID == knifeID, spot.mygun), releases it from the spot's Hanger socket and puts it in the holster. Knives are
-    //   moved, never instantiated, so a restore onto the back does the same.
+    // - ANBGameLogic.LoadContractHolsterKnife, in The Range, takes the knife from its wall spot (allKnifeSpots,
+    //   SlotID == knifeID, spot.mygun) and releases it from the spot's Hanger socket; in a contract it instantiates the
+    //   prefab from ANBdataCollection.allOthers with that knifeID. A restore onto the back does the same.
     //
     // One HolsterKind per knifeID ("Knife-<id>"), registered when a hand first takes that knife, or at start for ids
     // already saved in SavedBackHolsters.
@@ -109,7 +109,7 @@ namespace VRHolsterCustomization
                 Id = "Knife-" + id,
                 Blade = true,
                 IsMine = go => { var i = InfoOf(go); return i != null && i.Id == id && Fits(i); },
-                Spawn = () => TakeFromSpot(id),
+                Spawn = () => Make(id),
             });
         }
 
@@ -134,6 +134,35 @@ namespace VRHolsterCustomization
             catch { }
             info[go.Pointer] = i;
             return i;
+        }
+
+        // A knife for a restore, the way ANBGameLogic.LoadContractHolsterKnife gets one: in The Range (IsRangeScene) the
+        // one on its wall spot; anywhere else a copy of its prefab from ANBDataCollection.allOthers (contracts have no
+        // knife wall: 0.3.3 test logged "knife spots: 0" in the Warehouse and both katanas stayed behind). Not in the
+        // main menu (it waits for the next scene).
+        static GameObject Make(string id)
+        {
+            var game = ANBStaticGameManager.ANBmain;
+            if (!VRHolsterCustomizationMod.Alive(game) || game.IsMainMenuScene) return null;
+            return game.IsRangeScene ? TakeFromSpot(id) : FromPrefab(game, id);
+        }
+
+        static GameObject FromPrefab(ANBGameLogic game, string id)
+        {
+            var dc = game.ANBdataCollection;
+            var all = VRHolsterCustomizationMod.Alive(dc) ? dc.allOthers : null;
+            if (all == null) return null;
+            foreach (var prefab in all)
+            {
+                if (!VRHolsterCustomizationMod.Alive(prefab)) continue;
+                var knife = prefab.GetComponent<ANBKnife>();
+                if (knife == null || Clean(knife.knifeID) != id) continue;
+                var go = UnityEngine.Object.Instantiate(prefab);
+                if (VRHolsterCustomizationMod.DebugOn) VRHolsterCustomizationMod.Log.Msg($"'Knife-{id}': made from its prefab '{prefab.name}'");
+                return go;
+            }
+            if (VRHolsterCustomizationMod.DebugOn) VRHolsterCustomizationMod.Log.Msg($"'Knife-{id}': no prefab in allOthers");
+            return null;
         }
 
         // The knife hanging on this scene's wall spot for the id, freed from the spot's socket; null if there is none

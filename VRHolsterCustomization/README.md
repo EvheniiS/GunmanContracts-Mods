@@ -1,4 +1,4 @@
-# VR Holster Customization 0.3.3 (built, untested; 0.2.2 is the release candidate)
+# VR Holster Customization 0.3.4 (built, untested; 0.2.2 is the release candidate)
 
 This MelonLoader mod customizes the game's hip, knife, and back holsters and requires Mod Settings. It also owns the back slots for mod items, their grab and draw behavior, and their saved state. Weapon Framework uses its docking API for wall items and its back slot API for the test crowbar. Daredevil uses the back slot API for clubs.
 
@@ -70,8 +70,9 @@ The game's katanas and knives fit the two back slots too, one item per side, lik
 - The game sends a dropped knife back to its holster or wall spot after a few seconds. That timer is held at zero while
   the blade is on your back.
 - Saved like a mod item (`Knife-<id>` in `SavedBackHolsters`, The Range only). After a scene load or a checkpoint
-  reset the blade is taken from the scene's knife wall, exactly as the game fills its knife holsters. If that knife
-  is already in a knife holster, the back side stays empty.
+  reset the blade comes from where the game gets its holster knives: in The Range the knife wall (if that knife is
+  already in a knife holster, the back side stays empty), in a contract a new copy of the knife (0.3.4; contracts have
+  no knife wall). In the main menu it waits for the next scene.
 
 ## Build
 
