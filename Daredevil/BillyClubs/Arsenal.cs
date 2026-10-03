@@ -80,6 +80,25 @@ namespace BillyClubs
         [MethodImpl(MethodImplOptions.NoInlining)]
         static bool FwTryHolsterCore(GameObject go) => VRHolsterCustomization.Holsters.TryHolster(go);
 
+        // The return timer (ClubReturn.cs): a club last drawn from a back holster goes back there, like a katana does.
+        // False = it was never on the back (or both sides are taken, or VR Holster Customization is older): the belt.
+        static bool FwReturnHome(GameObject go)
+        {
+            if (!HolsterPresent) return false;
+            try { return FwReturnHomeCore(go); } catch { return false; }
+        }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool FwReturnHomeCore(GameObject go) => VRHolsterCustomization.Holsters.ReturnHome(go);
+
+        // The club went to a belt or wall slot: it is no longer "from the back".
+        static void FwForgetHome(GameObject go)
+        {
+            if (!HolsterPresent) return;
+            try { FwForgetHomeCore(go); } catch { }
+        }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void FwForgetHomeCore(GameObject go) => VRHolsterCustomization.Holsters.ForgetHome(go);
+
         // A club in a back holster is carried: never recalled to the wall or the belt.
         static bool OnBack(GameObject go) => HolsterPresent && FwHoldsCore(go);
         [MethodImpl(MethodImplOptions.NoInlining)]

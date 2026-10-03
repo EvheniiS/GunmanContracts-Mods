@@ -8,7 +8,8 @@ namespace BillyClubs
     // the timer starts when the club comes to rest (on the floor, against a wall, in a corner), not at the throw, so
     // a long flight never returns it in mid-air. Off by default: the clubs stay where they fall, like in the show.
     //
-    // The return itself is the F8 recall (SendToSlot): free the hand, end the flight, pin the club to the belt slot.
+    // A club last drawn from a back holster (VR Holster Customization) returns there; any other goes to the belt.
+    // The belt return itself is the F8 recall (SendToSlot): free the hand, end the flight, pin the club to the belt slot.
     // Nothing runs while ReturnClubs is off, so the default costs one bool check per club per frame.
     public partial class BillyClubsMod
     {
@@ -41,9 +42,16 @@ namespace BillyClubs
             if (k.RestAt < 0f && (k.StillFor >= RestTime || Time.time - k.LooseAt >= MaxRoll)) k.RestAt = Time.time;
             if (k.RestAt < 0f || Time.time - k.RestAt < Mathf.Max(0f, ReturnSeconds.Value)) return;
 
+            float lay = Time.time - k.RestAt;
+            // Drawn from a back holster: back it goes (VR Holster Customization remembers the side), like a katana.
+            if (FwReturnHome(k.Go))
+            {
+                EndFlight(k, null, null); k.Held = false;
+                Log.Msg($"club returned to its back holster ({lay:0.#} s after it came to rest)");
+                return;
+            }
             var free = FreeSlot();
             if (free == null) { k.RestAt = Time.time; return; }   // no belt yet (or both slots taken): ask again later
-            float lay = Time.time - k.RestAt;
             SendToSlot(k, free);
             SaveSlots();
             Log.Msg($"club returned to the {free.Name} holster ({lay:0.#} s after it came to rest)");

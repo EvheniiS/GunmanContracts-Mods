@@ -14,10 +14,12 @@
     from zero at the next rest. The return is the F8 recall (`SendToSlot`), logged as
     `club returned to the left holster (N s after it came to rest)`. With both belt slots taken it waits and asks again.
   - Code: `BillyClubs/ClubReturn.cs`. Off costs one bool check per club per frame.
-  - A club drawn from a back holster returns to the belt, not the back (knives return to the back).
+  - A club last drawn from a back holster returns there (the side it came from, else the other, else the belt), like a
+    katana. Needs **VR Holster Customization 0.3.7** (older: the belt). Drawn from or put in the belt: the belt.
 - Test: turn `ReturnClubs` on, throw a club at a wall and watch it go back after `ReturnSeconds`; pick it up before
   the time is up (nothing must happen); throw it down a stairwell or off a ledge; set `ReturnSeconds` to 0 and 30;
-  leave `ReturnClubs` off and confirm clubs stay put.
+  draw a club from your back, throw it and let it lie (back holster again), then draw from the belt and do the same
+  (belt again); leave `ReturnClubs` off and confirm clubs stay put.
 
 ## 1.1.1 (built Oct 3 2026, untested)
 

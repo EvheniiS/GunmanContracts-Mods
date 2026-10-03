@@ -413,6 +413,7 @@ namespace BillyClubs
 
         static void Holster(Club k, Slot s, bool log)
         {
+            FwForgetHome(k.Go); // a belt or wall slot is its home now, not the back
             EndFlight(k, null, null);
             var rb = k.Rb;
             if (Alive(rb))
