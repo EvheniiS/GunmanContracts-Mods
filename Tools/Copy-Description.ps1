@@ -8,7 +8,7 @@
   (Nexus's own rewriting undone). If the live page already matches, it says so and copies nothing, unless -Force.
   It also warns about leftover {{placeholders}}. It never writes to Nexus.
 
-  Opens https://www.nexusmods.com/<game>/mods/<id>/edit/general in the default browser. On that page: General tab, Description box,
+  Opens https://www.nexusmods.com/games/<game>/mods/<id>/edit/general in the default browser. On that page: General tab, Description box,
   select all, paste, Save. The Summary and tags are not stored locally and are not touched.
 
 .PARAMETER Mod     Mod folder name (e.g. GrabFix). One mod at a time, because there is one clipboard.
@@ -50,7 +50,7 @@ if ($state -eq 'MATCH' -and -not $Force) { Write-Host 'The live page already has
 
 Set-Clipboard -Value $text
 Write-Host ("Copied {0:N0} characters, {1} lines to the clipboard." -f $text.Length, ($text -split "`n").Count)
-$url = "https://www.nexusmods.com/$($cfg.game)/mods/$id/edit/general"
+$url = "https://www.nexusmods.com/games/$($cfg.game)/mods/$id/edit/general"
 if ($NoOpen) { Write-Host "Edit page: $url" }
 else { Start-Process $url; Write-Host "Opened $url" }
 Write-Host 'Then: General tab > Description > select all > paste > Save.'
