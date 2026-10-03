@@ -46,7 +46,7 @@ Lead with the answer: how many mods are in sync, then the ones that need attenti
 ## Boundaries
 
 - Checking is free and safe. **Uploading, publishing, or editing a Nexus page is outward-facing and the user's call every time.** Do not upload, tag, bump versions, or "fix" release artifacts as a side effect of a status check. This repository's AGENTS.md says release artifacts change only when the intended release and its test status are verified.
-- The API cannot edit a page's description, summary, tags or images (see `references/nexus-api.md`). A description fix is always a manual paste by the user; this skill only tells them which pages and where they differ.
+- The API cannot edit a page's description, summary, tags or images (see `references/nexus-api.md`). A description fix is always a manual paste by the user; this skill only tells them which pages and where they differ, and `Tools/Copy-Description.ps1 -Mod <Mod>` (see the `nexus-release` skill) gets the text onto their clipboard and opens the edit page.
 - Nexus data can lag by a minute or two after an upload. If the user has just uploaded, re-run once before concluding it failed.
 
 For what the Nexus API can and cannot do (including the v3 upload endpoints that `Tools/Update-Nexus.ps1` uses, driven from the `nexus-release` skill), read `references/nexus-api.md`.
