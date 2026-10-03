@@ -1,4 +1,4 @@
-# Grab Fix 1.1.1
+# Grab Fix 1.1.2
 
 More forgiving VR hand pickups, with normal grip controls and native grab eligibility checks.
 
@@ -12,6 +12,12 @@ More forgiving VR hand pickups, with normal grip controls and native grab eligib
 
 Requires MelonLoader; built for game 0.3.1.0 and MelonLoader 0.7.3. No gameplay mod dependencies.
 Settings are in `[GrabFix]` in `UserData/MelonPreferences.cfg`; all defaults are listed in the [Nexus description](../release/GrabFix/NEXUS_DESCRIPTION.txt).
+
+## 1.1.2 (built Oct 3 2026, untested)
+
+- The holstered-item reach check now counts an item's solid colliders even while they are switched to triggers
+  (the game and Daredevil 1.1.1 do that to holstered items). Before, such an item had no measurable distance and
+  could not be drawn. The native grab bag never skipped them.
 
 ## Release
 

@@ -10,7 +10,7 @@ using MelonLoader;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(GrabFix.GrabFixMod), "Grab Fix", "1.1.1", "Evgeeso")]
+[assembly: MelonInfo(typeof(GrabFix.GrabFixMod), "Grab Fix", "1.1.2", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace GrabFix;
@@ -60,7 +60,7 @@ public sealed class GrabFixMod : MelonMod
         EnemyRadius = c.CreateEntry("EnemyGrabRadius", .10f, description: "Enemies and downed (ragdoll) enemies can only be grabbed when their body is within this many metres of your palm, so a fist swung near a face or a lying body does not grab it. No distance grabs and no buffered grabs on enemies. 0 = no extra limit; maximum 0.25.");
         DebugLog = c.CreateEntry("DebugLog", false, description: "Log assisted pickup outcomes and detector setup.");
         wasEnabled = Active; scanAt = Now + 3;
-        Log.Msg($"1.1.1 (enemy grab radius {EnemyRadius.Value:0.00} m) - release candidate - direction={Direction.Value}, wider local sphere, grip buffer, recent-release catches; native grab checks retained.");
+        Log.Msg($"1.1.2 (enemy grab radius {EnemyRadius.Value:0.00} m) - release candidate - direction={Direction.Value}, wider local sphere, grip buffer, recent-release catches; native grab checks retained.");
     }
 
     public override void OnSceneWasInitialized(int buildIndex, string sceneName)
@@ -242,9 +242,12 @@ public sealed class GrabFixMod : MelonMod
     {
         float d = float.PositiveInfinity;
         if (g.Colliders == null) return d;
+        // g.Colliders holds only the item's solid shapes (HVR keeps real triggers in g.Triggers). A socketed or
+        // holstered item has them switched to triggers (HVRGrabbable.SetAllToTrigger), so isTrigger is not skipped:
+        // the native grab bag doesn't skip them either, and docked items must stay drawable.
         foreach (var c in g.Colliders)
         {
-            if (!Alive(c) || !c.enabled || !c.gameObject.activeInHierarchy || c.isTrigger) continue;
+            if (!Alive(c) || !c.enabled || !c.gameObject.activeInHierarchy) continue;
             var mesh = c.TryCast<MeshCollider>();
             if (!(Alive(c.TryCast<SphereCollider>()) || Alive(c.TryCast<BoxCollider>()) || Alive(c.TryCast<CapsuleCollider>()) || (Alive(mesh) && mesh.convex))) continue;
             d = Math.Min(d, Vector3.Distance(p, c.ClosestPoint(p)));
