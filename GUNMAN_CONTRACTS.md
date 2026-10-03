@@ -2505,3 +2505,11 @@ so the timer runs from release, not impact. `registerKnifeKill` is called from `
 `AfterKillSeconds` (registerKnifeKill postfix); each only shortens an armed timer (> 0) of a knife not held, defaults 0
 = vanilla. His cfg set by hand: release 0 (game), hit 0.5, kill 0.25. Debug lines: `knife return: the game's delay is
 N s` (once), `knife return: '<knife>' hit|kill, back in N s`.
+
+**0.3.6 (Oct 3 2026, built + installed `7844FDDE`, untested): knife return as two totals.** 0.3.5's three "shorten"
+timers were too confusing. Now `[VRHolsters_KnifeReturn]` `InEnemySeconds` (set exactly, from `StabEnemyFinal` or
+`registerKnifeKill`, so it may also be longer than the game's) and `OnGroundSeconds` (from when the released knife rests:
+under 0.15 m/s for 0.2 s; until then the game's timer is held above 10 s, max 10 s of flight). 0 = game timing; with
+`OnGroundSeconds` set and `InEnemySeconds` 0, a hit restores the game's remaining time (`autoReturnKnifeAfter` minus time
+since release). Nothing is done when the game's timer isn't armed at release (auto-return off). His cfg: in enemy 0.5,
+on ground 0 (game) until the log shows the game's delay (`knife return: the game's delay is N s from release`).

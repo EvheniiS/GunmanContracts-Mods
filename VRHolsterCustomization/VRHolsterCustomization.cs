@@ -4,7 +4,7 @@ using Il2CppHurricaneVR.Framework.Core.Grabbers;
 using MelonLoader;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(VRHolsterCustomization.VRHolsterCustomizationMod), "VR Holster Customization", "0.3.5", "Evgeeso")]
+[assembly: MelonInfo(typeof(VRHolsterCustomization.VRHolsterCustomizationMod), "VR Holster Customization", "0.3.6", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 [assembly: MelonAdditionalDependencies("ModSettings")]
 
@@ -37,12 +37,13 @@ namespace VRHolsterCustomization
             HolsterLog.Scene();
             Holsters.Scene();
             BackBlades.Scene();
+            KnifeReturn.Scene();
             VanillaHolsters.Scene();
         }
 
         public override void OnUpdate()
         {
-            try { HolsterLog.Tick(); Dock.Tick(); Holsters.Tick(); BackBlades.Tick(); VanillaHolsters.Tick(); }
+            try { HolsterLog.Tick(); Dock.Tick(); Holsters.Tick(); BackBlades.Tick(); KnifeReturn.Tick(); VanillaHolsters.Tick(); }
             catch (Exception e) { Log.Error($"update: {e}"); }
         }
 

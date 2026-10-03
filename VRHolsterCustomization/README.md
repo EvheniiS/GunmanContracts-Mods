@@ -1,4 +1,4 @@
-# VR Holster Customization 0.3.5 (built, untested; 0.2.2 is the release candidate)
+# VR Holster Customization 0.3.6 (built, untested; 0.2.2 is the release candidate)
 
 This MelonLoader mod customizes the game's hip, knife, and back holsters and requires Mod Settings. It also owns the back slots for mod items, their grab and draw behavior, and their saved state. Weapon Framework uses its docking API for wall items and its back slot API for the test crowbar. Daredevil uses the back slot API for clubs.
 
@@ -79,16 +79,18 @@ The game's katanas and knives fit the two back slots too, one item per side, lik
   already in a knife holster, the back side stays empty), in a contract a new copy of the knife (0.3.4; contracts have
   no knife wall). In the main menu it waits for the next scene.
 
-## Knife return time (0.3.5, untested)
+## Knife return time (0.3.6, untested)
 
-A thrown or dropped knife or katana comes back to its holster (or back slot) after a delay. `[VRHolsters_KnifeReturn]`:
+A thrown or dropped knife or katana returns to its holster (or back slot) on its own. `[VRHolsters_KnifeReturn]` sets
+how long it waits, in seconds, both live from Mod Settings. 0 = the game's own timing (with `DebugLog` the game's delay
+is logged at the first release).
 
-- `AfterReleaseSeconds`: the delay counted from the moment you let go. 0 = the game's own delay (logged once with
-  `DebugLog`). The game counts from the release, not from the hit, so below about 1 s a long throw returns in mid-air.
-- `AfterHitSeconds`: once a thrown blade sticks in an enemy, it comes back after this many seconds. 0 = off.
-- `AfterKillSeconds`: once a thrown blade kills an enemy, it comes back after this many seconds. 0 = off.
+- `InEnemySeconds`: how long it stays in an enemy, counted from when it sticks in or kills one. 0.5 = back half a
+  second after the hit; 5 = it stays a while.
+- `OnGroundSeconds`: how long it lies where it landed (floor, wall), counted from when it comes to rest. While it is
+  still flying it never returns, however short this is.
 
-They only shorten the game's timer, never start one: with the game's knife auto-return off, nothing changes.
+The game's own knife auto-return must be on; with it off, nothing changes.
 
 ## Build
 
