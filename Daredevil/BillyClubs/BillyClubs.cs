@@ -77,6 +77,7 @@ namespace BillyClubs
             public SwingTrack Sw;           // swing diagnostics while a hand holds it (SwingLog.cs)
             public bool InertiaSet;         // ClubInertiaScale has been applied to this club's rigidbody
             public List<Collider> Ghosted = new(); // solid colliders made triggers while holstered
+            public bool? SavedLos;          // the grabbable's RequireLineOfSight, switched off while holstered
             public float LooseAt = -99f, RestAt = -99f, StillFor; // return timer (ClubReturn.cs)
         }
 
@@ -525,6 +526,9 @@ namespace BillyClubs
         // A holstered or wall-mounted club collides with nothing, like the game's socketed guns
         // (HVRSocket.DisableCollision -> HVRGrabbable.SetAllToTrigger). Triggers still reach the
         // hand's grab bag, so the draw works. Drawn again: the same colliders turn solid.
+        // Line of sight must go off too: HVRHandGrabber.CheckLineOfSight raycasts grabbable.Colliders with
+        // QueryTriggerInteraction.Ignore, so it never hits a ghosted club and CanGrab/CanHover fail (1.1.1 bug:
+        // the club sat in the grab bag but was never hovered).
         static void SetGhost(Club k, bool ghost)
         {
             if (!Alive(k.Go)) return;
@@ -532,11 +536,14 @@ namespace BillyClubs
             {
                 foreach (var c in k.Ghosted) if (Alive(c)) c.isTrigger = false;
                 k.Ghosted.Clear();
+                if (k.SavedLos.HasValue && Alive(k.Grab)) k.Grab.RequireLineOfSight = k.SavedLos.Value;
+                k.SavedLos = null;
                 // Belt-and-braces: re-assert the player ignore pairs on the solid colliders.
                 k.IgnoresPlayer = false;
                 IgnorePlayer(k);
                 return;
             }
+            if (Alive(k.Grab) && k.Grab.RequireLineOfSight) { k.SavedLos ??= true; k.Grab.RequireLineOfSight = false; }
             int n = 0;
             foreach (var c in k.Go.GetComponentsInChildren<Collider>(true))
             {
