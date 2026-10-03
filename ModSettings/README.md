@@ -1,4 +1,4 @@
-# Mod Settings 1.0.0
+# Mod Settings 1.1.0
 
 An in-VR settings board for every MelonLoader mod in Gunman Contracts, with a mouse-driven on-screen version for
 flat mode. It reads all categories from
@@ -7,7 +7,7 @@ flat mode. It reads all categories from
 ## Use
 
 - **Open / close:** take out the phone and press the **Mod Settings** tile in the middle row (an empty slot), or press
-  **Ctrl+M**. The board opens 40 cm in front of your eyes, above the phone, and moves with you when you move with the
+  **Ctrl+M**. The board opens `PanelDistance` in front of your eyes (default 40 cm), above the phone, and moves with you when you move with the
   stick. It closes on X, on the tile again, on a
   scene load, or if you walk 5 m away.
 - **Move / tilt:** grip the top bar with an empty hand, nearby or with the laser aimed at it. Move and rotate your
@@ -16,7 +16,10 @@ flat mode. It reads all categories from
 - **Point and press trigger** with either empty hand to select from up to 4 m away, or press with an index fingertip,
   coming in from the front (sliding across the board doesn't press). Hands aimed at or near the board use the game's
   menu pointing pose. Held weapons keep their own pose. Release the opening gesture before interacting.
-- `<` / `>` at the top switch mods; `Up` / `Down` scroll a mod's settings; poke a setting's **name** to read its
+- **Section list:** press **List** (or the section name) at the top for a grid of every section, alphabetical,
+  column by column. The current one is red, sections with changed values have yellow names. Press one to jump
+  straight to it; **Back** returns. With more than 30 sections, `<` / `>` page the list while it is open.
+- `<` / `>` at the top switch mods (alphabetical order); `Up` / `Down` scroll a mod's settings; poke a setting's **name** to read its
   description, default and restart note; `Reset` puts the selected setting back to its default.
 - Numbers get `-big -small value +small +big` steps (from the default: 18 → 1/10, 0.6 → 0.01/0.1). Switches toggle.
   Choices written in the description (`TipFirst (...), Natural (...) or SpinEnd (...)`) and `#RRGGBB` colours cycle
@@ -29,7 +32,7 @@ flat mode. It reads all categories from
 ### Flat mode (no headset)
 
 **Ctrl+M** opens the same menu in the middle of the screen; use it with the mouse (wheel scrolls). Same pages and
-buttons as the board: click a name for its description, `<` `>` for mods, `X` or Ctrl+M closes. While it's open the
+buttons as the board: click a name for its description, `<` `>` for mods, **List** (or the title) for the section grid, `X` or Ctrl+M closes. While it's open the
 flat controller's cursor lock is released, so mouse look and firing stop and the cursor shows; walking still works and
 the game is not paused. Closing locks the cursor again (unless the game's own menu is open). Flat = no headset running
 (`XRSettings.isDeviceActive` false), or the flat controller is up and no VR hands exist.
@@ -44,7 +47,8 @@ clubs/holsters are built (`Mass`, `ThrowSearchDistance`, `Length`, `Radius`, `Bo
 
 ## Settings (`[ModSettings]`)
 
-`PhoneTile` (true), `OpenKey` (`M`, with Ctrl), `PanelDistance` (0.4 m), `PanelScale` (1), `DebugLog`.
+`PhoneTile` (true), `OpenKey` (`M`, with Ctrl), `PanelDistance` (0.4 m; fingertips reach up to ~0.6 m, past
+that use the laser, which reaches 4 m, and raise `PanelScale` if the text gets small), `PanelScale` (1), `DebugLog`.
 With `DebugLog`, the phone's home-screen layout is written once to `UserData/ModSettings_phone.txt`.
 
 0.2.0 replaced the 0.1.0 right-pocket grip gesture (too hard to find: grips landed 19-27 cm from it) with the phone

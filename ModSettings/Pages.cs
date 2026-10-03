@@ -15,6 +15,7 @@ namespace ModSettings
         public Setting Selected;
 
         public string Title => string.IsNullOrEmpty(Cat.DisplayName) ? Cat.Identifier : Cat.DisplayName;
+        public bool HasChanges => Settings.Exists(s => s.CanReset && !s.IsDefault);
     }
 
     internal static class Pages
@@ -44,6 +45,8 @@ namespace ModSettings
                 if (keep.TryGetValue(cat.Identifier, out var was)) { pg.Scroll = was.Scroll; pg.Selected = pg.Settings.Find(s => s.Entry == was.Selected?.Entry); }
                 All.Add(pg);
             }
+            // Alphabetical, so the section list is easy to scan and < / > follow the same order.
+            All.Sort((a, b) => string.Compare(a.Title, b.Title, StringComparison.OrdinalIgnoreCase));
             int i = All.FindIndex(p => p.Cat.Identifier == old);
             if (i >= 0) Current = i;
             if (All.Count == 0) { ModSettingsMod.Log.Warning("no mod settings to show"); return false; }
@@ -52,6 +55,8 @@ namespace ModSettings
         }
 
         public static void Turn(int dir) => Current = ((Current + dir) % All.Count + All.Count) % All.Count;
+
+        public static void Jump(int i) { if (i >= 0 && i < All.Count) Current = i; }
 
         // Steps a setting (see Setting.Change), logs it and schedules the save. Returns the status text to show.
         public static string Change(Setting s, int dir)

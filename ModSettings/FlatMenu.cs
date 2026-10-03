@@ -23,6 +23,10 @@ namespace ModSettings
         static CursorLockMode savedLock;
         static string status = "";
         static float statusUntil;
+        // Section list: a 3-column grid of every section in place of the rows; perPage depends on the screen size.
+        static bool listOpen;
+        static int listPage, perPage = 30;
+        static int ListPages => Math.Max(1, (Pages.All.Count + perPage - 1) / perPage);
 
         static GUIStyle label, title, desc, button;
         static int styleSize;
@@ -32,6 +36,7 @@ namespace ModSettings
             if (IsOpen) { Close(); ModSettingsMod.Dbg($"flat menu closed: {how}"); return; }
             if (!Pages.Load()) return;
             IsOpen = true;
+            listOpen = false;
             unlocked = null;
             savedCursor = false;
             var c = FindCharacter();
@@ -85,7 +90,8 @@ namespace ModSettings
             if (m != null && Pages.All.Count > 0)
             {
                 float y = m.scroll.ReadValue().y;
-                if (y != 0) Pages.Cur.Scroll += y > 0 ? -1 : 1;
+                if (y != 0 && listOpen) listPage = Math.Clamp(listPage + (y > 0 ? -1 : 1), 0, ListPages - 1);
+                else if (y != 0) Pages.Cur.Scroll += y > 0 ? -1 : 1;
             }
             if (statusUntil > 0 && Time.unscaledTime > statusUntil) { statusUntil = 0; status = ""; }
         }
@@ -120,13 +126,19 @@ namespace ModSettings
             int maxScroll = Math.Max(0, (pg.Settings.Count - 1) / Rows);
             pg.Scroll = Math.Clamp(pg.Scroll, 0, maxScroll);
 
-            // Header: < title (n/N) > ... X
-            float x0 = win.x + pad, y = win.y + pad, inner = w - 2 * pad;
-            if (Btn(new Rect(x0, y, row, row), "<")) { Pages.Turn(-1); return; }
-            GUI.Label(new Rect(x0 + row + gap, y, inner - 3 * row - 3 * gap, row), $"{pg.Title}   ({Pages.Current + 1}/{Pages.All.Count})", title);
-            if (Btn(new Rect(x0 + inner - 2 * row - gap * 3, y, row, row), ">")) { Pages.Turn(1); return; }
+            // Header: < title (n/N) [List] > ... X   (the title opens the section list too)
+            float x0 = win.x + pad, y = win.y + pad, inner = w - 2 * pad, listW = 90 * u;
+            float nextX = x0 + inner - 2 * row - gap * 3;
+            if (Btn(new Rect(x0, y, row, row), "<")) { TurnOrPage(-1); return; }
+            string head = !listOpen ? $"{pg.Title}   ({Pages.Current + 1}/{Pages.All.Count})"
+                : ListPages > 1 ? $"Sections   ({listPage + 1}/{ListPages})" : $"Sections   ({Pages.All.Count})";
+            if (GUI.Button(new Rect(x0 + row + gap, y, nextX - listW - 3 * gap - (x0 + row), row), head, title)) { ToggleList(); return; }
+            if (Btn(new Rect(nextX - listW - gap, y, listW, row), listOpen ? "Back" : "List")) { ToggleList(); return; }
+            if (Btn(new Rect(nextX, y, row, row), ">")) { TurnOrPage(1); return; }
             if (Btn(new Rect(x0 + inner - row, y, row, row), "X", new Color(0.6f, 0.15f, 0.15f))) { Close(); ModSettingsMod.Dbg("flat menu closed: X"); return; }
             y += row + 2 * gap;
+
+            if (listOpen) { DrawList(x0, y, inner, win.yMax - pad, row, gap); return; }
 
             // Rows: name | value | -big -small +small +big (numbers) or < > (choices)
             float resetW = 85 * u;
@@ -203,6 +215,44 @@ namespace ModSettings
                   (sel.Restart ? "\nRestart the game to apply." : "") +
                   (sel.Kind == Kind.ReadOnly ? "\nEdit this one in UserData/MelonPreferences.cfg." : "");
             GUI.Label(new Rect(x0, y, inner, win.yMax - pad - y), text, desc);
+        }
+
+        // Every section as a button, filled column by column; yellow = has changed values, red = the current one.
+        static void DrawList(float x0, float y0, float inner, float bottom, float row, float gap)
+        {
+            const int cols = 3;
+            int rows = Math.Max(1, (int)((bottom - y0 + gap) / (row + gap)));
+            perPage = cols * rows;
+            listPage = Math.Clamp(listPage, 0, ListPages - 1);
+            float colW = (inner - (cols - 1) * gap) / cols;
+            for (int k = 0; k < perPage; k++)
+            {
+                int idx = listPage * perPage + k;
+                if (idx >= Pages.All.Count) break;
+                var pg = Pages.All[idx];
+                var r = new Rect(x0 + k / rows * (colW + gap), y0 + k % rows * (row + gap), colW, row);
+                var bg = idx == Pages.Current ? new Color(0.45f, 0.1f, 0.1f) : new Color(0.2f, 0.2f, 0.23f);
+                if (Btn(r, " " + pg.Title, bg, pg.HasChanges ? new Color(1f, 0.82f, 0.35f) : Color.white, left: true))
+                {
+                    Pages.Jump(idx);
+                    listOpen = false;
+                    ModSettingsMod.Dbg($"flat list: {pg.Title}");
+                    return;
+                }
+            }
+        }
+
+        static void ToggleList()
+        {
+            listOpen = !listOpen;
+            if (listOpen) listPage = Pages.Current / perPage;
+        }
+
+        // < / >: page the list while it is open and has more than one page; otherwise switch section.
+        static void TurnOrPage(int dir)
+        {
+            if (listOpen && ListPages > 1) listPage = ((listPage + dir) % ListPages + ListPages) % ListPages;
+            else { listOpen = false; Pages.Turn(dir); }
         }
 
         static void Styles(float u)

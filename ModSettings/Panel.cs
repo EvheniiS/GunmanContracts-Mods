@@ -37,8 +37,14 @@ namespace ModSettings
         static Shader flat;
         static TMP_FontAsset font;
         static readonly List<Button> buttons = new();
-        static Button title, prevCat, nextCat, close, up, down, pageText, reset, status, desc;
+        static Button title, listBtn, prevCat, nextCat, close, up, down, pageText, reset, status, desc;
         static readonly Button[] labels = new Button[Rows], values = new Button[Rows];
+        // Section list: a grid of every section, filled column by column (alphabetical reads top to bottom).
+        const int ListCols = 3, ListRows = 10, Picks = ListCols * ListRows;
+        static readonly Button[] picks = new Button[Picks];
+        static bool listOpen;
+        static int listPage;
+        static int ListPages => Math.Max(1, (Pages.All.Count + Picks - 1) / Picks);
         static readonly Button[] resets = new Button[Rows];
         static readonly Button[,] steps = new Button[Rows, 4];
         static readonly Poker[] pokers = { new(), new() };
@@ -70,6 +76,7 @@ namespace ModSettings
             float parentScale = head.parent != null ? head.parent.lossyScale.x : 1f;
             root.transform.localScale = Vector3.one * (Mathf.Clamp(scale, 0.5f, 2f) / Mathf.Max(parentScale, 1e-3f));
             dragging = -1;
+            listOpen = false;
             foreach (var p in pokers) { p.WasIn = p.Trigger = p.Grip = true; p.LastDepth = float.PositiveInfinity; p.Hover = null; }
             root.SetActive(true);
             Refresh();
@@ -191,6 +198,11 @@ namespace ModSettings
 
         static void Refresh()
         {
+            ShowSettings(!listOpen);
+            if (listOpen) { RefreshList(); return; }
+            foreach (var b in picks) b.Go.SetActive(false);
+            listBtn.Text.SetIfChanged("List");
+
             var pg = Pages.Cur;
             int maxScroll = Math.Max(0, (pg.Settings.Count - 1) / Rows);
             pg.Scroll = Math.Clamp(pg.Scroll, 0, maxScroll);
@@ -254,6 +266,64 @@ namespace ModSettings
                   (sel.Kind == Kind.ReadOnly ? "\n<color=#999999>Edit this one in UserData/MelonPreferences.cfg.</color>" : ""));
         }
 
+        // Rows, footer and description; the rest of Refresh sets the per-row parts when they are shown.
+        static void ShowSettings(bool show)
+        {
+            pageText.Go.SetActive(show); status.Go.SetActive(show); desc.Go.SetActive(show);
+            if (show) return;
+            for (int r = 0; r < Rows; r++)
+            {
+                labels[r].Go.SetActive(false); values[r].Go.SetActive(false); resets[r].Go.SetActive(false);
+                for (int k = 0; k < 4; k++) steps[r, k].Go.SetActive(false);
+            }
+            up.Go.SetActive(false); down.Go.SetActive(false); reset.Go.SetActive(false);
+        }
+
+        static void RefreshList()
+        {
+            listPage = Math.Clamp(listPage, 0, ListPages - 1);
+            title.Text.SetIfChanged(ListPages > 1
+                ? $"Sections  <size=70%>({listPage + 1}/{ListPages})</size>"
+                : $"Sections  <size=70%>({Pages.All.Count})</size>");
+            listBtn.Text.SetIfChanged("Back");
+            for (int k = 0; k < Picks; k++)
+            {
+                int idx = listPage * Picks + k;
+                var b = picks[k];
+                b.Go.SetActive(idx < Pages.All.Count);
+                if (idx >= Pages.All.Count) continue;
+                var pg = Pages.All[idx];
+                b.Text.SetIfChanged(pg.Title);
+                b.Text.color = pg.HasChanges ? Changed : Color.white;
+                SetBase(b, idx == Pages.Current ? SelCol : BtnCol);
+            }
+        }
+
+        static void ToggleList()
+        {
+            listOpen = !listOpen;
+            if (listOpen) listPage = Pages.Current / Picks;
+            Refresh();
+        }
+
+        // < / >: page the list while it is open and has more than one page; otherwise switch section.
+        static void TurnOrPage(int dir)
+        {
+            if (listOpen && ListPages > 1) listPage = ((listPage + dir) % ListPages + ListPages) % ListPages;
+            else { listOpen = false; Pages.Turn(dir); }
+            Refresh();
+        }
+
+        static void Pick(int k)
+        {
+            int idx = listPage * Picks + k;
+            if (idx >= Pages.All.Count) return;
+            Pages.Jump(idx);
+            listOpen = false;
+            Refresh();
+            ModSettingsMod.Dbg($"list: {Pages.Cur.Title}");
+        }
+
         static void SetStep(int r, int k, string text)
         {
             var b = steps[r, k];
@@ -304,9 +374,11 @@ namespace ModSettings
             Make(new Vector2(0, H / 2 - 0.019f), new Vector2(W - 0.02f, 0.03f),
                 "GRIP HERE TO MOVE / TILT", 0.12f, BtnCol, null);
             float top = H / 2 - 0.07f;
-            prevCat = Make(new Vector2(-W / 2 + 0.03f, top), new Vector2(Btn, Btn), "<", 0.2f, BtnCol, () => { Pages.Turn(-1); Refresh(); });
-            title = Make(new Vector2(-0.025f, top), new Vector2(0.50f, Btn), "", 0.22f, Bg, null, TextAlignmentOptions.Center, false);
-            nextCat = Make(new Vector2(W / 2 - 0.085f, top), new Vector2(Btn, Btn), ">", 0.2f, BtnCol, () => { Pages.Turn(1); Refresh(); });
+            prevCat = Make(new Vector2(-W / 2 + 0.03f, top), new Vector2(Btn, Btn), "<", 0.2f, BtnCol, () => TurnOrPage(-1));
+            // The name opens the section list too, as does the List button next to it.
+            title = Make(new Vector2(-0.085f, top), new Vector2(0.38f, Btn), "", 0.22f, LabelCol, ToggleList);
+            listBtn = Make(new Vector2(0.17f, top), new Vector2(0.11f, Btn), "List", 0.17f, BtnCol, ToggleList);
+            nextCat = Make(new Vector2(W / 2 - 0.085f, top), new Vector2(Btn, Btn), ">", 0.2f, BtnCol, () => TurnOrPage(1));
             close = Make(new Vector2(W / 2 - 0.03f, top), new Vector2(Btn, Btn), "X", 0.2f, OffCol, () => { Close(); ModSettingsMod.Dbg("closed: X"); });
 
             float[] stepX = { -0.073f, -0.023f, 0.132f, 0.182f };
@@ -344,6 +416,16 @@ namespace ModSettings
             float descTop = nav - Btn / 2 - 0.006f, descH = descTop + H / 2 - 0.008f;
             desc = Make(new Vector2(0, descTop - descH / 2), new Vector2(W - 0.03f, descH), "", 0.12f, Bg, null, TextAlignmentOptions.TopLeft, false, true);
             desc.Text.fontSizeMin = 0.07f;
+
+            // Section list grid, over the rows, footer and description (hidden until List is pressed).
+            const float colW = 0.226f, colStep = 0.236f, listStep = 0.044f;
+            for (int k = 0; k < Picks; k++)
+            {
+                int slot = k, col = k / ListRows, row = k % ListRows;
+                picks[k] = Make(new Vector2((col - 1) * colStep, top - 0.05f - row * listStep), new Vector2(colW, 0.038f),
+                    "", 0.15f, BtnCol, () => Pick(slot));
+                picks[k].Go.SetActive(false);
+            }
 
             ModSettingsMod.Log.Msg($"menu built: font '{font.name}', shader '{flat.name}'");
             return true;

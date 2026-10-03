@@ -18,6 +18,14 @@ Unity hand rig or controller alignment; do this pass in the headset before relea
   must update the actual mod, restore DEFAULT, and survive restart. Test a mod-managed saved-state row: no Reset.
 - Compare desktop mode: each changed row has Reset, values save, cursor/weapon controls restore on close.
 
+## Section list (1.1.0)
+
+- Press List, then Back; press the section name: same list. Sections are alphabetical, current one red, changed ones
+  yellow. Pick one far down (VR Holsters): it opens on that page and no row under the finger gets pressed.
+- `X` closes from the list; reopening starts on the settings view. `<` / `>` from the list switch section and close it.
+- `PanelDistance` 1.4: the board opens ~1.4 m away at the same angle below the eyes; laser hover and press work.
+- Flat (Ctrl+M): List / title → click a section → lands there; wheel pages the list if it doesn't fit.
+
 ## Direct holster adjustment
 
 - Enable VR Holsters: move by hand. Check blue markers for each empty hip, knife and back socket. An occupied socket
