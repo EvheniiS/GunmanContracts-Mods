@@ -1,5 +1,7 @@
 # Better Bow
 
+Tested: 1.3.0 (2026-10-03)
+
 Part of [Gunman Contracts Mods](../README.md). Fixes and expands the bow:
 
 - **Quiver.** Holster the bow on a shoulder, take it in one hand, reach back to that shoulder with
