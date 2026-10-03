@@ -70,7 +70,7 @@ Weapon Framework     │
 ## 3. Exactly what moves (from Weapon Framework 0.2.4)
 
 State at the time of writing: Weapon Framework **0.2.4** installed (hash `60CF4D28…`), 0.2.1–0.2.3 tested in game (see
-`GUNMAN_CONTRACTS.md` "Weapon Framework 0.2.0 + Daredevil 0.3.5" section and `WeaponFramework/TESTING.md`). 0.2.4 adds
+`HISTORY.md` (Weapon Framework section), `GAME_KNOWLEDGE.md` §5 and `WeaponFramework/TESTING.md`). 0.2.4 adds
 hover haptics, the new pose defaults and the "waiting side" restore fix, **untested**. Commit 0.2.4 on `dev` before
 starting, so the move is a clean diff.
 
@@ -254,9 +254,9 @@ Code paths (from the binary, `il2cpp_tools`):
 
 ## 7. References
 
-- History and test results: `GUNMAN_CONTRACTS.md`, section "★ Weapon Framework 0.2.0 + Daredevil 0.3.5".
+- History and test results: `HISTORY.md` (Weapon Framework, VR Holster Customization) and `GAME_KNOWLEDGE.md` §5.
 - Weapon Framework: `WeaponFramework/README.md` (0.2.x section, known limit), `ROADMAP.md`, `TESTING.md`.
-- The request: `IDEAS.md` "★★ HIGHLY REQUESTED: holster management".
+- The request ("HIGHLY REQUESTED: holster management", Sep 29 2026): players want to choose where holsters sit; built as this mod.
 - Binary tools: `il2cpp_tools/` (`dumpt.py <Type>`, `disa.py <Namespace.Type::Method | 0xADDR>`, `xref.py`, `slot.py`);
   set `PYTHONIOENCODING=utf-8` first. `il2cpp_tools/sockets.txt` = earlier socket field dump.
 - Logging rule: one short line per event, fold load-time noise (see `VR/CLAUDE.md` "Working rules for mod projects").

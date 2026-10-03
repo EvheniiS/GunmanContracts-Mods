@@ -34,7 +34,7 @@ namespace EnemyAwarenessLog
     //
     // Also: which floor each enemy is on relative to you, who is still alive when a wave or scene
     // ends, your stealth visibility (the game's ANBPlayerDetector: height, light, movement,
-    // gunfire), and how many enemy shots the game made harmless (see IDEAS.md).
+    // gunfire), and how many enemy shots the game made harmless (see ROADMAP.md).
     //
     // Output: UserData\EnemyAwarenessLog\session-<time>.log. The MelonLoader console gets only the
     // scene and wave headers (to line up other mods' logs) and warnings. 0.5.0 keeps the file lean on

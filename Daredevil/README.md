@@ -1,11 +1,13 @@
 # Daredevil 1.1.2
 
-## 1.1.2 (built Oct 3 2026, untested)
+Tested: 1.1.2 (2026-10-03)
 
-- **Optional club return (off by default).** Same idea as the game's knives, which fly back to their holster after
+## 1.1.2 (built Oct 3 2026, tested Oct 3 2026)
+
+- **Club return (on by default).** Same idea as the game's knives, which fly back to their holster after
   a while (and as VR Holster Customization's `[VRHolsters_KnifeReturn]` times them). Two settings in `[BillyClubs]`,
   both on the Mod Settings board:
-  - `ReturnClubs` (`false`): a club you threw or dropped goes back to its belt holster by itself. Off = clubs stay
+  - `ReturnClubs` (`true`): a club you threw or dropped goes back to its holster by itself. Off = clubs stay
     where they land, like in the show; F8 and the arsenal terminal still bring them back.
   - `ReturnSeconds` (`10`): how long it lies where it landed first. Counted from the moment it comes to rest
     (under 0.15 m/s for 0.2 s), so a long throw never returns in mid-air. A club that is still rolling 10 s after the
@@ -14,6 +16,7 @@
     from zero at the next rest. The return is the F8 recall (`SendToSlot`), logged as
     `club returned to the left holster (N s after it came to rest)`. With both belt slots taken it waits and asks again.
   - Code: `BillyClubs/ClubReturn.cs`. Off costs one bool check per club per frame.
+  - Default changed to on before release (Oct 3 2026): the casual default; `ReturnSeconds` 10 matches the game's knives.
   - A club last drawn from a back holster returns there (the side it came from, else the other, else the belt), like a
     katana. Needs **VR Holster Customization 0.3.7** (older: the belt). Drawn from or put in the belt: the belt.
 - Test: turn `ReturnClubs` on, throw a club at a wall and watch it go back after `ReturnSeconds`; pick it up before
@@ -21,13 +24,17 @@
   draw a club from your back, throw it and let it lie (back holster again), then draw from the belt and do the same
   (belt again); leave `ReturnClubs` off and confirm clubs stay put.
 
-## 1.1.1 (built Oct 3 2026, untested)
+## 1.1.1 (built Oct 3 2026, tested Oct 3 2026)
 
 - **Holstered and wall-mounted clubs no longer collide with anything.** Their colliders turn into triggers while
   holstered (the same thing the game's holsters do to guns: `HVRSocket.DisableCollision` -> `SetAllToTrigger`) and
   turn solid again on the draw. The bow hand and enemies no longer bump into the clubs on your hips. Drawing still
   works: the hand's grab bag sees trigger colliders. Needs **Grab Fix 1.1.2** (older Grab Fix skipped trigger
   colliders in its holstered-item reach check, so a holstered club could not be drawn).
+- **Fix (Oct 3 2026, same version):** the first 1.1.1 build could not be drawn from the belt or the arsenal wall: the club
+  sat in the hand's grab bag but was never hovered. `HVRHandGrabber.CheckLineOfSight` raycasts the grabbable's
+  `Colliders` with `QueryTriggerInteraction.Ignore`, so a ghosted club always fails line of sight. A holstered club now
+  has `RequireLineOfSight` off; the draw restores it.
 - Test: draw and re-holster both clubs; draw with the bow in the other hand; walk into an enemy with full holsters;
   throw a drawn club at a wall (it must bounce, not pass through).
 

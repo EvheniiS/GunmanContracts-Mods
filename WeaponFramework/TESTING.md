@@ -72,7 +72,7 @@ Upcoming features add rows here when built:
 
 ## Results so far
 
-- **0.1.2 (Sep 29 2026): Gate C C1-C7 all PASS.** Action log B7: partial in 0.1.4 (see GUNMAN_CONTRACTS.md); 0.1.5 fixes
+- **0.1.2 (Sep 29 2026): Gate C C1-C7 all PASS.** Action log B7: partial in 0.1.4 (see HISTORY.md); 0.1.5 fixes
   scene-change bursts, knife names and knife/gun side collisions, untested.
 - **0.2.0 (Sep 29 2026):** crowbar entry retrieves and grabs (no icon; hung upright it stuck out of the slot). Crowbar
   (back-right) and a club (back-left) went IN. **FAIL:** neither could be drawn again, and the game still put the bow
@@ -81,5 +81,5 @@ Upcoming features add rows here when built:
 
 ## Record results
 
-One line per run in GUNMAN_CONTRACTS.md: version, gates run, any FAIL with its log line. Turn `DebugLog` off when the
+One line per run in this file: version, gates run, any FAIL with its log line. Turn `DebugLog` off when the
 framework is done being worked on (debug-log rule).

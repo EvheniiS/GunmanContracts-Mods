@@ -56,8 +56,7 @@ Daredevil.dll            clubs (Daredevil/BillyClubs/) + radar sense (Daredevil/
 - **Gloves** replaces the old `[BillyClubs] GloveColor` setting with `[Gloves] Color`.
 - **Weapon Framework** is for any mod: register a weapon and it appears on the arsenal panel (API in its README). Version 0.3.0 requires VR Holster Customization.
 
-Parked ideas (hardcore "no free misses") with the game code behind them: [IDEAS.md](IDEAS.md).
-How the game plays sounds and how to add custom ones: [SOUND.md](SOUND.md).
+How the game works (hooks, addresses, mechanisms, sound, flat mode): [GAME_KNOWLEDGE.md](GAME_KNOWLEDGE.md). Per-version history: [HISTORY.md](HISTORY.md). Open work and parked ideas: [ROADMAP.md](ROADMAP.md).
 
 ## Install
 
