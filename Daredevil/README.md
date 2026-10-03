@@ -94,6 +94,13 @@ knockouts, arsenal panel entry) + **radar sense** (enemy silhouettes through wal
 **Optional:** [Weapon Framework](../WeaponFramework/README.md) puts the clubs on the arsenal panel in The Range.
 **Optional:** [VR Holster Customization](../VRHolsterCustomization/README.md) lets clubs use the back slots and tints the club holster tubes. Weapon Framework 0.3.0 requires the holster mod.
 
+> **⚠ Shared code with VR Holster Customization: change one, check the other.** Daredevil calls its public API
+> (`Holsters.RegisterKind`, `TryHolster`, `Holds`, and since 1.1.2 `ReturnHome` and `ForgetHome`; wrappers in
+> `BillyClubs/Arsenal.cs`) and was compiled against it. Daredevil 1.1.2 (club return to the back holster) needs
+> **VR Holster Customization 0.3.7 or newer**; with an older one the club returns to the belt. When you change
+> that API, or the holster's draw / return / ghost-collider code (Daredevil's belt clubs do the same ghosting,
+> `SetGhost`), rebuild and retest both, and ship them together.
+
 **Optional but highly recommended:** [Heavy Melee](../HeavyMelee/),
 [Physical Dodge](../PhysicalDodge/), and [Enemy Awareness Fix](../EnemyAwarenessFix/).
 These companion mods are recommended for the Daredevil experience, but are not required to run it.

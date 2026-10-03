@@ -49,6 +49,13 @@ and spawns one only if the original is gone. The user confirmed this fix in game
 
 `[VRHolsters_BackSlots]` controls the pose, snap distance, and draw reach for non-game items registered through `Holsters.RegisterKind`. `SavedBackHolsters` is managed by the mod. Mods can call `Holsters.TryHolster(item)` when releasing an item, or `Holsters.Watch(item)` to have the mod watch for its release. `Holsters.Holds(item)` checks whether it is on the back.
 
+> **⚠ Daredevil depends on this API: change one, check the other.** Daredevil (the Billy Clubs) calls `RegisterKind`,
+> `TryHolster`, `Holds`, `ReturnHome` and `ForgetHome` (public since 0.3.7, for the club return in Daredevil 1.1.2).
+> Don't rename or change those signatures without updating `Daredevil/BillyClubs/Arsenal.cs`. `ReturnHome` needs the
+> side memory of `BeforeGrab`, which records it for every kind, not just blades. Daredevil's belt clubs also copy
+> this mod's ghost-collider and holster logic, so a fix to one usually belongs in the other. Rebuild and retest both,
+> and ship them together.
+
 These settings moved from `[WeaponFrameworkHolsters]`. Existing tuned values can be copied into the new category in `UserData/MelonPreferences.cfg` while the game is closed. The old category is no longer used.
 
 ## Katana and knives on the back (0.3.0, untested)
