@@ -2492,3 +2492,16 @@ match `GetComponent<ANBKnife>().knifeID`, `checkPurchaseDataWeapon`, `Object.Ins
 restore now does the same (and skips `IsMainMenuScene`). Same log: 0.3.3's shape fix confirmed (`'Knife-Katana' shape:
 0.80 m long, centre (-0.18,0.01,0), far end (-1,-0,-0)`), dual katanas drawn and re-holstered together repeatedly with
 the draw assist at 1-5 cm.
+
+**0.3.4 TESTED (Oct 3 2026):** both back katanas came into the contract (user). Wave/mission reloads not yet seen.
+
+**0.3.5 (Oct 3 2026, built + installed `BA0BA96D`, untested): knife return time.** Request: thrown knives/katanas
+stay in the enemy too long before returning; want it configurable, as low as ~0.5 s, faster on a kill. Game facts:
+`ANBKnife.releaseKnife` sets `autoReturnAfterCurrent = ANBGameLogic.autoReturnKnifeAfter` (0x224) on **every release**,
+so the timer runs from release, not impact. `registerKnifeKill` is called from `ANBBasicNPC.TakeDamage` and
+`TakeKnifeSlashDamage` (kills); `ANBKnife.stabEnemy` has no direct callers (UnityEvent), it ends in
+`ANBGameLogic.StabEnemyFinal`, which Throw Assist already proved fires for thrown knives. New `[VRHolsters_KnifeReturn]`:
+`AfterReleaseSeconds` (replaces the game's delay at release), `AfterHitSeconds` (StabEnemyFinal postfix),
+`AfterKillSeconds` (registerKnifeKill postfix); each only shortens an armed timer (> 0) of a knife not held, defaults 0
+= vanilla. His cfg set by hand: release 0 (game), hit 0.5, kill 0.25. Debug lines: `knife return: the game's delay is
+N s` (once), `knife return: '<knife>' hit|kill, back in N s`.

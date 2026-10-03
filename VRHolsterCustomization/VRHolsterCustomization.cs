@@ -4,7 +4,7 @@ using Il2CppHurricaneVR.Framework.Core.Grabbers;
 using MelonLoader;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(VRHolsterCustomization.VRHolsterCustomizationMod), "VR Holster Customization", "0.3.4", "Evgeeso")]
+[assembly: MelonInfo(typeof(VRHolsterCustomization.VRHolsterCustomizationMod), "VR Holster Customization", "0.3.5", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 [assembly: MelonAdditionalDependencies("ModSettings")]
 
@@ -28,6 +28,7 @@ namespace VRHolsterCustomization
             debug = c.CreateEntry("DebugLog", false, description: "Log holster in/out events and final holster positions.");
             Holsters.Init();
             VanillaHolsters.Init();
+            KnifeReturn.Init();
             Log.Msg("loaded");
         }
 
