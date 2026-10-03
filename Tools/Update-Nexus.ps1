@@ -28,7 +28,8 @@
 .PARAMETER ChangelogFile   File holding the changelog text.
 .PARAMETER NoChangelog     Apply without posting a changelog.
 .PARAMETER FileDescription Text for the file's description field. Default: the standard "Extract into the game folder..." line.
-.PARAMETER KeepOld         Do not archive the previous main file (it stays a main file next to the new one).
+.PARAMETER ArchiveOld      Send archive_existing_file=true. WARNING: that sets the previous file's category to ARCHIVED, which HIDES it from the public Files tab
+                 (seen with GrabFix 1.1.1, Oct 3 2026). Default is off. What the old file becomes without it is not confirmed yet: the verify step prints it.
 .PARAMETER Apply           Really upload. Without it nothing is written.
 .PARAMETER UploadOnly      With -Apply: stop after the upload is available (no page change).
 
@@ -45,7 +46,7 @@ param(
     [string]$ChangelogFile,
     [switch]$NoChangelog,
     [string]$FileDescription,
-    [switch]$KeepOld,
+    [switch]$ArchiveOld,
     [switch]$Apply,
     [switch]$UploadOnly
 )
@@ -204,7 +205,7 @@ Write-Host "== Update $Mod -> $Version  ($(if ($Apply) { if ($UploadOnly) { 'APP
 Write-Host ("Zip        {0}  ({1:N0} bytes, md5 {2})" -f (Split-Path $zip -Leaf), $size, $md5hex)
 Write-Host "Mod file   $fileId  (page $v1id, v3 mod $modId3)"
 Write-Host "New name   $newName    version $Version    category main"
-Write-Host "Previous   $(if ($latest) { "'$($latest.name)'" } else { '-' })  ->  $(if ($KeepOld) { 'stays a main file' } else { 'archived (API category ARCHIVED; the site shows it under Previous files)' })"
+Write-Host "Previous   $(if ($latest) { "'$($latest.name)'" } else { '-' })  ->  $(if ($ArchiveOld) { 'ARCHIVED = hidden from the public Files tab' } else { 'left to Nexus (archive flag off); its resulting category is printed by the verify step' })"
 Write-Host "File text  $FileDescription"
 Write-Host "Changelog  $(if ($clText) { ($clText -split "`n").Count.ToString() + ' lines' } else { 'none' })"
 Write-Host ''
@@ -259,7 +260,7 @@ if ($UploadOnly) {
 Write-Host '4/6 create file version' -ForegroundColor Cyan
 $body = [ordered]@{
     upload_id = $uploadId; name = $newName; version = $Version; file_category = 'main'; description = $FileDescription
-    update_mod_version = $true; archive_existing_file = (-not $KeepOld)
+    update_mod_version = $true; archive_existing_file = [bool]$ArchiveOld
     primary_mod_manager_download = $true; allow_mod_manager_download = $true
 }
 if ($latest) { $body.previous_version_id = [string]$latest.id }
@@ -281,7 +282,7 @@ $top = $vs | Select-Object -First 1; $prev = $vs | Select-Object -Skip 1 -First 
 $res = @()
 $res += [pscustomobject]@{ Ok = ($top.name -eq $newName -and $top.category -eq 'main'); What = "newest version is '$newName' (main)"; Got = "'$($top.name)' $($top.category)" }
 $res += [pscustomobject]@{ Ok = [bool]$top.is_primary; What = 'it is the primary download'; Got = "$($top.is_primary)" }
-if ($prev -and -not $KeepOld) { $res += [pscustomobject]@{ Ok = ($prev.category -in 'old_version', 'archived'); What = "previous file no longer main (the API's archive flag sets category 'archived', the site's manual flow 'old_version')"; Got = "'$($prev.name)' $($prev.category)" } }
+if ($prev) { $res += [pscustomobject]@{ Ok = ($prev.category -eq 'old_version'); What = "previous file shows as an old version (visible to players; 'archived' = hidden)"; Got = "'$($prev.name)' $($prev.category)" } }
 $f1 = Invoke-WebRequest -Uri "$v1/mods/$v1id/files.json" -Headers $headers -SkipHttpErrorCheck; $script:calls++   # v1 has no "data" wrapper
 if ($f1.StatusCode -eq 200) {
     $main1 = @(([string]$f1.Content | ConvertFrom-Json).files | Where-Object { $_.category_name -eq 'MAIN' } | Sort-Object uploaded_timestamp -Descending | Select-Object -First 1)
