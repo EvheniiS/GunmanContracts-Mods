@@ -251,7 +251,7 @@ namespace VRHolsterCustomization
             {
                 if (!VRHolsterCustomizationMod.Alive(s.Item) || !t.IsChildOf(s.Item.transform)) continue;
                 var item = s.Item; var kind = s.Kind;
-                if (kind != null && kind.Blade) home[item.Pointer] = s.Left;
+                if (kind != null) home[item.Pointer] = s.Left; // any kind: a mod's own return (Daredevil's clubs) uses it too
                 if (!drawn.Exists(go => VRHolsterCustomizationMod.Alive(go) && go.Pointer == item.Pointer)) drawn.Add(item);
                 s.Item = null; s.Kind = null;
                 Ghost(item, false);
@@ -616,8 +616,8 @@ namespace VRHolsterCustomization
 
         // The game's knife auto-return (ANBKnife.returnKnife) only knows the belt knife holster and the wall spot. A blade
         // last drawn from the back goes back there instead: its own side if free, else the other free side, else the
-        // game's return. True = it is on the back now.
-        internal static bool ReturnHome(GameObject item)
+        // game's return. True = it is on the back now. Public for mods that send their own items home (Daredevil's clubs).
+        public static bool ReturnHome(GameObject item)
         {
             if (Enabled == null || !Enabled.Value || !VRHolsterCustomizationMod.Alive(item) || !home.TryGetValue(item.Pointer, out bool left)) return false;
             var kind = KindOf(item);
@@ -632,7 +632,7 @@ namespace VRHolsterCustomization
         }
 
         // Taken from somewhere else (the belt knife holster, the wall): the game's return applies again.
-        internal static void ForgetHome(GameObject item)
+        public static void ForgetHome(GameObject item)
         {
             if (VRHolsterCustomizationMod.Alive(item)) home.Remove(item.Pointer);
         }
