@@ -8,6 +8,9 @@ Part of [Gunman Contracts Mods](../README.md). Fixes and expands the bow:
   grip along your knuckles (tip down by default) and back. A held arrow stabs.
 - **Throw assist.** Throw a drawn arrow and it gets the same aim assist as the game's throwing
   knives: it homes in on the enemy you are looking at and deals its damage on impact.
+- **Bow stays in its hand.** While one hand holds the bow, the other hand can only grab the string,
+  so gripping near the riser by mistake no longer swaps the bow to the drawing hand. Either hand
+  still takes it off a holster. `BowHandSwap = true` brings back the game's swapping.
 - **String grab on the first press.** Fixes having to press grip twice to get the next arrow when
   shooting fast.
 - **Explosive barrels** detonate from one arrow instead of three.
@@ -30,6 +33,7 @@ In short:
 
 | Feature | Cause in the game | What the mod does |
 |---|---|---|
+| Other hand takes the bow away | The bow's grabbable is `HVRHoldType.Swap`; `HVRHandGrabber.CheckSwapRelease` makes the holding hand let go | Sets it to `OneHand`, which `CanGrab` refuses while a hand (not a holster) holds it |
 | Grip twice for an arrow | `HVRHandGrabber.CheckGrab` grabs only on the grip-press frame, and `CanHover` refuses new hover targets while grip is held | Buffers the press and completes it with `TryGrab` on the string |
 | No quiver | The only arrow source is `HVRArrowLoader.OnStringGrabbed` | `CreateArrow(false)` spawns an un-nocked arrow into the hand; nocking hands over to the game's own string grab |
 | Barrels need 3 arrows | `ANBBreakable.hit` scales bullet/explosion damage but not arrows (100 vs 250 health) | Raises arrow damage on explosive breakables to the barrel's health |
@@ -40,5 +44,5 @@ In short:
 ## Files
 
 `BetterBow.cs` (entry, settings, registry), `StringGrab.cs`, `ArrowPower.cs` (barrels, doors),
-`Quiver.cs` (quiver, dagger grip), `ThrowAssist.cs` (thrown arrows), `PauseHands.cs` (pause-menu
+`Quiver.cs` (quiver, dagger grip), `HandSwap.cs` (bow hand lock), `ThrowAssist.cs` (thrown arrows), `PauseHands.cs` (pause-menu
 safety nets). [`QUIVER_PLAN.md`](QUIVER_PLAN.md) is the development log of the quiver and dagger grip.
