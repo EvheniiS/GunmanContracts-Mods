@@ -14,7 +14,7 @@ and [b]easier catches[/b] for items you just released. [b]Holstered items keep t
 
 [size=4][b]Holsters and deliberate grabs[/b][/size]
 [b]Enemies need your palm on them:[/b] standing, stunned and downed enemies are only grabbed when your palm is within 10 cm of their body, and never from a distance. A punch that brushes a face or a body at your feet no longer grabs it.
-Holstered, socketed and wall-mounted items use their original grab zones, so the wider pickup area and palm targeting do not extend their reach. Recently holstered items are excluded from catch assistance. [b]Holstered items stay drawable even when another mod makes them non-solid[/b] (for example Daredevil 1.1.1 clubs on your belt): the reach check counts their colliders either way.
+Holstered, socketed and wall-mounted items use their original grab zones, so the wider pickup area and palm targeting do not extend their reach. Recently holstered items are excluded from catch assistance. [b]Holstered items stay drawable even when another mod makes them non-solid[/b]: the reach check counts their colliders either way.
 You still press grip deliberately; holding it indefinitely does not keep retrying. The mod uses the game's normal grab checks and distance-grab controls. It changes pickup detection, not how a held item sits in your hand.
 
 [size=4][b]Install[/b][/size]
@@ -71,9 +71,6 @@ DebugLog               = false   log assisted pickups and detector setup
 [/code]
 Or change these live in-VR with [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28][b]Mod Settings[/b][/url] (optional) — no restart, no text editor.
 [/spoiler]
-
-[size=4][b]Compatibility[/b][/size]
-[b]Daredevil 1.1.1 or newer requires Grab Fix 1.1.2 or newer.[/b] With an older Grab Fix, a club on your belt cannot be drawn. Get [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/40]Daredevil[/url] and Grab Fix from their pages at the same time.
 
 [size=4][b]Uninstall[/b][/size]
 Delete [i]Mods\GrabFix.dll[/i].
