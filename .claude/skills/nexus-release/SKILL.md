@@ -1,6 +1,6 @@
 ---
 name: nexus-release
-description: Prepare a Gunman Contracts mod for a Nexus Mods upload. Builds the Release DLL, makes the zip with the right Mods/ layout, hashes it, checks the Nexus page text against the code (version line, every setting and default), drafts the changelog from git, and hands back a paste-ready upload sheet, then verifies Nexus afterwards. Use this whenever the user says "prepare the Nexus files", "prepare Nexus upload", "prepare for Nexus release", "package <mod> for Nexus", "release <mod>", "get <mod> ready to upload", "cut a patch", or "what do I need to upload", for one mod or several, even if they never say "skill". Also use it after they say they uploaded, to verify and finish the housekeeping.
+description: Prepare a Gunman Contracts mod for a Nexus Mods upload. Builds the Release DLL, makes the zip with the right Mods/ layout, hashes it, checks the Nexus page text against the code (version line, every setting and default), drafts the changelog from git, and hands back a paste-ready upload sheet, or, for a mod that already has a Nexus page and once the user confirms, uploads the new version with its changelog through the Nexus API (Tools/Update-Nexus.ps1), then verifies Nexus afterwards. Use this whenever the user says "prepare the Nexus files", "prepare Nexus upload", "prepare for Nexus release", "package <mod> for Nexus", "release <mod>", "get <mod> ready to upload", "cut a patch", or "what do I need to upload", for one mod or several, even if they never say "skill". Also use it after they say they uploaded, to verify and finish the housekeeping.
 ---
 
 # Prepare a Nexus release
@@ -9,7 +9,7 @@ The mechanical parts (build, zip, hash, lint, changelog material) are done by `T
 
 **Division of labour.** The user writes the page text (`NEXUS_DESCRIPTION.txt`) and the artwork with GPT, using `references/description-template.md`. Do not generate pages or images unless asked. Do check the finished text against the code and make small factual fixes yourself (version line, missing or wrong settings rows). If a page needs a rewrite, say so and point at the template.
 
-**Uploading is the user's.** Nothing here uploads, tags, merges or pushes. A public upload cannot be quietly undone, and the Nexus API cannot edit page text at all (see `../nexus-status/references/nexus-api.md`). Prepare, report, and let them press the button.
+**Uploading is the user's call.** `Pack-Release.ps1` never uploads, tags, merges or pushes. For an update to a mod that already has a Nexus page, `Tools/Update-Nexus.ps1` can push the zip, version, file description and changelog through the v3 API (step 7), but only after the user has said yes to that exact mod and version, because a public upload cannot be quietly undone. The API cannot edit page text, summary, tags or images (see `../nexus-status/references/nexus-api.md`), and it cannot create pages: new pages are always the user's manual upload.
 
 ## Workflow
 
@@ -50,9 +50,22 @@ The mechanical parts (build, zip, hash, lint, changelog material) are done by `T
 
    For a **new page** also give: mod name, summary (max 350 chars), category, tags, permissions, and the art files. Summary and tags exist only here, so write them once. If the DLL's file name changed from the previous release, say the old and new names and that the old DLL must be deleted from `Mods`, which AGENTS.md requires.
 
-7. **After the user says they uploaded:** run `Check-Nexus.ps1 -Mod <Mod> -Docs` and confirm the live version, that the page text matches, that the Settings column says OK (live page defaults equal the shipped config), and that a changelog entry exists. Nexus can lag a minute or two, so re-run once before calling it a failure. A brand-new page: add its id to `Tools/nexus-mods.json` (find it with `-Discover`).
+7. **Upload through the API (existing pages only), if the user wants it.** Offer it after the sheet; the manual sheet stays the fallback and is the only route for a new page.
+   - Write the step-5 changelog to a scratch file (plain text, one change per line).
+   - Dry run first (reads only, changes nothing):
+     ```
+     pwsh -NoProfile -File Tools\Update-Nexus.ps1 -Mod <Mod> -ChangelogFile <file>
+     ```
+     It prints the plan (zip, md5, new file name in the live naming pattern, what happens to the previous file, file description) and runs the checks: zip layout and DLL hash, zip not newer than source, newer than the live version, name and version valid, changelog not already on Nexus (the API only appends, so a second post would double it). Fix every FAIL before going on.
+   - Show the user the plan and ask for an explicit yes to this mod and version. The step is public and not undoable, so a yes to the packaging or to an earlier mod does not carry over.
+   - Then run the same command with `-Apply`. It uploads, creates the new version (previous main file archived as old, page version updated, primary download), posts the changelog, and verifies the version chain, the v1 file list and the changelog. `-KeepOld` keeps the previous file as a main file. `-FileDescription` overrides the default "Extract into the game folder..." line, for example to add "Mod Settings optional".
+   - The v3 ids per mod live in the `v3` block of `Tools/nexus-mods.json`; a new page needs `Update-Nexus.ps1 -Resolve -Mod <Mod>` once, and a page with two files (EnemyAwarenessFix also carries the Log) resolves to the one named like the mod.
+   - `-Apply -UploadOnly` is a rehearsal of the upload half only (nothing attached to a page).
+   - Requirements between your mods, and the page text, stay manual. Say which pages `Check-Nexus.ps1 -Docs` flags for a re-paste.
 
-8. **Housekeeping, offered, not done unasked.** The repo rule is `main` = released on Nexus, `dev` = unreleased, no feature branches. Remind them of: merge `dev` to `main` for the release, tag `<mod>-v<ver>` (existing tags are lowercase, for example `betterbow-v1.1.0`), update the mod's README status with the Nexus link, and the root README index. Do the git steps only when asked, and never switch branches over a dirty tree.
+8. **After the upload** (the API run's own verification, or the user saying they uploaded by hand): run `Check-Nexus.ps1 -Mod <Mod> -Docs` and confirm the live version, that the page text matches, that the Settings column says OK (live page defaults equal the shipped config), and that a changelog entry exists. Nexus can lag a minute or two, so re-run once before calling it a failure. A brand-new page: add its id to `Tools/nexus-mods.json` (find it with `-Discover`).
+
+9. **Housekeeping, offered, not done unasked.** The repo rule is `main` = released on Nexus, `dev` = unreleased, no feature branches. Remind them of: merge `dev` to `main` for the release, tag `<mod>-v<ver>` (existing tags are lowercase, for example `betterbow-v1.1.0`), update the mod's README status with the Nexus link, and the root README index. Do the git steps only when asked, and never switch branches over a dirty tree.
 
 ## NEXUS_UPLOAD.md is retired
 
@@ -62,8 +75,9 @@ All the sheets were deleted on Oct 3 2026 (their still-open mod-specific test no
 
 - `Check-Releases.ps1` checks the local release folders: source version vs newest zip, release DLL vs the DLL inside the zip, source changed in git since the release DLL was committed (REBUILD NEEDED), page text naming an old version. Run it before packaging when the question is "is my release folder healthy", it makes no API calls. `-Fix` rebuilds a flagged DLL and zip at the same version and never bumps a version.
 - `Compare-ReleaseDll.ps1` answers "does the release DLL still match the source?" by comparing compiled code (per-method IL and strings), since a fresh build never hashes the same as the committed DLL. Use it when `Check-Releases.ps1` says REBUILD NEEDED and you want to know whether the code really changed.
-- `Check-Nexus.ps1` (skill `nexus-status`) is the Nexus side.
+- `Check-Nexus.ps1` (skill `nexus-status`) is the Nexus side, read-only.
+- `Update-Nexus.ps1` is the Nexus side that writes: new version of an existing mod file (step 7). Dry run unless `-Apply`.
 
 ## Several mods at once
 
-Release in dependency order (a required mod's page must carry the needed version before the mod that needs it goes up). Run the packager per mod, give one combined sheet, and call out which uploads must happen together.
+Release in dependency order (a required mod's page must carry the needed version before the mod that needs it goes up). Run the packager per mod, give one combined sheet, and call out which uploads must happen together. With the API path, run `Update-Nexus.ps1` per mod in the same order, one confirmed `-Apply` per mod, and verify each before starting the next.

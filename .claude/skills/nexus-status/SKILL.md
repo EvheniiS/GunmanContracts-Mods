@@ -49,4 +49,4 @@ Lead with the answer: how many mods are in sync, then the ones that need attenti
 - The API cannot edit a page's description, summary, tags or images (see `references/nexus-api.md`). A description fix is always a manual paste by the user; this skill only tells them which pages and where they differ.
 - Nexus data can lag by a minute or two after an upload. If the user has just uploaded, re-run once before concluding it failed.
 
-For what the Nexus API can and cannot do (including the upload endpoints, relevant for a future release skill), read `references/nexus-api.md`.
+For what the Nexus API can and cannot do (including the v3 upload endpoints that `Tools/Update-Nexus.ps1` uses, driven from the `nexus-release` skill), read `references/nexus-api.md`.

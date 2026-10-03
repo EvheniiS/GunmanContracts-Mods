@@ -35,6 +35,24 @@ Field rules: file/version `name` max 50 chars, `[a-zA-Z0-9 _'().-]` only; `versi
 
 The official GitHub Action `Nexus-Mods/upload-action` wraps steps 1-5 (beta). It can only add a version to an existing file id, never create a page.
 
+### Verified with this key (Oct 3 2026, read-only calls)
+
+The personal key reaches v3. Three id spaces are involved and they are not interchangeable:
+
+| Id | Example (GrabFix) | Where it comes from |
+|---|---|---|
+| page number (v1 `game_scoped_id`) | `37` | the URL, `Tools/nexus-mods.json` `mods` |
+| v3 mod id (long) | `43654047596581` | `GET /v3/games/{game}/mods/{page number}` -> `data.id` |
+| v3 mod-file id (the "file group") | `8051487` | `GET /v3/mods/{v3 mod id}/files` -> `data.mod_files[].id` |
+
+`GET /v3/mods/37/files` with the page number is a 404 ("Mod not found"); it needs the long id. `Update-Nexus.ps1 -Resolve` looks all of them up and stores them in the `v3` block of `nexus-mods.json`.
+
+`GET /v3/mod-files/{fileId}/versions` returns the chain, newest first by `position` (a decimal string): each entry has `id`, `name`, `category` (`main` / `old_version`), `uploaded_at`, `is_primary`. Its `version` field is a counter ("1", "2"), not the mod version, so the real version is read from the name. The mod file's own name stays the FIRST version's name ("GrabFix 1.1.0" while the live main file is "GrabFix 1.1.1"). The version records do not expose the file description, so the description is always whatever the script sends.
+
+A page can hold several mod files (EnemyAwarenessFix: the Fix and the Log).
+
+Not yet exercised against the live API (as of this note): the write calls (`POST /uploads` through `POST /mods/{id}/changelogs`). `Update-Nexus.ps1` implements them from the spec, dry-run by default; the first real run is the proof, and its own verify step reports what Nexus ended up showing.
+
 ## What the API cannot do
 
 - Create a mod page, or edit its **description, summary, tags, category, images, permissions**. No endpoint exists in v1, v2 or v3. The page text is always pasted by hand.

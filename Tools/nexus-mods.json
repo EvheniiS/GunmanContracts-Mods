@@ -16,5 +16,68 @@
     "Daredevil": 40,
     "AimColors": 42,
     "DeathDetails": 43
+  },
+  "v3": {
+    "BetterBow": {
+      "mod": "43654047596566",
+      "file": "8020470"
+    },
+    "FireSelector": {
+      "mod": "43654047596569",
+      "file": "8026959"
+    },
+    "KneeShotStun": {
+      "mod": "43654047596570",
+      "file": "8027007"
+    },
+    "ModSettings": {
+      "mod": "43654047596572",
+      "file": "8042775"
+    },
+    "WeaponFramework": {
+      "mod": "43654047596573",
+      "file": "8043942"
+    },
+    "Gloves": {
+      "mod": "43654047596576",
+      "file": "8048196"
+    },
+    "PhysicalDodge": {
+      "mod": "43654047596579",
+      "file": "8049426"
+    },
+    "HeavyMelee": {
+      "mod": "43654047596580",
+      "file": "8051403"
+    },
+    "GrabFix": {
+      "mod": "43654047596581",
+      "file": "8051487"
+    },
+    "VRHolsterCustomization": {
+      "mod": "43654047596582",
+      "file": "8051694"
+    },
+    "ThrowAssist": {
+      "mod": "43654047596583",
+      "file": "8055312"
+    },
+    "Daredevil": {
+      "mod": "43654047596584",
+      "file": "8061282"
+    },
+    "AimColors": {
+      "mod": "43654047596586",
+      "file": "8069898"
+    },
+    "DeathDetails": {
+      "mod": "43654047596587",
+      "file": "8069994"
+    },
+    "EnemyAwarenessFix": {
+      "mod": "43654047596578",
+      "file": "8049372"
+    }
   }
 }
+
