@@ -183,3 +183,11 @@ head (sharper crack), club on limb/leg (dull thud). Metal tip and burgundy rubbe
 See the section in `GUNMAN_CONTRACTS.md` of the same date. Where the code should live is open: Grab Fix is pickup
 detection only (1.1.0 release candidate); this is the generic physics hand, so a small separate mod (or a Grab Fix section
 after its release) fits better than Billy Clubs. It is in Daredevil (`BillyClubs/HandProbe.cs`) for now so it can ship with the test builds.
+
+## Not yet exercised in play (kept from the retired Nexus upload sheets, Oct 3 2026)
+
+- **Aim Colors:** `SightBoost` above 1, rifle scopes beyond the collimator, enemy guns during a contract (`IncludeEnemies`). Players coming from `GunColors.dll` / `LaserColor.dll` must delete the old DLL; the section is now `[AimColors]` and old `[GunColors]` values are not read.
+- **Death Details:** `BleedOut` and `AnyHitEndsPain` (off by default, "experimental" on the page). Corpse-face load is not measured, so do not headline "cheaper than vanilla" without a measurement. Flat mode untested: do not claim it on the page (the head-hit finish needs VR weapons). `CloseEyes.dll` must be deleted by anyone who had it; the section is now `[DeathDetails]`.
+- **Heavy Melee:** the open-palm strike at 8 m/s (added in 0.4.0) was never played; the last log is from 0.3.0.
+- **Fire Selector 1.1.0:** `AllowBurst = false` (auto, single, auto; a weapon saved on burst) and `AllowBurst = true` (auto, burst, single) were both on the release checklist; confirm they were played.
+- **Weapon Framework:** the live page is 0.1.1; later builds need an in-game test with VR Holster Customization and Mod Settings (a dependent weapon mod registering and retrieving its entry, save and removal behaviour) before an upload.

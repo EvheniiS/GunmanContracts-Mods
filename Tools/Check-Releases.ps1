@@ -7,7 +7,7 @@
     - source version (MelonInfo) vs newest release zip version
     - release DLL vs the DLL inside that zip
     - whether source .cs/.csproj changed in git since the release DLL was committed (= changed without a re-release)
-    - NEXUS_UPLOAD.md / NEXUS_DESCRIPTION.txt still naming an old version or old DLL hash
+    - NEXUS_DESCRIPTION.txt still naming an old version
   Also lists source mods that have no release folder.
 
 .PARAMETER Build     Also build each mod fresh and compare hashes. Only decisive when the release DLL is uncommitted; otherwise
@@ -109,15 +109,8 @@ foreach ($dll in $dlls) {
     }
 
     # docs
-    $up = Join-Path $rdir 'NEXUS_UPLOAD.md'; $ds = Join-Path $rdir 'NEXUS_DESCRIPTION.txt'
+    $ds = Join-Path $rdir 'NEXUS_DESCRIPTION.txt'   # NEXUS_UPLOAD.md sheets are retired (Oct 3 2026): see the nexus-release skill
     if ($srcVer -and (Split-Path $rdir -Leaf) -eq $name) {   # docs are per release folder; skip mods sharing another mod's folder
-        if (Test-Path $up) {
-            $t = Get-Content $up -Raw
-            $m = [regex]::Match($t, '\|\s*Version\s*\|\s*`([\d.]+)`')
-            if ($m.Success -and $m.Groups[1].Value -ne $srcVer) { $notes += "NEXUS_UPLOAD Version field = $($m.Groups[1].Value)"; if ($verdict -eq 'OK') { $verdict = 'DOCS STALE' } }
-            $m = [regex]::Match($t, 'sha256 `([0-9a-f]{64})`')
-            if ($m.Success -and $m.Groups[1].Value -ne $relSha) { $notes += 'NEXUS_UPLOAD sha256 is not the release DLL'; if ($verdict -eq 'OK') { $verdict = 'DOCS STALE' } }
-        }
         if (Test-Path $ds) {
             $vs = [regex]::Matches((Get-Content $ds -Raw), "$([regex]::Escape($name))\s+v([\d.]+)") | ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique
             $bad = $vs | Where-Object { $_ -ne $srcVer }

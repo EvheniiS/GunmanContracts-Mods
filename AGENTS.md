@@ -29,3 +29,7 @@ This is a collection of MelonLoader mods for Gunman Contracts – Stand Alone (U
 
 - Update the affected mod's README or testing notes when its behavior or test status changes. Keep the root README's mod index accurate when public status changes.
 - Record substantial game-code findings or playtest results in `GUNMAN_CONTRACTS.md`, with the relevant version and whether the result was built, installed, or tested. Keep this agent guide short and durable.
+
+## Nexus
+
+- What is live on Nexus: run `pwsh -File Tools\Check-Nexus.ps1 [-Docs]` (skill `nexus-status`). Read-only; needs `NEXUS_API_KEY` in the git-ignored `.env`. Mod folder to Nexus id mapping: `Tools/nexus-mods.json`. Preparing a release (build, zip, page-text lint, changelog, upload sheet): skill `nexus-release` / `Tools/Pack-Release.ps1`; it never uploads, tags or merges. Uploading or editing a Nexus page is public and stays the user's call every time; the API cannot edit page descriptions (details in `.claude/skills/nexus-status/references/nexus-api.md`).

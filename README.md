@@ -91,8 +91,8 @@ Or put your path in `<ModFolder>/GameDir.local.props` (git-ignored):
 - `BlenderRefs/`: the billy club model (`out/billy_club.obj` + textures, embedded in Daredevil) and
   `render_arsenal_icon.py` / `make_arsenal_icon.py`, which render its arsenal panel picture.
 - `release/<Mod>/`: the prebuilt DLL of the last release and the Nexus Mods page text.
-- `release/NEXUS_TEMPLATE.txt`: the shared skeleton behind every `NEXUS_DESCRIPTION.txt` (Install,
-  Settings, Compatibility, Uninstall, Source boilerplate) — start a new mod's page from it.
+- `.claude/skills/nexus-release/` and `.claude/skills/nexus-status/`: the Nexus workflow (page-text template, packaging, what is live).
+  `Tools/Pack-Release.ps1` builds + zips + lints a release; `Tools/Check-Nexus.ps1` asks the Nexus API what is live.
 - `il2cpp_tools/`: small Python tools for reading the game without Cpp2IL/Il2CppDumper:
   `il2.py` (global-metadata v31 + GameAssembly method/field map), `disx.py` (named disassembly),
   `xref.py` (direct callers), `scanoff.py` (which methods touch a field offset), `slot.py` (string literals and generic types a method uses), `dumpt.py` (fields/methods of a type), `disa.py` (whole-method disassembly

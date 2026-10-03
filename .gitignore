@@ -23,3 +23,8 @@ release/**/*.zip
 BlenderRefs/game/
 BlenderRefs/*.blend
 BlenderRefs/*.blend1
+
+# secrets (Nexus API key etc.)
+.env
+.env.*
+!.env.example

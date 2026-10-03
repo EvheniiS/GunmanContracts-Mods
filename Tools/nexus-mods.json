@@ -1,0 +1,20 @@
+{
+  "game": "gunmancontractsstandalone",
+  "mods": {
+    "BetterBow": 22,
+    "FireSelector": 25,
+    "KneeShotStun": 26,
+    "ModSettings": 28,
+    "WeaponFramework": 29,
+    "Gloves": 32,
+    "EnemyAwarenessFix": 34,
+    "PhysicalDodge": 35,
+    "HeavyMelee": 36,
+    "GrabFix": 37,
+    "VRHolsterCustomization": 38,
+    "ThrowAssist": 39,
+    "Daredevil": 40,
+    "AimColors": 42,
+    "DeathDetails": 43
+  }
+}
