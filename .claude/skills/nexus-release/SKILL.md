@@ -11,6 +11,17 @@ The mechanical parts (build, zip, hash, lint, changelog material) are done by `T
 
 **Uploading is the user's call.** `Pack-Release.ps1` never uploads, tags, merges or pushes. For an update to a mod that already has a Nexus page, `Tools/Update-Nexus.ps1` can push the zip, version, file description and changelog through the v3 API (step 7), but only after the user has said yes to that exact mod and version, because a public upload cannot be quietly undone. The API cannot edit page text, summary, tags or images (see `../nexus-status/references/nexus-api.md`), and it cannot create pages: new pages are always the user's manual upload.
 
+## The whole path for an update to an existing page (proven with Grab Fix 1.1.2, Oct 3 2026)
+
+1. `Pack-Release.ps1 -Mod <Mod>`: build, zip, lint, commit subjects. Fix factual lint warnings in the page text.
+2. Draft the player-facing changelog to a scratch file (plain text, one change per line).
+3. `Update-Nexus.ps1 -Mod <Mod> -ChangelogFile <file>`: dry run. Show the user the plan and get a yes for that mod and version.
+4. Same command with `-Apply`: upload, new file version (previous main file archived, shown under Version history), changelog, verify.
+5. If the page text changed: `Copy-Description.ps1 -Mod <Mod>` copies it and opens the edit page; the user pastes into General > Description and saves. It copies nothing if the live page already matches.
+6. `Check-Nexus.ps1 -Mod <Mod> -Docs` to confirm: IN SYNC, description MATCH, Settings OK, changelog present. Then offer the git housekeeping (step 9).
+
+Only steps 3-4 are public and not undoable; step 5 is the user's own paste. A brand-new page is the user's manual upload, then `-Resolve` stores its ids. The numbered workflow below has the detail for each step.
+
 ## Workflow
 
 1. **Pick the mod(s) and version.** Use what the user named, or run `pwsh -NoProfile -File Tools\Check-Nexus.ps1` and take the UNRELEASED mods. The version being released is the one in source (`MelonInfo`). If the user means a different version, stop and sort that out first.
