@@ -53,13 +53,13 @@ namespace ModSettings
             // Alphabetical, so the section list is easy to scan and < / > follow the same order.
             All.Sort((a, b) => string.Compare(a.Title, b.Title, StringComparison.OrdinalIgnoreCase));
             // Default changes from mod updates come first, while there are any this session.
-            if (DefaultChanges.Items.Count > 0)
+            if (DefaultChanges.Items.Count > 0 || DefaultChanges.Notices.Count > 0)
             {
                 var up = new Page();
                 foreach (var it in DefaultChanges.Items)
                     try { up.Settings.Add(new Setting(it.Entry)); } catch (Exception ex) { ModSettingsMod.Dbg($"skipped {it.Key}: {ex.Message}"); }
                 if (keep.TryGetValue(up.Key, out var was)) up.Scroll = was.Scroll;
-                if (up.Settings.Count > 0) All.Insert(0, up);
+                if (up.Settings.Count > 0 || DefaultChanges.Notices.Count > 0) All.Insert(0, up);
             }
             int i = All.FindIndex(p => p.Key == old);
             if (i >= 0) Current = i;

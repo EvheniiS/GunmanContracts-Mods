@@ -27,7 +27,7 @@ Only steps 3-4 are public and not undoable; step 5 is the user's own paste. A br
 1. **Pick the mod(s) and version.** Use what the user named, or run `pwsh -NoProfile -File Tools\Check-Nexus.ps1` and take the UNRELEASED mods. The version being released is the one in source (`MelonInfo`). If the user means a different version, stop and sort that out first.
 
 2. **Gate: is it actually ready?** AGENTS.md says release artifacts change only after the intended release and its test status are verified, so look before packaging:
-   - Test status: the mod's README status, and the last commit subjects (a subject ending in "untested" means it has not been played). If it is untested, say so plainly and ask before going further; do not quietly package it.
+   - Test status: the mod's README `Tested:` line (see skill `mod-status`; `Check-Nexus.ps1` shows it too), and the last commit subjects (a subject ending in "untested" means it has not been played). If it is untested, say so plainly and ask before going further; do not quietly package it.
    - Requirements: read the mod's README for what it requires (for example Daredevil needs Grab Fix, Gloves, Throw Assist, Mod Settings, Weapon Framework). Run `Check-Nexus.ps1 -Mod <those>` and flag any required mod whose live version is older than needed, because then they must be released together, dependencies first.
    - Dirty tree: `git status` under the mod folder. The packaged DLL includes uncommitted work, so mention it.
 
@@ -77,11 +77,11 @@ Only steps 3-4 are public and not undoable; step 5 is the user's own paste. A br
 
 8. **After the upload** (the API run's own verification, or the user saying they uploaded by hand): run `Check-Nexus.ps1 -Mod <Mod> -Docs` and confirm the live version, that the page text matches, that the Settings column says OK (live page defaults equal the shipped config), and that a changelog entry exists. Nexus can lag a minute or two, so re-run once before calling it a failure. A brand-new page: add its id to `Tools/nexus-mods.json` (find it with `-Discover`).
 
-9. **Housekeeping, offered, not done unasked.** The repo rule is `main` = released on Nexus, `dev` = unreleased, no feature branches. Remind them of: merge `dev` to `main` for the release, tag `<mod>-v<ver>` (existing tags are lowercase, for example `betterbow-v1.1.0`), update the mod's README status with the Nexus link, and the root README index. Do the git steps only when asked, and never switch branches over a dirty tree.
+9. **Housekeeping, offered, not done unasked.** The repo rule is `main` = released on Nexus, `dev` = unreleased, no feature branches. Remind them of: merge `dev` to `main` for the release, tag `<mod>-v<ver>` (existing tags are lowercase, for example `betterbow-v1.1.0`), update the mod's README `Tested:` line and heading if they are stale, and on `main` run `Tools\Sync-Readme.ps1` (then `-Apply`) to refresh the root README index (skill `mod-status`). Do the git steps only when asked, and never switch branches over a dirty tree.
 
 ## NEXUS_UPLOAD.md is retired
 
-All the sheets were deleted on Oct 3 2026 (their still-open mod-specific test notes moved to `IDEAS.md`). Most of what they held is now derived: version, zip name, hash, size and rebuild command from the code and `Pack-Release.ps1`; summary, tags and the live changelog from Nexus itself; and a stale status line is a risk (the DeathDetails sheet still said "Not uploaded" after it was live). Do not create new ones and do not maintain existing ones unless the user asks. Open to-dos belong in the mod's README or `IDEAS.md`, not in a sheet.
+All the sheets were deleted on Oct 3 2026 (their still-open mod-specific test notes moved to `ROADMAP.md`). Most of what they held is now derived: version, zip name, hash, size and rebuild command from the code and `Pack-Release.ps1`; summary, tags and the live changelog from Nexus itself; and a stale status line is a risk (the DeathDetails sheet still said "Not uploaded" after it was live). Do not create new ones and do not maintain existing ones unless the user asks. Open to-dos belong in the mod's README or `ROADMAP.md`, not in a sheet.
 
 ## Other tools in `Tools/`
 

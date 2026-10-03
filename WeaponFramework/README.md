@@ -1,5 +1,7 @@
 # Weapon Framework 0.2.4
 
+Tested: 0.2.3
+
 Lets other mods put their own weapons on the game's **arsenal panel** in The Range (the Big Guns wall with the
 rifles, shotguns and the bow). The player pages to the entry with `+` / `-`, presses **Retrieve**, and the wall slot
 comes out with the mod's items on it, ready to take. No keyboard, no UnityExplorer.

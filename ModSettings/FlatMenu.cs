@@ -210,7 +210,7 @@ namespace ModSettings
             GUI.enabled = wasEnabled;
             y += row + 2 * gap;
 
-            string text = pg.Updates ? DefaultChanges.Help : sel == null
+            string text = pg.Updates ? DefaultChanges.Help(false) : sel == null
                 ? "Click a setting's name to read what it does. Changes apply at once and are saved. * = needs a game restart. Mouse wheel scrolls. Ctrl+"
                   + ModSettingsMod.OpenKeyName + " closes."
                 : $"{sel.Name} = {sel.ValueText()}   (default {sel.Entry.GetDefaultValueAsString()})\n{sel.Entry.Description}" +
@@ -224,20 +224,19 @@ namespace ModSettings
         {
             var it = DefaultChanges.Find(s.Entry);
             bool waiting = it != null && it.Waiting;
-            var blue = new Color(0.45f, 0.85f, 1f);
-            string state = it == null ? "" : !waiting ? it.Done : it.Auto ? "now the new default" : "yours kept";
-            if (Btn(new Rect(x0, y, nameW, row), $" {Page.CategoryTitle(s.Entry.Category)} · {s.Name}: {it?.OldDefault} -> {s.Entry.GetDefaultValueAsString()} ({state})",
-                    new Color(0.2f, 0.2f, 0.23f), waiting ? blue : Color.gray, left: true))
+            var tint = !waiting ? Color.gray : it.Auto ? new Color(0.45f, 0.85f, 1f) : new Color(1f, 0.82f, 0.35f);   // blue = moved to the new default, yellow = yours kept
+            if (Btn(new Rect(x0, y, nameW, row), $" {Page.CategoryTitle(s.Entry.Category)} · {s.Name}: {(it == null ? "" : DefaultChanges.Explain(it))}",
+                    new Color(0.2f, 0.2f, 0.23f), tint, left: true))
                 Pages.JumpTo(s, Rows);
             float x = x0 + nameW + gap;
             var vr = new Rect(x, y, valW, row);
             if (s.Kind == Kind.Color && ColorUtility.TryParseHtmlString(s.ValueText(), out var col)) Fill(vr, col);
             GUI.Label(vr, s.ValueText(), label);
             x += valW + gap;
-            if (waiting && !it.Auto && Btn(new Rect(x + 3 * (stepW + gap), y, stepW, row), "Keep")) Status(Pages.Decide(it, "keep"));
+            if (waiting && !it.Auto && Btn(new Rect(x + 3 * (stepW + gap), y, stepW, row), DefaultChanges.KeepLabel(it), fg: tint)) Status(Pages.Decide(it, "keep"));
             var rr = new Rect(x0 + inner - resetW, y, resetW, row);
             if (!waiting) GUI.Label(rr, "Done", label);
-            else if (Btn(rr, it.Auto ? "Revert" : "Use new", fg: blue)) Status(Pages.Decide(it, it.Auto ? "revert" : "use new"));
+            else if (Btn(rr, it.Auto ? "Undo" : DefaultChanges.UseLabel(it), fg: tint)) Status(Pages.Decide(it, it.Auto ? "revert" : "use new"));
         }
 
         // Every section as a button, filled column by column; yellow = has changed values, red = the current one.

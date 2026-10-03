@@ -28,6 +28,10 @@ Unity hand rig or controller alignment; do this pass in the headset before relea
 
 ## Updated defaults (1.2.0)
 
+**Easiest: the Defaults Test fixture** (`Tools/DefaultsTest/`, a throwaway mod with 1.0.0 and 1.1.0 builds covering every case; touches only its own DLL, cfg section and record lines, never your real mods): `.\Test-Defaults.ps1 Setup` -> start game, quit -> `Update` -> start game, open the board -> quit -> `Check`. Details in the script header.
+
+**Removed settings file (1.2.1).** In the fixture: after the Update test, start the game once more and quit (so the changed-setting counts are saved), then `.\Test-Defaults.ps1 ResetCfg` (removes only the `[DefaultsTest]` cfg section) and start the game: the log must say `Settings were reset: Defaults Test ...`, the board opens on **Updated defaults** showing that message with no rows, and the next start does not repeat it. `Check` verifies the log line. Do not delete your real `MelonPreferences.cfg` to test this.
+
 **Real update test (Daredevil 1.0.0 -> 1.1.0).** DLLs staged in `feature/defaults-test/1.0.0/` and `1.1.0/`. The only
 default that changed between them is `BillyClubs.ChestStunSeconds` (3 -> 1), so one round tests one case:
 

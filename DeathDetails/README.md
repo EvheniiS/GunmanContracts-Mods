@@ -1,5 +1,7 @@
 # Death Details
 
+Tested: 0.7.1 (2026-10-02)
+
 *Good night, gentlemen.* (Was **Close Eyes** until 0.7.0.)
 
 Dead enemies close their eyes, and the mouth stays slightly parted instead of gaping. Enemies writhing in pain on the floor keep their pain face and close their eyes when they

@@ -1,5 +1,7 @@
 # Grab Fix 1.1.2
 
+Tested: 1.1.2 (2026-10-03)
+
 More forgiving VR hand pickups, with normal grip controls and native grab eligibility checks.
 
 - Finger and palm distance targeting together; optional finger-only mode.

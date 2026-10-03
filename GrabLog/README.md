@@ -1,5 +1,7 @@
 # Grab Log
 
+Tested: none
+
 **0.1.0 — diagnostic build; compiled against the installed game, VR testing pending.**
 
 Records why an item does or does not become available to grab, especially when picking it up

@@ -20,6 +20,21 @@ namespace ModSettings
             return value == known ? DefaultChange.AutoUpdate : DefaultChange.Ask;
         }
 
+        // Settings-file removal detection. The record keeps, per category, how many settings the player had changed when
+        // the game last ran ("~custom.<Category>" in the versions slot). A category that had at least minBefore changed
+        // settings and now has none was reset (the settings file was removed or edited back). Returns those categories.
+        public static List<string> ResetCategories(Dictionary<string, string> recorded, Dictionary<string, int> now, int minBefore = 2)
+        {
+            var reset = new List<string>();
+            foreach (var kv in now)
+                if (kv.Value == 0 && recorded.TryGetValue(CustomKey(kv.Key), out var was) && int.TryParse(was, out var n) && n >= minBefore)
+                    reset.Add(kv.Key);
+            reset.Sort(StringComparer.OrdinalIgnoreCase);
+            return reset;
+        }
+
+        public static string CustomKey(string category) => "~custom." + category;
+
         public static void Parse(IEnumerable<string> lines, Dictionary<string, string> defaults, Dictionary<string, string> versions)
         {
             foreach (var raw in lines)

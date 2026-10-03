@@ -258,7 +258,7 @@ namespace ModSettings
             reset.Interactive = Pages.CanResetSection;
             reset.Text.color = reset.Interactive ? Color.white : Grey;
             SetBase(reset, reset.Interactive ? BtnCol : LabelCol);
-            desc.Text.SetIfChanged(pg.Updates ? DefaultChanges.Help : sel == null
+            desc.Text.SetIfChanged(pg.Updates ? DefaultChanges.Help(true) : sel == null
                 ? "Point + trigger or poke to adjust. Grip the top bar to move / tilt this board. Yellow = changed; Reset restores that row. Select a name for help. * = restart required."
                 : $"<b>{sel.Name}</b> = {sel.ValueText()}  <color=#999999>(default {sel.Entry.GetDefaultValueAsString()})</color>\n{sel.Entry.Description}" +
                   (sel.Restart ? "\n<color=#FFD060>Restart the game to apply.</color>" : "") +
@@ -281,18 +281,18 @@ namespace ModSettings
         {
             var it = DefaultChanges.Find(s.Entry);
             bool waiting = it != null && it.Waiting;
-            string state = it == null ? "" : !waiting ? it.Done : it.Auto ? "now the new default" : "yours kept";
+            var tint = !waiting ? Grey : it.Auto ? NewDef : Changed;   // blue = moved to the new default, yellow = your value kept
             labels[r].Text.SetIfChanged($"{Page.CategoryTitle(s.Entry.Category)} · {s.Name}{(s.Restart ? " *" : "")}" +
-                $"\n<size=65%>default {it?.OldDefault} -> {s.Entry.GetDefaultValueAsString()} · {state}</size>");
-            labels[r].Text.color = waiting ? NewDef : Grey;
+                $"\n<size=65%>{(it == null ? "" : DefaultChanges.Explain(it))}</size>");
+            labels[r].Text.color = tint;
             SetBase(labels[r], LabelCol);
             ShowValue(values[r], s);
             values[r].Interactive = false;
-            resets[r].Text.SetIfChanged(!waiting ? "Done" : it.Auto ? "Revert" : "Use new");
+            resets[r].Text.SetIfChanged(!waiting ? "Done" : it.Auto ? "Undo" : DefaultChanges.UseLabel(it));
             resets[r].Interactive = waiting;
-            resets[r].Text.color = waiting ? NewDef : Grey;
+            resets[r].Text.color = tint;
             SetBase(resets[r], waiting ? BtnCol : LabelCol);
-            if (waiting && !it.Auto) SetStep(r, 3, "Keep");
+            if (waiting && !it.Auto) SetStep(r, 3, DefaultChanges.KeepLabel(it));
         }
 
         // Rows, footer and description; the rest of Refresh sets the per-row parts when they are shown.

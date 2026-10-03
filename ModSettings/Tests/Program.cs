@@ -66,6 +66,13 @@ DefaultRecord.Parse(DefaultRecord.Format(recD, recV), backD, backV);
 Check(backD.Count == 2 && backD["X.Text"] == "a\tb\\c\nd" && backD["BillyClubs.ChestStunSeconds"] == "3", "record round-trips defaults");
 Check(backV.Count == 1 && backV["Daredevil"] == "1.1.0", "record round-trips versions");
 
+var recCnt = new Dictionary<string, string> { ["~custom.A"] = "5", ["~custom.B"] = "1", ["~custom.C"] = "4", ["~custom.D"] = "3" };
+var nowCnt = new Dictionary<string, int> { ["A"] = 0, ["B"] = 0, ["C"] = 2, ["D"] = 0, ["E"] = 0 };
+var resetCats = DefaultRecord.ResetCategories(recCnt, nowCnt);
+Check(resetCats.Count == 2 && resetCats[0] == "A" && resetCats[1] == "D", "categories with 2+ changed settings that are now all default are reported as reset");
+Check(!resetCats.Contains("B") && !resetCats.Contains("E"), "one changed setting reset by hand, and never-customised categories, are not reported");
+Check(DefaultRecord.ResetCategories(recCnt, new Dictionary<string, int> { ["C"] = 4 }).Count == 0, "still-customised category is fine");
+
 var hold = new VRHolsterCustomization.AdjustmentHold();
 Check(!hold.TryStart(true, true, 0), "buttons already held when enabled cannot arm");
 Check(!hold.TryStart(false, true, 0), "release arms without starting");

@@ -29,7 +29,7 @@ Columns: **Nexus** = version parsed from the MAIN file's name (the page's own `v
 | Verdict | Meaning | What to tell the user |
 |---|---|---|
 | IN SYNC | Nexus = zip, source not ahead | Nothing to do. |
-| UNRELEASED | Source is newer than the live zip | Normal `dev` work. Say which mods and versions, and whether the newer version is tested (check the mod's README or its NEXUS_UPLOAD.md status line) before suggesting a release. |
+| UNRELEASED | Source is newer than the live zip | Normal `dev` work. The verdict ends in `(tested)` or `(untested, last tested x)`, from the `Tested:` line in the mod's README (skill `mod-status`). Only `(tested)` ones are ready for `nexus-release`; for the others say what was last tested. An `IN SYNC (untested, ...)` row means the live version was never confirmed in play. |
 | NOT UPLOADED | A zip exists that is newer than Nexus | Packaged but never uploaded. This is the actionable one. |
 | NEXUS AHEAD | Nexus is newer than the newest local zip | Zip missing or uploaded from elsewhere. Investigate before anything else. |
 | NO ZIP / NO NEXUS FILE | One side has nothing to compare | Report it plainly. |

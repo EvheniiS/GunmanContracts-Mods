@@ -1,4 +1,38 @@
-# Shared helpers for Check-Nexus.ps1 and Pack-Release.ps1 (dot-source this file).
+# Shared helpers for Check-Nexus.ps1, Pack-Release.ps1 and Sync-Readme.ps1 (dot-source this file).
+
+# --- mod version and test status ---------------------------------------------------------------------
+function Get-SourceVersion($dir) {
+    foreach ($f in Get-ChildItem $dir -Filter *.cs -Recurse | Where-Object { $_.FullName -notmatch '\\(obj|bin)\\' -and $_.FullName -notmatch '\\Example\\' }) {
+        $m = Select-String -Path $f.FullName -Pattern 'MelonInfo\(typeof\([^)]*\),\s*"[^"]*",\s*"([\d.]+)"' | Select-Object -First 1
+        if ($m) { return $m.Matches[0].Groups[1].Value }
+    }
+}
+# The mod README carries one line in its first 40 lines:  `Tested: 1.1.0 (2026-10-02)`  or  `Tested: none`  (date optional).
+# It names the newest version somebody actually played. Returns $null when the line is missing, else Version ($null for none) + Date.
+function Get-TestedStatus($modDir) {
+    $readme = Join-Path $modDir 'README.md'
+    if (-not (Test-Path $readme)) { return $null }
+    foreach ($l in (Get-Content $readme -TotalCount 40)) {
+        if ($l -match '^Tested:\s*none\b') { return [pscustomobject]@{ Version = $null; Date = $null } }
+        if ($l -match '^Tested:\s*(\d+(?:\.\d+)+)(?:\s*\(([^)]*)\))?') { return [pscustomobject]@{ Version = $Matches[1]; Date = $Matches[2] } }
+    }
+    $null
+}
+# Pads to 4 parts so "1.0" == "1.0.0".
+function Ver($s) {
+    $p = @($s -split '\.' | ForEach-Object { [int]$_ }); while ($p.Count -lt 4) { $p += 0 }
+    [version]($p[0..3] -join '.')
+}
+function Cmp($a, $b) { (Ver $a).CompareTo((Ver $b)) }
+# 'tested' = the given version itself was played; otherwise says what was last played.
+function Get-TestLabel($ver, $tested) {
+    if (-not $tested) { return 'no Tested line' }
+    if (-not $tested.Version) { return 'untested' }
+    $c = if ($ver) { Cmp $tested.Version $ver } else { 0 }
+    if ($c -eq 0) { return 'tested' }
+    if ($c -gt 0) { return "Tested line ahead of the version ($($tested.Version))" }
+    "untested, last tested $($tested.Version)"
+}
 
 # --- Nexus page text ---------------------------------------------------------------------------------
 function Norm-Doc($s) {

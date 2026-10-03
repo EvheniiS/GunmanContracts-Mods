@@ -1,5 +1,7 @@
 # Slow Motion Hands
 
+Tested: 0.1.3 (2026-10-02)
+
 Your hands keep up with your controllers during slow motion. Status: **0.1.3 tested Oct 2 2026: "feel is much better" in slow motion.** Log covered empty hands and pistol only (2 slow motions); rifle and club with 0.1.3 not yet logged. See "What we tried" at the bottom.
 
 ## Why the hands lag in slow motion

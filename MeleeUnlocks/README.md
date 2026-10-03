@@ -1,5 +1,7 @@
 # Melee Unlocks 0.2.1
 
+Tested: 0.2.1 (2026-10-03)
+
 Unlocks knives on The Range knife wall as if you had made the kills with them. **Default: the double katana**
 (`Katana2`), the second katana for dual wielding. It has a wall spot, but no contract map places one, so it can't be
 unlocked by playing (game 0.3.1.1).

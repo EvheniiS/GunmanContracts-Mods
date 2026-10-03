@@ -36,12 +36,6 @@ Add-Type -A System.IO.Compression.FileSystem
 
 if (-not (Test-Path "$src\$Mod.csproj")) { Write-Error "No project at $src\$Mod.csproj"; exit 1 }
 
-function Get-SourceVersion($dir) {
-    foreach ($f in Get-ChildItem $dir -Filter *.cs -Recurse | Where-Object { $_.FullName -notmatch '\\(obj|bin)\\' -and $_.FullName -notmatch '\\Example\\' }) {
-        $m = Select-String -Path $f.FullName -Pattern 'MelonInfo\(typeof\([^)]*\),\s*"[^"]*",\s*"([\d.]+)"' | Select-Object -First 1
-        if ($m) { return $m.Matches[0].Groups[1].Value }
-    }
-}
 function Sha($p) { (Get-FileHash $p -Algorithm SHA256).Hash.ToLower() }
 
 $ver = Get-SourceVersion $src
@@ -50,6 +44,8 @@ New-Item -ItemType Directory -Force $rdir | Out-Null
 $dllOut = Join-Path $rdir "$Mod.dll"
 $zip    = Join-Path $rdir "$Mod-$ver.zip"
 $warn   = @()
+$tl = Get-TestLabel $ver (Get-TestedStatus $src)
+if ($tl -ne 'tested') { $warn += "README Tested line: $tl (source is $ver)" }
 
 # --- build ---
 if ($LintOnly) { "Version    $ver (lint only: no build, no zip)" }

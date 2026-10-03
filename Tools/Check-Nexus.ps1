@@ -8,6 +8,7 @@
   name of the MAIN file (e.g. "GrabFix 1.1.1"). Compared with:
     - newest release/<Mod>/<Mod>-<ver>.zip
     - source version (MelonInfo in <Mod>/*.cs), same method as Check-Releases.ps1
+  Tested column = the `Tested:` line in the mod's README (newest version played); UNRELEASED / NOT UPLOADED rows say whether that version was tested.
   Verdicts: IN SYNC | NOT UPLOADED (zip newer than Nexus) | UNRELEASED (source newer than zip) | NEXUS AHEAD |
             NOT PUBLISHED (page hidden / removed) | NO ZIP | NO NEXUS FILE
 
@@ -45,6 +46,7 @@ if (-not $key) { Write-Error 'NEXUS_API_KEY not found (environment or <repo>\.en
 $headers = @{ apikey = $key; 'Application-Name' = 'GunmanContractsTools'; 'Application-Version' = '1.0' }
 $cfg  = Get-Content "$PSScriptRoot\nexus-mods.json" -Raw | ConvertFrom-Json
 $base = "https://api.nexusmods.com/v1/games/$($cfg.game)"
+. "$PSScriptRoot\Nexus-Common.ps1"   # Get-SourceVersion, Get-TestedStatus, Norm-Doc, Short, settings parsing/comparison, shipped-source lookup
 
 function Invoke-Nexus($path) {
     try {
@@ -61,28 +63,15 @@ function Invoke-Nexus($path) {
         throw
     }
 }
-function Get-SourceVersion($dir) {
-    foreach ($f in Get-ChildItem $dir -Filter *.cs -Recurse | Where-Object { $_.FullName -notmatch '\\(obj|bin)\\' -and $_.FullName -notmatch '\\Example\\' }) {
-        $m = Select-String -Path $f.FullName -Pattern 'MelonInfo\(typeof\([^)]*\),\s*"[^"]*",\s*"([\d.]+)"' | Select-Object -First 1
-        if ($m) { return $m.Matches[0].Groups[1].Value }
-    }
-}
 function Get-ZipVersion($name) {
     $zip = Get-ChildItem (Join-Path $rel $name) -Filter "$name-*.zip" -ErrorAction SilentlyContinue |
            Where-Object { $_.Name -match "^$name-([\d.]+)\.zip$" } |
            Sort-Object { [version]([regex]::Match($_.Name, '([\d.]+)\.zip$').Groups[1].Value) } | Select-Object -Last 1
     if ($zip) { [regex]::Match($zip.Name, '([\d.]+)\.zip$').Groups[1].Value }
 }
-function Ver($s) {   # pad to 4 parts so "1.0" == "1.0.0"
-    $p = @($s -split '\.' | ForEach-Object { [int]$_ }); while ($p.Count -lt 4) { $p += 0 }
-    [version]($p[0..3] -join '.')
-}
-function Cmp($a, $b) { (Ver $a).CompareTo((Ver $b)) }
-
 $names = $cfg.mods.PSObject.Properties.Name
 if ($Mod) { $names = $names | Where-Object { $Mod -contains $_ } }
 
-. "$PSScriptRoot\Nexus-Common.ps1"   # Norm-Doc, Short, settings parsing/comparison, shipped-source lookup
 
 $docRows = @()
 $rows = @(); $notes = @()
@@ -91,9 +80,11 @@ foreach ($name in $names) {
     $page = Invoke-Nexus "mods/$id.json"
     $src  = Get-SourceVersion (Join-Path $root $name)
     $zipV = Get-ZipVersion $name
+    $tst  = Get-TestedStatus (Join-Path $root $name)
+    $tstV = if ($tst -and $tst.Version) { $tst.Version } elseif ($tst) { 'none' } else { '?' }
     if (-not $page -or $page.status -ne 'published') {
         $st = if ($page) { $page.status } else { 'missing' }
-        $rows += [pscustomobject]@{ Mod=$name; Id=$id; Nexus='-'; Zip=$zipV; Source=$src; Updated='-'; Dl='-'; Endo='-'; Verdict="NOT PUBLISHED ($st)" }
+        $rows += [pscustomobject]@{ Mod=$name; Id=$id; Nexus='-'; Zip=$zipV; Source=$src; Tested=$tstV; Updated='-'; Dl='-'; Endo='-'; Verdict="NOT PUBLISHED ($st)" }
         continue
     }
     $files = (Invoke-Nexus "mods/$id/files.json").files
@@ -110,6 +101,11 @@ foreach ($name in $names) {
     elseif ((Cmp $zipV $nexV) -gt 0) { $verdict = 'NOT UPLOADED' }
     elseif ((Cmp $zipV $nexV) -lt 0) { $verdict = 'NEXUS AHEAD' }
     elseif ($src -and (Cmp $src $zipV) -gt 0) { $verdict = 'UNRELEASED' }
+    if ($verdict -in 'IN SYNC', 'UNRELEASED', 'NOT UPLOADED') {   # which version the Tested line is judged against: the one that is newest for this verdict
+        $v = if ($verdict -eq 'UNRELEASED') { $src } else { $zipV }
+        $tl = Get-TestLabel $v $tst
+        if ($verdict -ne 'IN SYNC' -or $tl -ne 'tested') { $verdict += " ($tl)" }
+    }
 
     if ($Docs) {
         $rdir = Join-Path $rel $name
@@ -158,7 +154,7 @@ foreach ($name in $names) {
     }
 
     $upd = if ($pick) { [DateTimeOffset]::FromUnixTimeSeconds($pick.uploaded_timestamp).LocalDateTime.ToString('yyyy-MM-dd HH:mm') } else { '-' }
-    $rows += [pscustomobject]@{ Mod=$name; Id=$id; Nexus=$nexV; Zip=$zipV; Source=$src; Updated=$upd; Dl=$page.mod_downloads; Endo=$page.endorsement_count; Verdict=$verdict }
+    $rows += [pscustomobject]@{ Mod=$name; Id=$id; Nexus=$nexV; Zip=$zipV; Source=$src; Tested=$tstV; Updated=$upd; Dl=$page.mod_downloads; Endo=$page.endorsement_count; Verdict=$verdict }
 }
 
 $rows | Format-Table -AutoSize

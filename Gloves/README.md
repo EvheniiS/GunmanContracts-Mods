@@ -1,5 +1,7 @@
 # Gloves 0.1.0
 
+Tested: 0.1.0
+
 Recolours the player's gloves. **Default dark red** (`#8A0F0F`, the Daredevil look); change it in
 `UserData/MelonPreferences.cfg` → `[Gloves] Color`, or on the **Mod Settings** board (colour palette, applied at
 once). `#414141` is the game's own grey.

@@ -9,7 +9,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.XR;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(ModSettings.ModSettingsMod), "Mod Settings", "1.2.0", "Evgeeso")]
+[assembly: MelonInfo(typeof(ModSettings.ModSettingsMod), "Mod Settings", "1.2.1", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace ModSettings
@@ -49,6 +49,9 @@ namespace ModSettings
 
         // Every mod has made its entries by now: move untouched settings to defaults that a mod update changed.
         public override void OnLateInitializeMelon() => DefaultChanges.Scan();
+
+        // Remember how many settings the player has changed, so a removed settings file is noticed next start.
+        public override void OnApplicationQuit() => DefaultChanges.SaveCounts();
 
         internal static string OpenKeyName => OpenKey.Value;
 
