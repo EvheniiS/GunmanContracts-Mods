@@ -1,4 +1,4 @@
-# Throw Assist 0.2.3
+# Throw Assist 0.2.4
 
 Throw assist with real physics, and thrown pistols that hurt. Required by the Daredevil package (Billy Clubs + Radar
 Sense). Moved out of Billy Clubs 0.10.x.
@@ -18,6 +18,21 @@ Sense). Moved out of Billy Clubs 0.10.x.
   but those items have not been broadly tested. There is no need to test props to validate knife throwing.
 - **Billy Clubs** fly their own club flight (ricochets, spin styles, floor shots): objects named `BillyClub-*` are left
   to that mod, so the two never steer the same throw.
+
+## 0.2.4: early releases and throws you aren't looking along (built Oct 3 2026, untested; both off by default)
+
+The 03:43-03:57 session: 124 of 149 knife releases were assisted and nearly all stuck. The 25 misses never got an
+assist: 12 were early releases at 2.8-3.2 m/s (the hand still speeding up, just under the game's 3.5 gate), 13 were
+real throws (4-10 m/s) where the game found "no target in view", because its search is **gaze-based** (headset
+position + forward, `assistedThrowViewAngle`), not throw-based. Two of those hit a leg anyway, unassisted.
+
+- `KnifeAssistMinSpeed` (default 3.5 = unchanged; the user runs 2.5): a knife released at least this fast is
+  assisted. The game's gate is lowered for that one `releaseKnife` call and restored after it (also on an exception).
+  Logged as `early release at <speed> m/s assisted`.
+- `AimByThrow` (default off; the user runs it on) + `ThrowAimMaxAngle` (25): when the game finds no target, the
+  enemy nearest the throw direction (head, chest or a leg collider within the angle, within `SearchDistance`) is
+  used. One `FindObjectsByType` per such throw, nothing per frame. Logged as `(by throw direction, N deg; none in view)`.
+- A flight ends as `docked` if the item turns kinematic (put in a holster), so a fast put-back is never steered.
 
 ## 0.2.3: long blades (built Oct 3 2026, untested)
 

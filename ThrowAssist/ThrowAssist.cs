@@ -7,7 +7,7 @@ using MelonLoader;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(ThrowAssist.ThrowAssistMod), "Throw Assist", "0.2.3", "Evgeeso")]
+[assembly: MelonInfo(typeof(ThrowAssist.ThrowAssistMod), "Throw Assist", "0.2.4", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace ThrowAssist
@@ -42,8 +42,8 @@ namespace ThrowAssist
     public class ThrowAssistMod : MelonMod
     {
         internal static MelonLogger.Instance Log;
-        internal static MelonPreferences_Entry<bool> PistolAssist, PistolDamage, PistolStagger, SteerOtherItems, AimHead, DebugLog, KnifeVerticalSpin, AllowKneeHit;
-        internal static MelonPreferences_Entry<float> MinAssistSpeed, PistolAssistMinSpeed, PistolSteerMinSpeed, MaxSpeed, SearchDistance, MaxFlyDistance, PistolThrowDamage, KnifeSpeedMultiplier, HeadAimMaxAngle, KneeAimMaxAngle;
+        internal static MelonPreferences_Entry<bool> PistolAssist, PistolDamage, PistolStagger, SteerOtherItems, AimHead, DebugLog, KnifeVerticalSpin, AllowKneeHit, AimByThrow;
+        internal static MelonPreferences_Entry<float> MinAssistSpeed, PistolAssistMinSpeed, PistolSteerMinSpeed, MaxSpeed, SearchDistance, MaxFlyDistance, PistolThrowDamage, KnifeSpeedMultiplier, HeadAimMaxAngle, KneeAimMaxAngle, KnifeAssistMinSpeed, ThrowAimMaxAngle;
         internal static bool Dbg => DebugLog.Value;
 
         public override void OnInitializeMelon()
@@ -62,6 +62,9 @@ namespace ThrowAssist
             MaxFlyDistance = c.CreateEntry("MaxFlyDistance", 20f, description: "How far an assisted throw flies before it gives up (m). Pistols as shipped: 4.");
             AimHead = c.CreateEntry("AimHead", true, description: "Allow head aim when the release direction points closest to the head. False disables head selection; optional knee selection still applies. Existing saved preferences retain their value.");
             AllowKneeHit = c.CreateEntry("allowKneeHit", false, description: "Allow knee assist and make actual thrown-item leg hits trigger the knee-shot animation. Knee Shot Stun extends the kneel when installed. Billy Clubs keep their own settings.");
+            KnifeAssistMinSpeed = c.CreateEntry("KnifeAssistMinSpeed", 3.5f, description: "A knife released at least this fast (m/s) can get the assist. 3.5 = the game's own gate. Lower (2.5) so an early release, still speeding up when you let go, is assisted too. Never above the game's gate.");
+            AimByThrow = c.CreateEntry("AimByThrow", false, description: "When the game finds no target (it only looks where your headset points), look along the throw instead: the enemy closest to the throw direction within ThrowAimMaxAngle and SearchDistance. Runs once per such throw.");
+            ThrowAimMaxAngle = c.CreateEntry("ThrowAimMaxAngle", 25f, description: "AimByThrow: maximum angle (degrees) between the throw direction and an enemy's head, chest or legs.");
             KneeAimMaxAngle = c.CreateEntry("KneeAimMaxAngle", 25f, description: "Maximum angle in degrees from the release direction to a knee. The knee must also be closer to the release direction than the chest and any eligible head target. Requires allowKneeHit.");
             HeadAimMaxAngle = c.CreateEntry("HeadAimMaxAngle", 25f, description: "Maximum angle in degrees between the release direction and the head for a head-seeking throw. The release must also point closer to the head than the chest. 25 balances challenge and reward; lower for stricter aim.");
             PistolDamage = c.CreateEntry("PistolDamage", true, description: "A thrown pistol that hits an enemy does real damage (PistolThrowDamage). Off = the game's weak hit.");
@@ -119,7 +122,7 @@ namespace ThrowAssist
 
         static readonly List<Flight> Flights = new();
         static Vector3 preV, preW;
-        static bool preOurs;
+        static bool preOurs, preAssist;
 
         static bool Ours(ANBAssistedThrowingObject ato, out ANBHVRGunBase gun, out Rigidbody rb)
         {
@@ -145,6 +148,7 @@ namespace ThrowAssist
             float threshold = gun != null ? Mathf.Max(GameThreshold(), ThrowAssistMod.PistolAssistMinSpeed.Value) : ThrowAssistMod.MinAssistSpeed.Value;
             bool assist = (knife || preV.magnitude >= threshold) && (gun == null || ThrowAssistMod.PistolAssist.Value);
             // A soft toss isn't a throw at anyone. Pistols are switched on here (the game ships them off).
+            preAssist = assist && (gun != null || !ato.dontUse);   // pistols ship dontUse = true; set just below
             if (gun != null) ato.dontUse = !assist;
             else if (!assist) ato.dontUse = true;   // restored below; the game would still drag a slow throw
             if (assist)
@@ -173,6 +177,16 @@ namespace ThrowAssist
             float sp = preV.magnitude;
             bool pistol = gun != null;
             var knife = pistol ? null : ato.GetComponent<ANBKnife>() ?? ato.GetComponentInParent<ANBKnife>();
+            string found = null;
+            if (target == null && preAssist && ThrowAssistMod.AimByThrow.Value && sp >= MinThrowSpeed && !rb.isKinematic)
+            {
+                var game = ANBStaticGameManager.ANBmain;
+                if (game != null && game.assistedThrow && sp >= game.assistedThrowAtVelocity)
+                {
+                    var npc = ByThrow(rb.worldCenterOfMass, preV / sp, out float angle);
+                    if (npc != null) { target = Alive(npc.aimAtHead) ? npc.aimAtHead : npc.transform; found = $" (by throw direction, {angle:0} deg; none in view)"; }
+                }
+            }
             if (sp < MinThrowSpeed || (!pistol && knife == null && target == null && !ThrowAssistMod.AllowKneeHit.Value))
             {
                 if (ThrowAssistMod.Dbg) W($"{(pistol ? "pistol" : knife != null ? "knife" : "item")} '{ato.name}' released at {sp:0.0} m/s: {(pistol && !ThrowAssistMod.PistolAssist.Value ? "PistolAssist off" : NoAssist(sp, knife != null, pistol))}; game threshold {GameThreshold():0.0}, item speed {ato.speed:0.0}, dontUse {ato.dontUse}");
@@ -205,10 +219,33 @@ namespace ThrowAssist
                 f.Dir = to.normalized; f.Speed = f.SteerAt;
                 rb.linearVelocity = f.Dir * f.SteerAt;
                 if (knife != null) BladeFirst(f);
-                assist = $"{(npc != null ? "enemy" : "target")} '{(npc != null ? npc.name : target.name)}' {to.magnitude:0.0} m, steered at {f.SteerAt:0} m/s{(f.Reach > 0f ? $" by the tip ({f.Reach:0.00} m ahead)" : "")}";
+                assist = $"{(npc != null ? "enemy" : "target")} '{(npc != null ? npc.name : target.name)}' {to.magnitude:0.0} m, steered at {f.SteerAt:0} m/s{(f.Reach > 0f ? $" by the tip ({f.Reach:0.00} m ahead)" : "")}{found}";
             }
             else assist = pistol && !ThrowAssistMod.PistolAssist.Value ? "none (PistolAssist off)" : NoAssist(sp, knife != null, pistol);
             if (ThrowAssistMod.Dbg) W($"{(pistol ? "pistol" : knife != null ? "knife" : "item")} '{f.Name}' released at {sp:0.0} m/s, assist: {assist}; game threshold {GameThreshold():0.0}, item speed {ato.speed:0.0}, spin {preW.magnitude:0.0} rad/s, aim {f.Aim}");
+        }
+
+        // AimByThrow: the live enemy nearest the throw direction (head, chest or a leg within ThrowAimMaxAngle), within
+        // SearchDistance. One FindObjectsByType per throw the game found no target for; nothing per frame.
+        static ANBBasicNPC ByThrow(Vector3 from, Vector3 dir, out float bestAngle)
+        {
+            bestAngle = Mathf.Max(0f, ThrowAssistMod.ThrowAimMaxAngle.Value);
+            float range = ThrowAssistMod.SearchDistance.Value;
+            ANBBasicNPC best = null;
+            var probe = new Flight();
+            foreach (var o in Object.FindObjectsByType(Il2CppInterop.Runtime.Il2CppType.Of<ANBBasicNPC>(), FindObjectsSortMode.None))
+            {
+                var npc = o.TryCast<ANBBasicNPC>();
+                if (npc == null || npc.isDead || !npc.NPCStarted || npc.NPCPaused || !npc.gameObject.activeInHierarchy) continue;
+                var chest = AimPoint(npc, probe);
+                if ((chest - from).sqrMagnitude > range * range) continue;
+                float a = Vector3.Angle(dir, chest - from);
+                if (Alive(npc.aimAtHead)) a = Mathf.Min(a, Vector3.Angle(dir, npc.aimAtHead.position - from));
+                foreach (var col in npc.GetComponentsInChildren<Collider>())
+                    if (col.enabled && !col.isTrigger && IsLeg(col)) a = Mathf.Min(a, Vector3.Angle(dir, col.bounds.center - from));
+                if (a <= bestAngle) { bestAngle = a; best = npc; }
+            }
+            return best;
         }
 
         static float GameThreshold() => ANBStaticGameManager.ANBmain != null ? ANBStaticGameManager.ANBmain.assistedThrowAtVelocity : -1f;
@@ -268,12 +305,36 @@ namespace ThrowAssist
             reachedAssist = false;
             var rb = k.GetComponent<Rigidbody>() ?? k.GetComponentInParent<Rigidbody>();
             releaseSpeed = rb != null ? rb.linearVelocity.magnitude : 0f;
+            // KnifeAssistMinSpeed: an early release is still speeding up when the hand opens. Lower the game's gate for
+            // this one release (releaseKnife and StartAssistedThrow both read it); KnifeReleaseFinally puts it back.
+            var game = ANBStaticGameManager.ANBmain;
+            float gate = Mathf.Max(MinThrowSpeed, ThrowAssistMod.KnifeAssistMinSpeed.Value);
+            if (game != null && k.allowAssistedThrow && releaseSpeed >= gate && releaseSpeed < game.assistedThrowAtVelocity)
+            {
+                savedGate = game.assistedThrowAtVelocity;
+                game.assistedThrowAtVelocity = gate;
+                earlyRelease = true;
+            }
+        }
+
+        static float savedGate = -1f;
+        static bool earlyRelease;
+
+        internal static void KnifeReleaseFinally()
+        {
+            if (savedGate < 0f) return;
+            var game = ANBStaticGameManager.ANBmain;
+            if (game != null) game.assistedThrowAtVelocity = savedGate;
+            savedGate = -1f;
         }
 
         internal static void KnifeReleaseAfter(ANBKnife k)
         {
             if (--releaseDepth > 0) return;
             releaseDepth = 0;
+            KnifeReleaseFinally();
+            if (earlyRelease && reachedAssist && ThrowAssistMod.Dbg) W($"  knife '{k.name}': early release at {releaseSpeed:0.0} m/s assisted (KnifeAssistMinSpeed {ThrowAssistMod.KnifeAssistMinSpeed.Value:0.0})");
+            earlyRelease = false;
             if (!reachedAssist)
                 TrackFreeKnife(k, k.GetComponent<Rigidbody>() ?? k.GetComponentInParent<Rigidbody>());
             if (reachedAssist || !ThrowAssistMod.Dbg || releaseSpeed < MinThrowSpeed) return;   // a drop, not a throw
@@ -493,6 +554,7 @@ namespace ThrowAssist
                 bool held = false;
                 try { held = Alive(f.Grab) && f.Grab.IsHandGrabbed; } catch { }
                 if (held && age > 0.2f) { End(f, "grabbed"); continue; }
+                if (rb.isKinematic) { End(f, "docked"); continue; }   // put in a holster, not thrown
                 var v = rb.linearVelocity;
                 float sp = v.magnitude;
                 if (sp > f.TopSpeed) f.TopSpeed = sp;
@@ -597,6 +659,12 @@ namespace ThrowAssist
         static void Postfix(ANBKnife __instance)
         {
             try { Throws.KnifeReleaseAfter(__instance); } catch (Exception e) { ThrowAssistMod.Log.Warning($"knife release: {e.Message}"); }
+        }
+
+        // The lowered gate must never outlive the release, even if releaseKnife throws.
+        static void Finalizer()
+        {
+            try { Throws.KnifeReleaseFinally(); } catch { }
         }
     }
 

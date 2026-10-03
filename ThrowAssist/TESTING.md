@@ -100,3 +100,12 @@ VR Holster Customization logged `(returned)` for that blade; no success did. The
 colliders are already triggers, so the holster recorded none and the draw restored none. Fixed in VR Holster
 Customization 0.3.5. Lesson: "no body collision" plus a top speed far above the steer speed = a non-solid item;
 check its colliders before the flight code.
+
+## 0.2.3 + VR Holster Customization 0.3.5 session, 03:43–03:57 — collisions fixed; 0.2.4 for the misses
+
+Every return logged `(3 already were, solid again on the draw)`; no throw fell out of the map. 149 knife releases:
+124 assisted (stabs on head/chest, kneels on legs), 25 not assisted: 12 below the game's 3.5 m/s gate (2.8–3.2,
+early releases; e.g. 03:48:54 both katanas flicked 0.24 s after the draw at 2.9/3.2 m/s while the hand peaked at
+4.4 m/s afterwards) and 13 "no target in view" at 4–10 m/s (03:56:24 and 03:56:40 hit a leg anyway). 0.2.4 adds
+`KnifeAssistMinSpeed` and `AimByThrow`. Test: flick-throws at a knee while looking at the chest or away; expect
+`early release ... assisted` and `by throw direction` lines, and no `docked` on real throws.
