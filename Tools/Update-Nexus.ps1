@@ -232,6 +232,7 @@ try {
     $content = [System.Net.Http.StreamContent]::new($fs)
     [void]$content.Headers.TryAddWithoutValidation('Content-Disposition', "attachment; filename=`"$(Split-Path $zip -Leaf)`"")
     [void]$content.Headers.TryAddWithoutValidation('Content-MD5', $md5b64)
+    [void]$content.Headers.TryAddWithoutValidation('Content-Type', 'application/octet-stream')   # signed into the URL (SignedHeaders has content-type); the spec does not name the value, this one is accepted
     $resp = $http.PutAsync($presigned, $content).GetAwaiter().GetResult()
     if (-not $resp.IsSuccessStatusCode) { Fail "PUT failed: HTTP $([int]$resp.StatusCode) $($resp.Content.ReadAsStringAsync().GetAwaiter().GetResult())" }
     Write-Host "    HTTP $([int]$resp.StatusCode)"

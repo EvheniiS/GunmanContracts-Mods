@@ -51,7 +51,9 @@ The personal key reaches v3. Three id spaces are involved and they are not inter
 
 A page can hold several mod files (EnemyAwarenessFix: the Fix and the Log).
 
-Not yet exercised against the live API (as of this note): the write calls (`POST /uploads` through `POST /mods/{id}/changelogs`). `Update-Nexus.ps1` implements them from the spec, dry-run by default; the first real run is the proof, and its own verify step reports what Nexus ended up showing.
+Upload half proven Oct 3 2026 (`Update-Nexus.ps1 -Apply -UploadOnly`, GrabFix 1.1.2 zip): create upload, PUT, finalise, state `available`. One undocumented requirement found by the first attempt (HTTP 403 `SignatureDoesNotMatch`): the presigned URL signs `content-type` too, so the PUT must send **`Content-Type: application/octet-stream`** besides `Content-Disposition` and `Content-MD5`. Retrying a PUT on the same URL is fine.
+
+Not yet exercised against the live API (as of this note): `POST /mod-files/{id}/versions` and `POST /mods/{id}/changelogs` (they change a public page). `Update-Nexus.ps1` implements them from the spec; the first real `-Apply` is the proof, and its own verify step reports what Nexus ended up showing.
 
 ## What the API cannot do
 
