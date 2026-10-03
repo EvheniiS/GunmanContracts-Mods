@@ -130,7 +130,8 @@ foreach ($name in $names) {
         $cl = Invoke-Nexus "mods/$id/changelogs.json"
         if ($nexV) {
             $hit = $false
-            if ($cl) { foreach ($p in $cl.PSObject.Properties) { if ((@($p.Value) -join ' ') -match [regex]::Escape($nexV)) { $hit = $true } } }
+            # manual uploads key an entry by the page's version counter and name the version in the text; API posts key it by the version string
+            if ($cl) { foreach ($p in $cl.PSObject.Properties) { if ($p.Name -eq $nexV -or (@($p.Value) -join ' ') -match [regex]::Escape($nexV)) { $hit = $true } } }
             $chV = if ($hit) { "has $nexV" } else { "none for $nexV" }
         }
         # Live page Settings block vs the config the shipped DLL was built from (source at the release DLL's last commit).
