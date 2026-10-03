@@ -1,6 +1,6 @@
-# Gun Colors (0.1.0, release candidate: tested in game Oct 2 2026)
+# Aim Colors (0.1.0, release candidate: tested in game Oct 2 2026)
 
-Renamed from Laser Color (the old `LaserColor.dll` was removed from `Mods`; the new file is `GunColors.dll`). Settings are under `[GunColors]` in `UserData/MelonPreferences.cfg` and on the Mod Settings board, applied within about two seconds. A colour equal to the game's default changes nothing.
+Renamed from Laser Color, then Gun Colors (the weapons themselves are not recoloured, only what you aim with). Delete the old `LaserColor.dll` / `GunColors.dll` from `Mods`; the file is now `AimColors.dll`. Settings are under `[AimColors]` in `UserData/MelonPreferences.cfg` and on the Mod Settings board, applied within about two seconds. A colour equal to the game's default changes nothing.
 
 | Setting | Default | What it does |
 |---|---|---|

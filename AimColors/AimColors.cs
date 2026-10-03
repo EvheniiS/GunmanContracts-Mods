@@ -6,10 +6,10 @@ using Il2CppVLB;
 using MelonLoader;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(GunColors.GunColorsMod), "Gun Colors", "0.1.0", "Evgeeso")]
+[assembly: MelonInfo(typeof(AimColors.AimColorsMod), "Aim Colors", "0.1.0", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
-namespace GunColors
+namespace AimColors
 {
     // Recolours two things on the player's weapons, both live from the Mod Settings board:
     //
@@ -29,7 +29,7 @@ namespace GunColors
     //
     // Weapons spawn and are enabled at runtime, so every couple of seconds new ones are found and anything whose
     // colour drifted is re-applied. Enemy lasers are left alone unless IncludeEnemies is on.
-    public class GunColorsMod : MelonMod
+    public class AimColorsMod : MelonMod
     {
         class LaserRig { public Light[] Lights; public float[] LightIntensity; public VolumetricLightBeamSD[] Beams; public float[] BeamIntensity; }
         class SightOrig { public Color Base, Emission; public bool HasEmission; }
@@ -48,7 +48,7 @@ namespace GunColors
         public override void OnInitializeMelon()
         {
             Log = LoggerInstance;
-            var c = MelonPreferences.CreateCategory("GunColors", "Gun Colors");
+            var c = MelonPreferences.CreateCategory("AimColors", "Aim Colors");
             LaserColor = c.CreateEntry("LaserColor", "#FF3640", description: "Colour of the weapon laser (beam and dot) as #RRGGBB, applied at once. Default #FF3640 is the game's own red.");
             LaserBoost = c.CreateEntry("LaserBoost", 5f, description: "Brightness multiplier for the laser beam and dot (0.2 to 8). 1 = the game's own brightness; the default 5 is much easier to see, even through wireless-stream compression.");
             SightColor = c.CreateEntry("SightColor", "#5A080A", description: "Colour of the default iron sights as #RRGGBB, applied at once. Default #5A080A is a dark red; #FFB03B is the game's own yellow-orange. Shared by every gun, enemy guns included.");

@@ -2,8 +2,8 @@
   <Import Project="GameDir.local.props" Condition="Exists('GameDir.local.props')" />
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <AssemblyName>GunColors</AssemblyName>
-    <RootNamespace>GunColors</RootNamespace>
+    <AssemblyName>AimColors</AssemblyName>
+    <RootNamespace>AimColors</RootNamespace>
     <Nullable>disable</Nullable>
     <LangVersion>latest</LangVersion>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
