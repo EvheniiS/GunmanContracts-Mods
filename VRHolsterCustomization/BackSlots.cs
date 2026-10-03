@@ -586,8 +586,25 @@ namespace VRHolsterCustomization
                 c.isTrigger = true;
                 if (!mine.Exists(x => x.Pointer == c.Pointer)) mine.Add(c);
             }
+            // A knife can arrive already non-solid: the game turns its colliders into triggers while it flies or sticks
+            // in an enemy, and an auto-return (ReturnToBack) docks it in that state. Recording only the solid ones left
+            // nothing to restore, so every katana drawn after a return passed through enemies, walls and floors
+            // (Oct 3 2026). The knife's own list of normally solid colliders is restored on the draw as well.
+            int already = 0;
+            var knife = item.GetComponent<ANBKnife>();
+            var native = knife != null ? knife.nonTriggerColliders : null;
+            if (native != null)
+                for (int i = 0; i < native.Count; i++)
+                {
+                    var c = native[i];
+                    if (!VRHolsterCustomizationMod.Alive(c) || mine.Exists(x => x.Pointer == c.Pointer)) continue;
+                    var mesh = c.TryCast<MeshCollider>();
+                    if (mesh != null && !mesh.convex) continue;
+                    c.isTrigger = true;
+                    mine.Add(c); already++;
+                }
             if (VRHolsterCustomizationMod.DebugOn && mine.Count > 0)
-                VRHolsterCustomizationMod.Log.Msg($"'{item.name}': {mine.Count} collider(s) non-solid while holstered");
+                VRHolsterCustomizationMod.Log.Msg($"'{item.name}': {mine.Count} collider(s) non-solid while holstered{(already > 0 ? $" ({already} already were, solid again on the draw)" : "")}");
         }
 
         // The item's own scripts may turn a collider solid again (a knife's switchCollisions): re-assert, cheaply.
