@@ -120,6 +120,13 @@ with the gun pointed at you, which looks unnatural. It would need a new or borro
 Daredevil (clubs + red gloves), Radar Sense (enemy wall vision, dropped-club detection) and Throw Assist
 (pistol aim assist + thrown-pistol damage) are all **built and tested well**. What's left is unbuilt polish:
 
+**To-do (Oct 3 2026):**
+- **DONE in Daredevil 1.1.1 + Grab Fix 1.1.2 (built Oct 3 2026, untested).** Holstered clubs on the hips must have no collision. Before, they keep their colliders while holstered (the
+  rigidbody only goes kinematic, `BillyClubs.cs:413`), so the bow hand grabs/bumps them and enemies collide with
+  them. Turn the club colliders off (or put them on a non-colliding layer) while holstered and back on when drawn,
+  the way the game's own holstered weapons behave. Check first what the game does to a holstered gun's colliders
+  and copy that; the draw must still work (hand-hover detection may rely on a collider).
+
 - **Daredevil "sound ping"**: turn Radar Sense on briefly when you get hit or on a collision/impact, instead of
   only during slow motion.
 - **Echolocation sweep**: a ring expands from you and enemies light up as it passes them, then fade.
@@ -132,3 +139,47 @@ Daredevil (clubs + red gloves), Radar Sense (enemy wall vision, dropped-club det
 - **★ Low priority — club collision SFX.** Play a custom sound on club hits (wall/enemy ricochet, catch). Blocked
   on a friend making the actual SFX; nothing to build until the audio exists.
 
+
+## Billy Club impact sounds (Oct 1 2026, not started)
+
+All sound findings (clip arrays, play call, AudioReplacer, silent spots) are collected in [SOUND.md](SOUND.md).
+
+Playtest: club swings feel good, but two impacts are silent or unclear. A friend has offered to make the sound files.
+- **Club on club:** no sound. The Range has one crowbar, so the game never needed a crowbar-on-crowbar clip.
+- **Club on an enemy:** no impact sound. Club on a wall does play one, so the crowbar's own collision sound still works there.
+
+What the game has (from `il2cpp_tools/dumpt.py`, nothing tested yet):
+- **`ANBSoundPhysicsItem`** is the collision-sound component on physics props (on the crowbar copy, so on the clubs): `OnCollisionEnter`
+  picks a clip by `PhysicsType Material` and impact strength tier, or from `customSounds` with `overrideSoundsSoft/Medium/Hard`
+  (AudioClip arrays). `useLayerMaskOverride` + `layerMaskOverride` limit which layers make a sound, `noiseOnSoft/Medium/Hard` and
+  `canAlert` decide whether it alerts enemies. A layer mask that leaves out enemy bodies and other clubs would explain both gaps.
+  First check: log the club's `Material`, `customSounds`, layer mask and `PhysicsClipWait` on a template build.
+- **`ANBBluntWeapon.hit(bodyPart, speed, npc, collision)`** is the enemy hit (damage, blood, stagger). Daredevil already hooks it
+  (`BeforeBluntHit`, `Damage.cs`) and knows the speed tier (slow/medium/fast = 5/10/34 damage), body part and whether it was a
+  head hit. It is the natural place to play an enemy-impact clip.
+- **Playing a clip the game's way:** `RadarSense/Steps.cs` already does it (`ANBSFXPlayerManager.PlayAudioClip` or its own
+  AudioSource with the game's mixer group), so the volume settings still apply and slow motion pitches it.
+- **The game's own enemy melee sounds (found Oct 2 2026 for Death Details):** `ANBGameLogic.BluntHit` / `BluntHitHead` /
+  `FleshKnifeHit` / `FleshKnifeSlashHit` / `WoodHit` clip arrays. `TakeBluntWeaponDamage` plays a random `BluntHit` with
+  `ANBGameLogic.PlayAudioClip(clip, part position, false, "default", false, -1, -1)`. So "club on an enemy: no impact
+  sound" is odd: that call should run on every club hit on a living enemy. Check whether `BluntHit` is empty or the clip
+  too quiet, or whether Daredevil's damage path skips it. These arrays are also the natural slot for the friend's clips
+  (swap the entries at runtime). Death Details 0.7.1 already plays `BluntHitHead` on its finishing head hit.
+- Third-party `AudioReplacer` is installed (`UserData/CustomAudio`); its folder format could carry the files without a new loader,
+  but our own clips should ship inside the DLL or next to it so the mod stays self-contained.
+
+Plan, cheapest first:
+1. Find out why the native sound is silent (layer mask / material) and fix it by setting the club's `ANBSoundPhysicsItem` fields.
+   Club on club then works too (both clubs carry the component).
+2. If the native route can't make an enemy impact sound, play one from the `hit` hook, tiered by speed and body part (head, torso, limb).
+3. Club on club through `OnCollisionEnter` when the other collider belongs to a club, volume by relative speed.
+
+**Sound list for the friend** (suggestion, short mono or stereo WAV, 44.1 or 48 kHz, no reverb tail beyond 0.4 s so the game's
+room sound adds it): club-on-club clack (3 strengths: soft, medium, hard), club on body (soft thud, hard crack), club on
+head (sharper crack), club on limb/leg (dull thud). Metal tip and burgundy rubber grip: a dry baton "tok", not a sword ring.
+
+## Hand feel: input lag of the glove behind the real controller (Oct 1 2026, measured, tuning open)
+
+See the section in `GUNMAN_CONTRACTS.md` of the same date. Where the code should live is open: Grab Fix is pickup
+detection only (1.1.0 release candidate); this is the generic physics hand, so a small separate mod (or a Grab Fix section
+after its release) fits better than Billy Clubs. It is in Daredevil (`BillyClubs/HandProbe.cs`) for now so it can ship with the test builds.

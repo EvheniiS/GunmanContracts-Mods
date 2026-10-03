@@ -13,6 +13,9 @@ release/**/*.jpg
 release/**/*-prompt.txt
 release/**/*.zip
 
+# Reusable Nexus text-overlay template
+/release/TEXT_ONLY_NEXUS_ART_PROMPT.txt
+
 # Ad-hoc test-capture footage
 *.mp4
 

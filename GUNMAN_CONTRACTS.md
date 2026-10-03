@@ -11,6 +11,12 @@ Developer string: `ANB_Seth`. Game logic lives in `HurricaneVR.Framework.dll` (c
 
 **Sound (how the game plays it, clip arrays, ways to add custom sounds): [SOUND.md](SOUND.md).**
 
+## Game updates log
+
+Per-update change logs and what they could mean for our mods: [GAME_UPDATES.md](GAME_UPDATES.md). **0.3.1.1 announced
+Oct 2 2026, not yet launched** (adds Outpost object culling, a retrieve-lost-weapons terminal button, savegame backup,
+hand-stuck checks; first launch Oct 2: interop regenerated, 21 mods loaded, 0 errors, no contract played yet).
+
 ## Game-update recovery audit (Oct 1 2026)
 
 The Sep 27 recovery entry below is superseded by [Tools/UPDATE_RECOVERY.md](Tools/UPDATE_RECOVERY.md).
@@ -36,6 +42,37 @@ structural changes. The current native binary and metadata are archived under gi
 exactly 14 diagnostic keys changed, other preference bytes preserved, and a Restore dry run passed. Radar Sense's
 gameplay toggle and Frame Probe remain disabled. Grab Log is not installed, so no DLL was added. No new game session,
 gameplay verification, mod build or DLL deployment was performed by this audit.
+
+## Mod Settings 1.2.0 (Oct 3 2026): changed defaults from mod updates — built + installed, untested
+
+- **Problem:** MelonLoader writes every value into `MelonPreferences.cfg`, untouched ones too, so a new default in a
+  mod update (Daredevil `BillyClubs.ChestStunSeconds` 3 → 1, the only released default that changed `main` → `dev`)
+  never reaches existing players.
+- **Fix:** `UserData/ModSettings_defaults.txt` records each setting's default (+ every mod's version). At
+  `OnLateInitializeMelon` and on each board open (`DefaultChanges.Scan`): value == old default → moved to the new
+  default and listed with **Revert**; customised value → kept and listed with **Use new / Keep** until decided (stays
+  pending across restarts). The board opens on an **Updated defaults** page first while anything waits. Mod-managed
+  entries are skipped. Decision logic + file format are pure (`DefaultRecord.cs`, in the tests).
+- **Versions are context only:** categories have no owner mod (Daredevil's are `BillyClubs`/`RadarSense`), so the diff
+  is the recorded defaults themselves; the page just shows "Updated: Daredevil 1.0.0 -> 1.1.0".
+- **No baseline table (decided):** the first run of 1.2.0 only records, so Daredevil 1.1.0's change is caught only for
+  players who run Mod Settings 1.2.0 before updating Daredevil. → **Release Mod Settings 1.2.0 before Daredevil 1.1.0.**
+- Test steps: `ModSettings/TESTING.md` "Updated defaults".
+
+## Holstered items collide with nothing: how the game does it (Oct 3 2026) → Daredevil 1.1.1 + Grab Fix 1.1.2
+
+- **`HVRSocket.DisableCollision`** (field `0x150`, default true in the ctor) → `HandleRigidBodyGrab` calls
+  **`HVRGrabbable.SetAllToTrigger()`**: every collider in `grabbable.Colliders` gets `isTrigger = true`.
+  `HVRSocket.OnReleased` calls **`ResetToNonTrigger()`**. (`HVRGrabbable.DisableCollision()` is a different thing:
+  `Collider.enabled = false`.) `Start` warns "Sockets with a non kinematic rigidbody should not disable DisableCollision".
+- **Triggers stay grabbable:** `HVRTriggerGrabbableBag.OnTriggerEnter/Exit` and `DistanceToGrabbable` never read
+  `isTrigger`. `grabbable.Colliders` holds only the solid shapes; real triggers are in `grabbable.Triggers`.
+- **Daredevil 1.1.1** does the same for its own belt and wall slots (`SetGhost` in `BillyClubs.cs`: solid colliders →
+  trigger on `Holster`, re-applied when `KeepOnBelt` pulls the club back, restored in `BeforeGrab` on the draw,
+  then the player ignore pairs are re-asserted). Concave mesh colliders are skipped.
+- **Grab Fix 1.1.2:** `SurfaceDistance` skipped `isTrigger` colliders, so a trigger-only holstered item had infinite
+  distance and the docked-hover clamp (`NativeContains`) would refuse the draw. It now counts every collider in
+  `g.Colliders`. Both built, untested.
 
 ## Frame Probe log review (Oct 1 2026)
 
@@ -374,6 +411,21 @@ and about 41% range.** A few centimetres short of full draw costs a third of the
 - On **`dev`** (commit `bcebf09`), version 1.2.0. Built, copied to `feature/BetterBow.dll`
   and `<game>\Mods`. **Not tested in game yet.** Asset reader: scratch script, same raw-layout approach as
   `bowpaint.py` (MonoScript `HVRPhysicsBow` = `globalgamemanagers.assets` pathID 3626).
+
+## ★ The other hand steals the bow → Better Bow 1.3.0 bow hand lock (Oct 3 2026)
+
+Reported: holding the bow in the left hand, a grip meant for the string often lands on the riser and the bow
+jumps to the right hand. **Not a second grab point (unlike the crowbar/club): it's HVR's `HoldType`.**
+- `HVRGrabbable.HoldType` (0x2c), enum **OneHand 0, Swap 1, TwoHanded 2, ManyHands 3**.
+  `HVRHandGrabber.CheckSwapRelease` (@0x181d5bd10): if `HoldType == Swap` and the `PrimaryGrabber` is a hand,
+  that hand releases. `HVRHandGrabber.CanGrab` (@0x181d5a2c0): if the primary grabber is not a socket,
+  `OneHand` + `GrabberCount > 0` → refused (unless `_isForceAutoGrab`, 0x350); `TwoHanded` refuses a third.
+- **Fix (`BetterBow/HandSwap.cs`): set the bow grabbable to `OneHand` while `BowHandSwap` is false (default).**
+  Holster draws are untouched (socket primary skips the check), the string is a separate grabbable
+  (`NockGrabbable`). A missed riser grip then falls through to the string grab buffer, which is what you wanted.
+  Live-switchable; only changes a bow whose original type is Swap. DebugLog prints `bow hold type: X` once per bow
+  (confirms Swap in play).
+- On **`dev`**, 1.3.0, built. **Not installed (game was running, DLL locked) and not tested.**
 
 ## ★ Weapon paint: the bow already has a BLACK paint in the game (Sep 24 2026)
 
@@ -2247,6 +2299,22 @@ the three already-selected trajectories. Keep the feature experimental and priva
 by default and the user's personal saved opt-in retained. The Nexus description draft mentions the private
 experiment explicitly; the 0.2.1 release package is unchanged. See `ThrowAssist/TESTING.md` for remaining checks.
 
+## Throw Assist 0.2.3 + VR Holster Customization 0.3.5 (Oct 3 2026): katanas passing through enemies
+
+Three assisted katana throws in a row thrashed inside the enemy and flew off (log: no stab, no body collision,
+4 s timeout, 30-35 m/s at the end, while steering caps at 17). Steering aimed the centre of mass, ~0.5 m
+behind a katana's point, then reversed past the aim point inside the body and `BladeFirst` spun the blade there.
+Now knives steer by the tip and steering stops within 0.3 m of, or past, the aim point (tested fine).
+**That was not the cause.** The 0.2.3 test failed the same way, and every failure came after VR Holster
+Customization auto-returned the blade to the back: it docks the knife while the game has its colliders as triggers,
+recorded none, so the draw restored none. 0.3.5 also restores `ANBKnife.nonTriggerColliders`; built + installed,
+untested. **Rule: no collision at all plus a top speed far above the steer speed (falling out of the map) = a
+non-solid item; check its colliders before the flight code.** Details: `ThrowAssist/TESTING.md`.
+**Both CONFIRMED by the user's next sessions (Oct 3 2026, 03:43-03:57).** The remaining misses were throws the game never
+assisted: early releases under its 3.5 m/s gate, and gaze-based targeting finding nobody when the throw went
+elsewhere. Throw Assist 0.2.4 (built + installed, untested): `KnifeAssistMinSpeed` (user 2.5) and `AimByThrow`
+(user on), both off by default.
+
 ## Challenge NPC Limit 0.1.0 (Sep 30 2026): takedown enemy selection cap
 
 Research on the local Gunman Contracts 0.3.1.0 installation (`GameAssembly.dll` and IL2CPP metadata):
@@ -2329,6 +2397,30 @@ Log `26-10-1_23-36-10.log` (HandProbe build, settings untouched). Last swings (2
 
 **Flip trace result (log `26-10-1_23-56-15.log`, game still running, settings untouched): hypothesis CONFIRMED for the real spins.** R-hand flips at 23:58:56 and 23:58:59: club 159 deg off the hand's line, **hand body 178-179 deg off the controller, grip slip only 5-18 deg** -> the hand turned, not the grip. Club and hand spin are identical (peaks 31-34 rad/s, equal to the club's 30 rad/s cap) while the controller reached 25-41 rad/s. After the controller stops (1-3 rad/s) the hand keeps turning at 14 -> 8 rad/s over ~200 ms (about -100 rad/s2: a constant, saturated torque), goes through the target and ends 178 deg away, then returns (a ring-down 46 -> 75 -> 14 -> 178 -> 0 deg). Collisions did not appear in the trace. The ten `FLIP L` lines (23:57:44-58:05) are a logger artifact: the left hand held the right club as a second hand, so its controller says nothing about the club; fixed in the source (tracking only while exactly one hand holds the club, 2.5 s repeat guard). That build was not deployed (game running, DLL locked).
 
+## Oct 2 2026: Slow Motion Hands (0.1.2: slow = normal speed; 0.1.3 snappier, NOT yet played)
+
+Request: hands delayed / unresponsive in slow motion. Code read first:
+- `ANBGameLogic.toggleSlowMotion` only sets `Time.timeScale` (from `GameTimeScaleSlowmotion[step-1]`); it does not touch the physics step.
+- `ANBGameLogic.FixedTimeTest` (called from `Update`) sets `Time.fixedDeltaTime`: static mode `fixedUpdateOrig x timeScale`, dynamic mode (`+0x2d0`) = average frame time clamped between values scaled by `timeScale` (min/max steps `+0x2d8/+0x2dc`). The old logs show 7.3 / 6.7 ms at x0.22 (11-12 ms normally): physics ~30 Hz real in slow motion.
+- Hand strength reaches the hand joint only through `HVRHandStrengthHandler.UpdateStrength(PDStrength | HVRJointSettings)` -> `HVRJointUtilities.SetLinearDrive/SetSlerpDrive` (`UpdateJoint` picks which strength). Real-time delay scales as 1/timeScale (HandProbe: 88-96 ms at x0.22 vs 16-24).
+- Built `SlowMotionHands/`: postfix on `FixedTimeTest` sets step = real frame time x timeScale; pre/postfix on both `UpdateStrength` overloads scales only the drives the game just rewrote (spring/force x(1/s)^2, damper x1/s, capped); `UpdateJoint` forces a rewrite when slow motion starts/ends. Per-slow-motion log summary with physics step and hand gap (while moving) slow vs normal. Details and test steps: `SlowMotionHands/README.md`.
+
+- **Second test (log `26-10-2_16-29-56.log`), grip scaling added: no change.** Hand gap in slow motion 12-15 cm vs normal 1-4 cm, held item = hand. The hold log showed why: at x0.22 (boost x20.7) the **hand joint read the plain game values** (pistol 9000/900/9000, rifle 2000/200/1000). The pre/postfix compared the drives before and after `UpdateStrength` and skipped "unchanged" ones; when slow motion starts the game rewrites the same base value, so nothing was boosted. Boost only landed by accident on a grab/release mid-slow-motion. The grip joint is locked (linear 0/0/0, slerp 100000/1000) and was never the issue.
+- **0.1.1:** hand joint uses the same base/written tracker as the grip (a drive not equal to what the mod wrote last is a new game value), applied after every `UpdateStrength` and every physics step. Pass = the `holds` line reads x20.7 values. **★ Lesson: a "scale only what the call just changed" guard silently does nothing when the call rewrites an identical value; track what YOU wrote instead.**
+- **0.1.1 tested (log `26-10-2_16-37-49.log`):** boost lands. Pistol slow 3.2 cm vs normal 6.7, club 1.4-2.1 vs 0.5-4.6: fixed. Rifle slow 8.3 / max 14 cm vs 1.6: still lags (its hand strength is 2000/200/1000 by design, laggy one-handed at normal speed too). **0.1.2:** `maxAngularVelocity` is game-time (hand 150 rad/s from `HVRJointHand.Awake` = 33 rad/s real at x0.22; items via `HVRRigidBodyOverrides`), now raised by 1/timeScale.
+- **0.1.2 tested (log `26-10-2_16-54-14.log`): slow motion = normal speed** (pistol 1.7-1.9 vs 0.9-3.4 cm, club 5.7 vs 6.3 cm, probe 12-24 ms). Item spin limits seen: pistol/rifle 30, club 80, hand 150 rad/s. The remaining "bit" is the physics hand's normal lag, more visible in slow motion. **0.1.3:** `SlowMotionSnap` x2 on the hand joint in slow motion only. **Tested (log `26-10-2_17-6-21.log`): user says the feel is much better**; empty hand slow 1.2 vs normal 3.3 cm, pistol 1.0 vs 0.6 cm (max 5 vs 4), no errors. Rifle/club not logged with 0.1.3.
+## Weapon laser anatomy and the recolor experiment (Oct 2 2026, game 0.3.1.1)
+
+Built, installed and **tested**: a recolor of the weapon laser works on pistol and bow. **Dropped, not shipped:** the game's default red is the most visible colour, so a recolor has no use. Kept here only for the findings.
+
+- Every weapon has its own copy of `Attachments/Originals/flashlight/attachment_pistol_lightlaser/lasersource/laserbeam` (`ANBWeaponAttachments.LaserBeam`; bow and pistols share the prefab). It holds one 1-degree spot `Light` ("Spot Light (3)", default (1, 0.21, 0.25), intensity 700000: the dot on the wall) and a `VLB.VolumetricLightBeamSD` with `colorFromLight = true` (the visible beam, shader `Hidden/VLB_SD_URP_GPUInstancing`). Tinting the beam material does nothing; setting `Light.color` (plus the beam's `color` and `UpdateAfterManualPropertyChange()`) recolors beam and dot.
+- The flashlight half is separate: `lightsource` with `Spot Light Old/New` and an emissive `attachment2_glass` material. Not touched.
+- `LaserPoint` (game class) is NOT the weapon laser dot; no instance existed in the Range.
+- Game types such as `ANBWeaponAttachments` live in `Il2CppHurricaneVR.Framework.dll` in the regenerated interop, not `Assembly-CSharp.dll`; `VLB` types are there too.
+- Sight slots: `AT3` = "Reflexsight" (object `holosight`, the collimator), `AT1` silencer, `AT4` compensator. The default sights are SpriteRenderers on material `sights`. The collimator was never probed.
+- Source kept untracked in `AttachmentProbe/` (F9 dump of every active weapon's attachments, renderers, materials, light/beam components) and `AimColors/` (was Laser Color, then Gun Colors; renamed Oct 2 2026 because the weapons themselves are not recoloured; also tints iron sights and reticle). The probe is reusable for any future attachment question.
+- **First test (log `26-10-2_15-15-8.log`):** physics step 7.3 -> 2.4 ms OK; empty hand at x0.22 delay 0 ms / lag 2 cm at 16 m/s (was ~90 ms), so the hand-drive scaling works. A hand holding a pistol still showed delay 32 ms / lag 14 cm, bow hand gap 16 cm: the hand-to-weapon joint (`HVRHandGrabber.Joint`) was not scaled. Added `GripResponse` (polled per fixed step, base/written tracking), a hold log line and a held-item lag meter. Built + installed, not played.
+
 ## Death Details (was Close Eyes, Oct 2 2026): dead enemies close their eyes; 0.7.1 RELEASE CANDIDATE (tested Oct 2 2026)
 - **Enemy faces are Synty Sidekick meshes** (`CC_Combined_LOD0`-`LOD4`, found in `resources.assets`): 147 blend shapes =
   the full ARKit set (`eyeBlinkLeft/Right`, `jawOpen`, `eyeLookDown*`...) + Sidekick `shp_*`/`mod_*`/`body_*` shape keys.
@@ -2401,6 +2493,7 @@ Request: store the katana (and knives) in the back slots. Built, 0 warnings, ins
 
 **Open questions for the test:** do contracts have knife spots (debug line `knife spots: N (…)` ~10 s after load)?
 Does a slow knife release near the shoulder (game throw gate ~3.5 m/s, our snap limit 5 m/s) dock instead of throwing?
+
 **0.3.1 (Oct 3 2026, built + installed `2318B579`, untested):** first report: with the katana in the left back slot
 and the bow in the right, the bow caught on the katana when drawn. Back-slot items were docked kinematic but still
 solid. Now every back-slot item is non-solid while holstered (solid colliders → triggers, re-asserted every frame in
@@ -2427,6 +2520,37 @@ back slot pointed sideways through the chest. Log (`26-10-3_2-57-59.log`): `'Kni
 ghosted colliders as solid, and log a warning if nothing measurable is found. Same session: the `HeadRelativeInventory`
 frame read `up (-0.49,0.65,0.58)` at calibration (it follows head pitch), and The Range logged all 10 knife spots
 including `Katana2`; the main menu has none (`knife spots: 0`, back-left `waits`).
+
+**0.3.4 (Oct 3 2026, built + installed `457E4996`, untested):** fourth report: two katanas (`Knife-Katana` left,
+`Knife-Katana2` right) on the back in The Range did not come into the Warehouse contract. Log `26-10-3_3-8-24.log`:
+`back holsters restored: … 'Knife-Katana2' waits …, 'Knife-Katana' waits …` and `knife spots: 0` in the contract.
+**Contracts have no knife wall.** `LoadContractHolsterKnife` branches on `ANBGameLogic.IsRangeScene` (0x95): Range =
+take `spot.mygun` from `allKnifeSpots`; otherwise loop `ANBDataCollection.allOthers` (0x58, `GameObject[]` prefabs),
+match `GetComponent<ANBKnife>().knifeID`, `checkPurchaseDataWeapon`, `Object.Instantiate(prefab)`. The back-slot
+restore now does the same (and skips `IsMainMenuScene`). Same log: 0.3.3's shape fix confirmed (`'Knife-Katana' shape:
+0.80 m long, centre (-0.18,0.01,0), far end (-1,-0,-0)`), dual katanas drawn and re-holstered together repeatedly with
+the draw assist at 1-5 cm.
+
+**0.3.4 TESTED (Oct 3 2026):** both back katanas came into the contract (user). Wave/mission reloads not yet seen.
+
+**0.3.5 (Oct 3 2026, built + installed `BA0BA96D`, untested): knife return time.** Request: thrown knives/katanas
+stay in the enemy too long before returning; want it configurable, as low as ~0.5 s, faster on a kill. Game facts:
+`ANBKnife.releaseKnife` sets `autoReturnAfterCurrent = ANBGameLogic.autoReturnKnifeAfter` (0x224) on **every release**,
+so the timer runs from release, not impact. `registerKnifeKill` is called from `ANBBasicNPC.TakeDamage` and
+`TakeKnifeSlashDamage` (kills); `ANBKnife.stabEnemy` has no direct callers (UnityEvent), it ends in
+`ANBGameLogic.StabEnemyFinal`, which Throw Assist already proved fires for thrown knives. New `[VRHolsters_KnifeReturn]`:
+`AfterReleaseSeconds` (replaces the game's delay at release), `AfterHitSeconds` (StabEnemyFinal postfix),
+`AfterKillSeconds` (registerKnifeKill postfix); each only shortens an armed timer (> 0) of a knife not held, defaults 0
+= vanilla. His cfg set by hand: release 0 (game), hit 0.5, kill 0.25. Debug lines: `knife return: the game's delay is
+N s` (once), `knife return: '<knife>' hit|kill, back in N s`.
+
+**0.3.6 (Oct 3 2026, built + installed `7844FDDE`, untested): knife return as two totals.** 0.3.5's three "shorten"
+timers were too confusing. Now `[VRHolsters_KnifeReturn]` `InEnemySeconds` (set exactly, from `StabEnemyFinal` or
+`registerKnifeKill`, so it may also be longer than the game's) and `OnGroundSeconds` (from when the released knife rests:
+under 0.15 m/s for 0.2 s; until then the game's timer is held above 10 s, max 10 s of flight). 0 = game timing; with
+`OnGroundSeconds` set and `InEnemySeconds` 0, a hit restores the game's remaining time (`autoReturnKnifeAfter` minus time
+since release). Nothing is done when the game's timer isn't armed at release (auto-return off). His cfg: in enemy 0.5,
+on ground 0 (game) until the log shows the game's delay (`knife return: the game's delay is N s from release`).
 
 ## ★ Knife unlocks and the double katana (Oct 3 2026, game 0.3.1.1, from the game code + scene files)
 
@@ -2482,34 +2606,3 @@ called.** 0.2.1: gate closed → add the id to `purchasedContentWeapons` in memo
 then call `makePurchase` once `gameStarted` is true (checked each second), which saves. **0.2.1 TESTED Oct 3 2026: works.** Log: `unlocked 'Katana2' ... in memory` at
 Range load (03:09:05), `saved 'Katana2' to the game's purchases` 4 s later (so `gameStarted` does turn true in The
 Range), wall summary no longer lists it. The double katana hangs next to the katana and dual wielding works.
-
-**0.3.4 (Oct 3 2026, built + installed `457E4996`, untested):** fourth report: two katanas (`Knife-Katana` left,
-`Knife-Katana2` right) on the back in The Range did not come into the Warehouse contract. Log `26-10-3_3-8-24.log`:
-`back holsters restored: … 'Knife-Katana2' waits …, 'Knife-Katana' waits …` and `knife spots: 0` in the contract.
-**Contracts have no knife wall.** `LoadContractHolsterKnife` branches on `ANBGameLogic.IsRangeScene` (0x95): Range =
-take `spot.mygun` from `allKnifeSpots`; otherwise loop `ANBDataCollection.allOthers` (0x58, `GameObject[]` prefabs),
-match `GetComponent<ANBKnife>().knifeID`, `checkPurchaseDataWeapon`, `Object.Instantiate(prefab)`. The back-slot
-restore now does the same (and skips `IsMainMenuScene`). Same log: 0.3.3's shape fix confirmed (`'Knife-Katana' shape:
-0.80 m long, centre (-0.18,0.01,0), far end (-1,-0,-0)`), dual katanas drawn and re-holstered together repeatedly with
-the draw assist at 1-5 cm.
-
-**0.3.4 TESTED (Oct 3 2026):** both back katanas came into the contract (user). Wave/mission reloads not yet seen.
-
-**0.3.5 (Oct 3 2026, built + installed `BA0BA96D`, untested): knife return time.** Request: thrown knives/katanas
-stay in the enemy too long before returning; want it configurable, as low as ~0.5 s, faster on a kill. Game facts:
-`ANBKnife.releaseKnife` sets `autoReturnAfterCurrent = ANBGameLogic.autoReturnKnifeAfter` (0x224) on **every release**,
-so the timer runs from release, not impact. `registerKnifeKill` is called from `ANBBasicNPC.TakeDamage` and
-`TakeKnifeSlashDamage` (kills); `ANBKnife.stabEnemy` has no direct callers (UnityEvent), it ends in
-`ANBGameLogic.StabEnemyFinal`, which Throw Assist already proved fires for thrown knives. New `[VRHolsters_KnifeReturn]`:
-`AfterReleaseSeconds` (replaces the game's delay at release), `AfterHitSeconds` (StabEnemyFinal postfix),
-`AfterKillSeconds` (registerKnifeKill postfix); each only shortens an armed timer (> 0) of a knife not held, defaults 0
-= vanilla. His cfg set by hand: release 0 (game), hit 0.5, kill 0.25. Debug lines: `knife return: the game's delay is
-N s` (once), `knife return: '<knife>' hit|kill, back in N s`.
-
-**0.3.6 (Oct 3 2026, built + installed `7844FDDE`, untested): knife return as two totals.** 0.3.5's three "shorten"
-timers were too confusing. Now `[VRHolsters_KnifeReturn]` `InEnemySeconds` (set exactly, from `StabEnemyFinal` or
-`registerKnifeKill`, so it may also be longer than the game's) and `OnGroundSeconds` (from when the released knife rests:
-under 0.15 m/s for 0.2 s; until then the game's timer is held above 10 s, max 10 s of flight). 0 = game timing; with
-`OnGroundSeconds` set and `InEnemySeconds` 0, a hit restores the game's remaining time (`autoReturnKnifeAfter` minus time
-since release). Nothing is done when the game's timer isn't armed at release (auto-return off). His cfg: in enemy 0.5,
-on ground 0 (game) until the log shows the game's delay (`knife return: the game's delay is N s from release`).
