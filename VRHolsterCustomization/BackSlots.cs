@@ -4,6 +4,7 @@ using System.Globalization;
 using Il2Cpp;
 using Il2CppHurricaneVR.Framework.Core;
 using Il2CppHurricaneVR.Framework.Core.Grabbers;
+using Il2CppHurricaneVR.Framework.Core.Sockets;
 using Il2CppHurricaneVR.Framework.Core.Utils;
 using Il2CppInterop.Runtime;
 using MelonLoader;
@@ -58,7 +59,8 @@ namespace VRHolsterCustomization
         static readonly Dictionary<IntPtr, List<Collider>> ghosted = new(); // per holstered item: colliders we made non-solid
         static readonly Dictionary<IntPtr, bool> home = new(); // blade last drawn from the back: true = left side
 
-        static MelonPreferences_Entry<bool> Enabled;
+        static MelonPreferences_Entry<bool> Enabled, Sounds;
+        static MelonPreferences_Entry<string> SoundIn, SoundOut;
         static MelonPreferences_Entry<int> Out, Up, Back, Drop, Tilt, Lean, Spin, Snap, DrawReach, BladeGrip, BladeTilt, BladeLean, BladeSpin;
         static MelonPreferences_Entry<string> Saved;
         static MelonPreferences_Category cat;
@@ -75,6 +77,10 @@ namespace VRHolsterCustomization
         {
             cat = MelonPreferences.CreateCategory("VRHolsters_BackSlots", "VR Holster Customization: back slots");
             Enabled = cat.CreateEntry("BackHolsters", true, description: "Mod weapons (framework items, Billy Clubs) can go in the back holsters. Each side holds one weapon: a game gun or a mod item.");
+            Sounds = cat.CreateEntry("HolsterSounds", true, description: "Holstering and drawing a mod weapon in a back holster plays the game's own holster sound, like a gun or the bow.");
+            SoundIn = cat.CreateEntry("HolsterInSound", "EQUIPTact_Equipment Metal Buckle Chain Jangle Latch Flap Belts 03_ESM_SG", description: "Sound when a mod weapon goes into a back holster: the name of a game sound clip (find names with the Sound Probe mod). The default is the sound of taking a katana from its wall spot. Blank = a gun's holster click.");
+            SoundOut = cat.CreateEntry("HolsterOutSound", "S_WEP_Knife_Attack_01", description: "Sound when a mod weapon is drawn from a back holster: the name of a game sound clip. The default is the sound of drawing a knife or katana from the belt. Blank = a gun's holster click.");
+            wantIn = SoundIn.Value; wantOut = SoundOut.Value;
             Out = cat.CreateEntry("OutCm", -13, description: "Moves the mod item in the back holster away from the spine (cm, both sides mirrored).");
             Up = cat.CreateEntry("UpCm", 0, description: "Moves it up (cm).");
             Back = cat.CreateEntry("BackCm", 7, description: "Moves it back, away from your body (cm).");
@@ -148,6 +154,7 @@ namespace VRHolsterCustomization
                     return false;
                 }
                 Put(best, item, kind);
+                Sound(best, item, true);
                 HolsterLog.ModHolster(best.Name, Label(kind, item), true);
                 Save();
                 return true;
@@ -256,6 +263,7 @@ namespace VRHolsterCustomization
                 s.Item = null; s.Kind = null;
                 Ghost(item, false);
                 Dock.Unpin(item);
+                Sound(s, item, false);
                 HolsterLog.ModHolster(s.Name, Label(kind, item), false);
                 Save();
                 return;
@@ -487,6 +495,101 @@ namespace VRHolsterCustomization
             PinIn(s);
         }
 
+        // The sound of a mod item going into or out of a back holster. It never enters the shoulder socket, so the socket
+        // plays nothing. The game's own clips are picked by name (HolsterInSound / HolsterOutSound; Oct 3 2026 probe: a katana
+        // drawn from the belt plays 'S_WEP_Knife_Attack_01' and the belt knife holster has no clip of its own, taking one
+        // from the wall plays the 'Belts' jangle). A name is found among the loaded clips or learned the first time the game
+        // plays it. Blank, or not found: a gun's click (ANBGunSounds.HolsterIn / HolsterOut, the bow's if seen; for a
+        // blade, nothing). Played the way the game does, ANBGameLogic.PlayAudioClip at the slot. Not on a restore: the game
+        // is silent while it loads too.
+        static readonly Dictionary<string, AudioClip> named = new();
+        static string wantIn, wantOut;
+        static float nextNamedScan;
+        static AudioClip gunIn, gunOut;
+        static bool gunInBow, gunOutBow;
+
+        // From the sound pool's postfix: remember the clips we are looking for.
+        internal static void Heard(AudioClip clip)
+        {
+            if (wantIn == null && wantOut == null) return;
+            var n = clip.name;
+            if ((n == wantIn || n == wantOut) && !named.ContainsKey(n)) named[n] = clip;
+        }
+
+        static AudioClip Named(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return null;
+            if (named.TryGetValue(name, out var c) && VRHolsterCustomizationMod.Alive(c)) return c;
+            if (Time.time < nextNamedScan) return null;
+            nextNamedScan = Time.time + 5f;
+            try
+            {
+                foreach (var o in Resources.FindObjectsOfTypeAll(Il2CppType.Of<AudioClip>()))
+                {
+                    var ac = o.TryCast<AudioClip>();
+                    if (ac != null && ac.name == name) { named[name] = ac; return ac; }
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        internal static void LearnGunClips(Il2CppHurricaneVR.Framework.Weapons.ANBGunSounds gs, bool into)
+        {
+            try
+            {
+                if (!VRHolsterCustomizationMod.Alive(gs)) return;
+                var clip = into ? gs.HolsterIn : gs.HolsterOut;
+                if (!VRHolsterCustomizationMod.Alive(clip)) return;
+                var owner = VRHolsterCustomizationMod.Alive(gs.gunbase) ? gs.gunbase.name : gs.name;
+                bool bow = owner.IndexOf("bow", StringComparison.OrdinalIgnoreCase) >= 0;
+                if (into ? (gunIn == null || (bow && !gunInBow)) : (gunOut == null || (bow && !gunOutBow)))
+                {
+                    if (into) { gunIn = clip; gunInBow = bow; } else { gunOut = clip; gunOutBow = bow; }
+                    if (VRHolsterCustomizationMod.DebugOn) VRHolsterCustomizationMod.Log.Msg($"gun holster click learned from '{owner}': {(into ? "in" : "out")} '{clip.name}'");
+                }
+            }
+            catch { }
+        }
+
+        static void ScanGunClips()
+        {
+            try
+            {
+                foreach (var o in Object.FindObjectsByType(Il2CppType.Of<Il2CppHurricaneVR.Framework.Weapons.ANBGunSounds>(), FindObjectsInactive.Include, FindObjectsSortMode.None))
+                {
+                    var gs = o.TryCast<Il2CppHurricaneVR.Framework.Weapons.ANBGunSounds>();
+                    LearnGunClips(gs, true); LearnGunClips(gs, false);
+                }
+            }
+            catch { }
+        }
+
+        static void Sound(Slot s, GameObject item, bool into)
+        {
+            if (!Sounds.Value || !VRHolsterCustomizationMod.Alive(s.Socket)) return;
+            try
+            {
+                string want = into ? SoundIn.Value : SoundOut.Value;
+                wantIn = SoundIn.Value; wantOut = SoundOut.Value;
+                AudioClip clip = Named(want);
+                string from = $"clip '{want}'";
+                if (!VRHolsterCustomizationMod.Alive(clip) && !string.IsNullOrEmpty(want) && VRHolsterCustomizationMod.DebugOn)
+                    VRHolsterCustomizationMod.Log.Msg($"{s.Name}: sound '{want}' not found (not loaded or played yet)");
+                bool blade = s.Kind != null && s.Kind.Blade;
+                if (!VRHolsterCustomizationMod.Alive(clip) && string.IsNullOrEmpty(want) || !VRHolsterCustomizationMod.Alive(clip) && !blade)
+                {
+                    if (gunIn == null && gunOut == null) ScanGunClips();
+                    clip = into ? gunIn : gunOut; from = (into ? gunInBow : gunOutBow) ? "bow" : "gun";
+                }
+                var game = ANBStaticGameManager.ANBmain;
+                if (!VRHolsterCustomizationMod.Alive(clip) || !VRHolsterCustomizationMod.Alive(game)) return;
+                game.PlayAudioClip(clip, s.Socket.transform.position, false, "default", false, -1f, -1f);
+                if (VRHolsterCustomizationMod.DebugOn) VRHolsterCustomizationMod.Log.Msg($"{s.Name}: {(into ? "holster" : "draw")} sound '{clip.name}' ({from})");
+            }
+            catch (Exception e) { VRHolsterCustomizationMod.Log.Warning($"holster sound: {e.Message}"); }
+        }
+
         // Pose in the frame of the socket's parent (the body), from the live settings.
         static void PinIn(Slot s)
         {
@@ -626,6 +729,7 @@ namespace VRHolsterCustomization
             if (!Free(s)) s = left ? slots[1] : slots[0];
             if (!Free(s)) return false;
             Put(s, item, kind);
+            Sound(s, item, true);
             HolsterLog.ModHolster(s.Name, Label(kind, item) + " (returned)", true);
             Save();
             return true;
@@ -815,6 +919,31 @@ namespace VRHolsterCustomization
         {
             if (!__result) return;
             try { if (Holsters.BlocksGameSocket(__instance, grabbable)) __result = false; } catch { }
+        }
+    }
+
+    // The game's guns and the bow have no clip on the shoulder socket or their HVRSocketable (Oct 3 2026 log: all empty for the
+    // AB15); their holster click is ANBGunSounds.HolsterIn / HolsterOut, played by the gun itself. Learn those clips from
+    // the real thing the first time a gun is holstered or drawn (the bow preferred), for Holsters.Sound.
+    [HarmonyLib.HarmonyPatch(typeof(Il2CppHurricaneVR.Framework.Weapons.ANBGunSounds), nameof(Il2CppHurricaneVR.Framework.Weapons.ANBGunSounds.PlayHolsterIn))]
+    static class GunHolsterInProbe
+    {
+        static void Postfix(Il2CppHurricaneVR.Framework.Weapons.ANBGunSounds __instance) { Holsters.LearnGunClips(__instance, true); }
+    }
+
+    [HarmonyLib.HarmonyPatch(typeof(Il2CppHurricaneVR.Framework.Weapons.ANBGunSounds), nameof(Il2CppHurricaneVR.Framework.Weapons.ANBGunSounds.PlayHolsterOut))]
+    static class GunHolsterOutProbe
+    {
+        static void Postfix(Il2CppHurricaneVR.Framework.Weapons.ANBGunSounds __instance) { Holsters.LearnGunClips(__instance, false); }
+    }
+
+    // Learns the clips named by HolsterInSound / HolsterOutSound the first time the game plays them.
+    [HarmonyLib.HarmonyPatch(typeof(Il2CppHurricaneVR.Framework.Core.Utils.SFXPlayer), nameof(Il2CppHurricaneVR.Framework.Core.Utils.SFXPlayer.PlaySFX))]
+    static class HeardClipPatch
+    {
+        static void Postfix(AudioClip clip)
+        {
+            try { if (VRHolsterCustomizationMod.Alive(clip)) Holsters.Heard(clip); } catch { }
         }
     }
 }

@@ -18,7 +18,8 @@ namespace VRHolsterCustomization
     //   TakeKnifeSlashDamage), it returns after exactly this long. Longer than the game's is fine.
     // - OnGroundSeconds: from the moment a released knife comes to rest (on the floor, stuck in a wall), it returns after
     //   exactly this long. While it is still flying the return is held back, so a long throw never returns in mid-air.
-    // 0 = the game's own timing. Nothing happens when the game's knife auto-return is off (timer not armed at release).
+    // Defaults are 1 s in an enemy and 5 s on the ground (the user's pick after playtesting; the game's own
+    // autoReturnKnifeAfter is 10 s, read from ANBGameLogic at runtime); 0 = leave the game's timer completely alone. Nothing happens when the game's knife auto-return is off (timer not armed at release).
     internal static class KnifeReturn
     {
         static MelonPreferences_Entry<float> InEnemy, OnGround;
@@ -32,8 +33,8 @@ namespace VRHolsterCustomization
         internal static void Init()
         {
             var c = MelonPreferences.CreateCategory("VRHolsters_KnifeReturn", "VR Holster Customization: knife return");
-            InEnemy = c.CreateEntry("InEnemySeconds", 0f, description: "How long a thrown knife or katana stays in an enemy (after it sticks in or kills one) before it returns, in seconds. 0 = the game's own timing.");
-            OnGround = c.CreateEntry("OnGroundSeconds", 0f, description: "How long a dropped or thrown knife or katana lies where it landed (floor, wall) before it returns, in seconds. 0 = the game's own timing.");
+            InEnemy = c.CreateEntry("InEnemySeconds", 1f, description: "How long a thrown knife or katana stays in an enemy (after it sticks in or kills one) before it returns, in seconds. The game's own delay is 10; 0 = leave the game's own timer alone.");
+            OnGround = c.CreateEntry("OnGroundSeconds", 5f, description: "How long a dropped or thrown knife or katana lies where it landed (floor, wall) before it returns, in seconds. The game's own delay is 10; 0 = leave the game's own timer alone.");
         }
 
         internal static void Scene()

@@ -244,6 +244,8 @@ Code paths (from the binary, `il2cpp_tools`):
   pistols" by making their position a setting.
 
 ### Later
+- **Custom holster sounds** (idea, Oct 3 2026): own click and sheath sounds for the katana and clubs on the back, instead of borrowing the
+  belt knife holster's clip (0.3.8). Needs sound files (embedded WAV via `AudioClip.Create`, or AudioImportLib; GAME_KNOWLEDGE §7).
 - Flat mode: the holster mod does nothing without a VR rig (check before touching sockets).
 - The template limit (a contract loaded before visiting The Range has no crowbar/clubs to put on your back) belongs to
   Weapon Framework, not here: the holster mod only waits for `Spawn` to succeed (`pending`).

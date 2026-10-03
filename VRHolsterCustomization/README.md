@@ -1,4 +1,6 @@
-# VR Holster Customization 0.3.7 (built, untested; 0.2.2 is the release candidate)
+# VR Holster Customization 0.3.8
+
+Tested: 0.3.8 (2026-10-03)
 
 This MelonLoader mod customizes the game's hip, knife, and back holsters and requires Mod Settings. It also owns the back slots for mod items, their grab and draw behavior, and their saved state. Weapon Framework uses its docking API for wall items and its back slot API for the test crowbar. Daredevil uses the back slot API for clubs.
 
@@ -47,7 +49,7 @@ and spawns one only if the original is gone. The user confirmed this fix in game
 
 ## Mod item back slots
 
-`[VRHolsters_BackSlots]` controls the pose, snap distance, and draw reach for non-game items registered through `Holsters.RegisterKind`. `SavedBackHolsters` is managed by the mod. Mods can call `Holsters.TryHolster(item)` when releasing an item, or `Holsters.Watch(item)` to have the mod watch for its release. `Holsters.Holds(item)` checks whether it is on the back.
+`[VRHolsters_BackSlots]` controls the pose, snap distance, and draw reach for non-game items registered through `Holsters.RegisterKind`. `HolsterSounds` (on) plays a sound when a mod weapon goes into or out of a back holster (0.3.8). `HolsterInSound` / `HolsterOutSound` name the game clip to play (defaults: the wall-pickup jangle `EQUIPTact_Equipment Metal Buckle Chain Jangle Latch Flap Belts 03_ESM_SG` in, the belt-draw `S_WEP_Knife_Attack_01` out; find other names with the [Sound Probe](../SoundProbe/README.md) mod); blank = a gun's holster click, never used for a blade. `SavedBackHolsters` is managed by the mod. Mods can call `Holsters.TryHolster(item)` when releasing an item, or `Holsters.Watch(item)` to have the mod watch for its release. `Holsters.Holds(item)` checks whether it is on the back.
 
 > **⚠ Daredevil depends on this API: change one, check the other.** Daredevil (the Billy Clubs) calls `RegisterKind`,
 > `TryHolster`, `Holds`, `ReturnHome` and `ForgetHome` (public since 0.3.7, for the club return in Daredevil 1.1.2).
@@ -58,7 +60,7 @@ and spawns one only if the original is gone. The user confirmed this fix in game
 
 These settings moved from `[WeaponFrameworkHolsters]`. Existing tuned values can be copied into the new category in `UserData/MelonPreferences.cfg` while the game is closed. The old category is no longer used.
 
-## Katana and knives on the back (0.3.0, untested)
+## Katana and knives on the back (0.3.0)
 
 The game's katanas and knives fit the two back slots too, one item per side, like a mod item.
 
@@ -86,11 +88,11 @@ The game's katanas and knives fit the two back slots too, one item per side, lik
   already in a knife holster, the back side stays empty), in a contract a new copy of the knife (0.3.4; contracts have
   no knife wall). In the main menu it waits for the next scene.
 
-## Knife return time (0.3.6, untested)
+## Knife return time (0.3.6)
 
 A thrown or dropped knife or katana returns to its holster (or back slot) on its own. `[VRHolsters_KnifeReturn]` sets
-how long it waits, in seconds, both live from Mod Settings. 0 = the game's own timing (with `DebugLog` the game's delay
-is logged at the first release).
+how long it waits, in seconds, both live from Mod Settings. Defaults: 1 s in an enemy, 5 s on the ground (the game's own delay is 10 s; with `DebugLog` it is
+logged at the first release). 0 = leave the game's timer alone.
 
 - `InEnemySeconds`: how long it stays in an enemy, counted from when it sticks in or kills one. 0.5 = back half a
   second after the hit; 5 = it stays a while.
