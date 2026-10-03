@@ -77,6 +77,7 @@ namespace BillyClubs
             public SwingTrack Sw;           // swing diagnostics while a hand holds it (SwingLog.cs)
             public bool InertiaSet;         // ClubInertiaScale has been applied to this club's rigidbody
             public List<Collider> Ghosted = new(); // solid colliders made triggers while holstered
+            public float LooseAt = -99f, RestAt = -99f, StillFor; // return timer (ClubReturn.cs)
         }
 
         class Slot
@@ -129,6 +130,7 @@ namespace BillyClubs
             InitMiddleGripPref(c);
             InitDamagePrefs(c);
             InitHolsterPrefs(c);
+            InitReturnPrefs(c);
             InitFollowPrefs(c);
             InitSwingLogPrefs(c);
             InitHandProbePrefs(c);
@@ -227,6 +229,7 @@ namespace BillyClubs
                 }
                 if (k.In != null && !held) KeepOnBelt(k);
                 k.Held = held;
+                WatchReturn(k, held);
             }
 
             UpdateDoorKicks();
@@ -289,10 +292,7 @@ namespace BillyClubs
                     if ((k.In != null && !k.In.Wall) || !Alive(k.Go) || IsHandHeld(k) || OnBack(k.Go)) continue;
                     var free = FreeSlot();
                     if (free == null) break;
-                    try { if (IsHeld(k.Grab)) k.Grab.ForceRelease(); } catch { }
-                    EndFlight(k, null, null); k.Held = false;
-                    if (k.In != null) { k.In.Club = null; k.In = null; }   // off the arsenal wall
-                    Holster(k, free, false);
+                    SendToSlot(k, free);
                     recalled++;
                 }
             }
@@ -400,6 +400,15 @@ namespace BillyClubs
             }
             Holster(k, best, true);
             SaveSlots();
+        }
+
+        // Bring a loose club (or one on the arsenal wall) back to a belt slot, from wherever it is: F8 and the return timer.
+        static void SendToSlot(Club k, Slot s)
+        {
+            try { if (IsHeld(k.Grab)) k.Grab.ForceRelease(); } catch { }
+            EndFlight(k, null, null); k.Held = false;
+            if (k.In != null) { k.In.Club = null; k.In = null; }   // off the arsenal wall
+            Holster(k, s, false);
         }
 
         static void Holster(Club k, Slot s, bool log)

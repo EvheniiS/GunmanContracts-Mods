@@ -1,4 +1,23 @@
-# Daredevil 1.1.1
+# Daredevil 1.1.2
+
+## 1.1.2 (built Oct 3 2026, untested)
+
+- **Optional club return (off by default).** Same idea as the game's knives, which fly back to their holster after
+  a while (and as VR Holster Customization's `[VRHolsters_KnifeReturn]` times them). Two settings in `[BillyClubs]`,
+  both on the Mod Settings board:
+  - `ReturnClubs` (`false`): a club you threw or dropped goes back to its belt holster by itself. Off = clubs stay
+    where they land, like in the show; F8 and the arsenal terminal still bring them back.
+  - `ReturnSeconds` (`10`): how long it lies where it landed first. Counted from the moment it comes to rest
+    (under 0.15 m/s for 0.2 s), so a long throw never returns in mid-air. A club that is still rolling 10 s after the
+    release counts as at rest.
+  - The timer stops while a hand holds the club, it is holstered (belt, wall, back) or in flight, and starts again
+    from zero at the next rest. The return is the F8 recall (`SendToSlot`), logged as
+    `club returned to the left holster (N s after it came to rest)`. With both belt slots taken it waits and asks again.
+  - Code: `BillyClubs/ClubReturn.cs`. Off costs one bool check per club per frame.
+  - A club drawn from a back holster returns to the belt, not the back (knives return to the back).
+- Test: turn `ReturnClubs` on, throw a club at a wall and watch it go back after `ReturnSeconds`; pick it up before
+  the time is up (nothing must happen); throw it down a stairwell or off a ledge; set `ReturnSeconds` to 0 and 30;
+  leave `ReturnClubs` off and confirm clubs stay put.
 
 ## 1.1.1 (built Oct 3 2026, untested)
 
