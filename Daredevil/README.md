@@ -1,4 +1,14 @@
-# Daredevil 1.1.0
+# Daredevil 1.1.1
+
+## 1.1.1 (built Oct 3 2026, untested)
+
+- **Holstered and wall-mounted clubs no longer collide with anything.** Their colliders turn into triggers while
+  holstered (the same thing the game's holsters do to guns: `HVRSocket.DisableCollision` -> `SetAllToTrigger`) and
+  turn solid again on the draw. The bow hand and enemies no longer bump into the clubs on your hips. Drawing still
+  works: the hand's grab bag sees trigger colliders. Needs **Grab Fix 1.1.2** (older Grab Fix skipped trigger
+  colliders in its holstered-item reach check, so a holstered club could not be drawn).
+- Test: draw and re-holster both clubs; draw with the bow in the other hand; walk into an enemy with full holsters;
+  throw a drawn club at a wall (it must bounce, not pass through).
 
 ## 1.1.0 release notes (release candidate on `dev`, tested Oct 2 2026; not on Nexus yet)
 

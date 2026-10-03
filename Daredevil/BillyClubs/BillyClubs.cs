@@ -76,6 +76,7 @@ namespace BillyClubs
             public bool HandOk;
             public SwingTrack Sw;           // swing diagnostics while a hand holds it (SwingLog.cs)
             public bool InertiaSet;         // ClubInertiaScale has been applied to this club's rigidbody
+            public List<Collider> Ghosted = new(); // solid colliders made triggers while holstered
         }
 
         class Slot
@@ -419,6 +420,7 @@ namespace BillyClubs
             if (ato != null) { ato.StopAllCoroutines(); ato.homingTarget = null; }
             PinToBelt(k.Go.transform, s.Anchor);
             IgnorePlayer(k);
+            SetGhost(k, true);
             k.In = s; s.Club = k; s.Full = true;
             if (log) Log.Msg($"club holstered ({s.Name})");
             if (Dbg && log)
@@ -452,6 +454,7 @@ namespace BillyClubs
             if (pull == null && (t.localPosition + t.localRotation * ClubCenter).sqrMagnitude > 0.0001f) pull = "moved on the belt";
             if (pull == null) return;
             PinToBelt(t, s.Anchor);
+            SetGhost(k, true); // the game's physics setup may have rebuilt or reset the colliders
             if (Dbg && pull != k.LastPull) Log.Msg($"club ({s.Name}) was {pull} by the game - put back on the belt");
             k.LastPull = pull;
         }
@@ -481,6 +484,7 @@ namespace BillyClubs
                 if (k.In == null) { if (k.Fly != null) EndFlight(k, null, null); if (Dbg) Log.Msg($"club '{k.Go.name}' grabbed by '{Name(grabber)}'"); return; }
                 var s = k.In;
                 k.Go.transform.SetParent(null, true);
+                SetGhost(k, false);
                 if (Alive(k.Rb))
                 {
                     k.Rb.isKinematic = false;
@@ -506,6 +510,34 @@ namespace BillyClubs
                 foreach (var c in mine) { Physics.IgnoreCollision(c, pc, true); pairs++; }
             }
             if (Dbg) Log.Msg($"club ignores {pairs / Math.Max(1, mine.Length)} player colliders");
+        }
+
+        // A holstered or wall-mounted club collides with nothing, like the game's socketed guns
+        // (HVRSocket.DisableCollision -> HVRGrabbable.SetAllToTrigger). Triggers still reach the
+        // hand's grab bag, so the draw works. Drawn again: the same colliders turn solid.
+        static void SetGhost(Club k, bool ghost)
+        {
+            if (!Alive(k.Go)) return;
+            if (!ghost)
+            {
+                foreach (var c in k.Ghosted) if (Alive(c)) c.isTrigger = false;
+                k.Ghosted.Clear();
+                // Belt-and-braces: re-assert the player ignore pairs on the solid colliders.
+                k.IgnoresPlayer = false;
+                IgnorePlayer(k);
+                return;
+            }
+            int n = 0;
+            foreach (var c in k.Go.GetComponentsInChildren<Collider>(true))
+            {
+                if (c.isTrigger) continue;
+                var mesh = c.TryCast<MeshCollider>();
+                if (Alive(mesh) && !mesh.convex) continue; // a concave mesh can't be a trigger
+                c.isTrigger = true;
+                k.Ghosted.Add(c);
+                n++;
+            }
+            if (Dbg && n > 0) Log.Msg($"club '{k.Go.name}': {n} collider(s) made non-solid while holstered");
         }
 
         static bool IsClubCollider(Collider c)
