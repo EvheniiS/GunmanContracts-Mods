@@ -55,7 +55,8 @@ namespace ModSettings
 
         static readonly Color Bg = new(0.07f, 0.07f, 0.08f), BtnCol = new(0.22f, 0.22f, 0.25f), LabelCol = new(0.13f, 0.13f, 0.15f),
             SelCol = new(0.32f, 0.08f, 0.08f), FlashCol = new(0.75f, 0.2f, 0.2f), OnCol = new(0.12f, 0.42f, 0.16f),
-            OffCol = new(0.32f, 0.1f, 0.1f), Changed = new(1f, 0.82f, 0.35f), Grey = new(0.6f, 0.6f, 0.6f);
+            OffCol = new(0.32f, 0.1f, 0.1f), Changed = new(1f, 0.82f, 0.35f), Grey = new(0.6f, 0.6f, 0.6f),
+            NewDef = new(0.45f, 0.85f, 1f); // a default changed by a mod update
 
         public static bool IsOpen => Alive(root) && root.activeSelf;
 
@@ -217,9 +218,12 @@ namespace ModSettings
                 resets[r].Go.SetActive(s != null);
                 for (int k = 0; k < 4; k++) steps[r, k].Go.SetActive(false);
                 if (s == null) continue;
+                if (pg.Updates) { UpdateRow(r, s); continue; }
 
+                bool newDefault = DefaultChanges.Find(s.Entry)?.Waiting == true;
                 labels[r].Text.SetIfChanged(s.Name + (s.Restart ? " *" : "") +
-                    $"\n<size=65%>{(s.IsDefault ? "DEFAULT" : "CHANGED")} · default: {s.Entry.GetDefaultValueAsString()}</size>");
+                    $"\n<size=65%>{(s.IsDefault ? "DEFAULT" : "CHANGED")} · default: {s.Entry.GetDefaultValueAsString()}" +
+                    (newDefault ? " <color=#73D9FF>(new)</color>" : "") + "</size>");
                 labels[r].Text.color = s.IsDefault ? Color.white : Changed;
                 SetBase(labels[r], s == pg.Selected ? SelCol : LabelCol);
                 resets[r].Text.SetIfChanged(s.IsDefault ? "Default" : s.CanReset ? "Reset" : "Managed");
@@ -227,14 +231,8 @@ namespace ModSettings
                 resets[r].Text.color = s.IsDefault ? Grey : Changed;
                 SetBase(resets[r], s.IsDefault ? LabelCol : BtnCol);
 
-                var v = values[r];
-                v.Text.SetIfChanged(s.ValueText());
-                v.Text.color = s.Kind == Kind.ReadOnly ? Grey : Color.white;
-                v.Interactive = s.Kind == Kind.Bool;
-                v.Quad.SetActive(s.Kind == Kind.Bool || s.Kind == Kind.Color);
-                if (s.Kind == Kind.Bool) SetBase(v, (bool)s.Entry.BoxedValue ? OnCol : OffCol);
-                else if (s.Kind == Kind.Color && ColorUtility.TryParseHtmlString(s.ValueText(), out var col)) SetBase(v, col);
-                else if (s.Kind == Kind.Color) SetBase(v, LabelCol);
+                ShowValue(values[r], s);
+                values[r].Interactive = s.Kind == Kind.Bool;
 
                 switch (s.Kind)
                 {
@@ -256,14 +254,45 @@ namespace ModSettings
             down.Go.SetActive(pg.Scroll < maxScroll);
             var sel = pg.Selected;
             reset.Go.SetActive(true);
+            reset.Text.SetIfChanged(pg.Updates ? "Use all new" : "Reset section");
             reset.Interactive = Pages.CanResetSection;
             reset.Text.color = reset.Interactive ? Color.white : Grey;
             SetBase(reset, reset.Interactive ? BtnCol : LabelCol);
-            desc.Text.SetIfChanged(sel == null
+            desc.Text.SetIfChanged(pg.Updates ? DefaultChanges.Help : sel == null
                 ? "Point + trigger or poke to adjust. Grip the top bar to move / tilt this board. Yellow = changed; Reset restores that row. Select a name for help. * = restart required."
                 : $"<b>{sel.Name}</b> = {sel.ValueText()}  <color=#999999>(default {sel.Entry.GetDefaultValueAsString()})</color>\n{sel.Entry.Description}" +
                   (sel.Restart ? "\n<color=#FFD060>Restart the game to apply.</color>" : "") +
                   (sel.Kind == Kind.ReadOnly ? "\n<color=#999999>Edit this one in UserData/MelonPreferences.cfg.</color>" : ""));
+        }
+
+        static void ShowValue(Button v, Setting s)
+        {
+            v.Text.SetIfChanged(s.ValueText());
+            v.Text.color = s.Kind == Kind.ReadOnly ? Grey : Color.white;
+            v.Quad.SetActive(s.Kind == Kind.Bool || s.Kind == Kind.Color);
+            if (s.Kind == Kind.Bool) SetBase(v, (bool)s.Entry.BoxedValue ? OnCol : OffCol);
+            else if (s.Kind == Kind.Color && ColorUtility.TryParseHtmlString(s.ValueText(), out var col)) SetBase(v, col);
+            else if (s.Kind == Kind.Color) SetBase(v, LabelCol);
+        }
+
+        // A row of the Updated defaults page: "Use new" + "Keep" when your own value was kept, "Revert" when it moved
+        // to the new default automatically. The value is shown, not stepped: press the name to adjust it in its section.
+        static void UpdateRow(int r, Setting s)
+        {
+            var it = DefaultChanges.Find(s.Entry);
+            bool waiting = it != null && it.Waiting;
+            string state = it == null ? "" : !waiting ? it.Done : it.Auto ? "now the new default" : "yours kept";
+            labels[r].Text.SetIfChanged($"{Page.CategoryTitle(s.Entry.Category)} · {s.Name}{(s.Restart ? " *" : "")}" +
+                $"\n<size=65%>default {it?.OldDefault} -> {s.Entry.GetDefaultValueAsString()} · {state}</size>");
+            labels[r].Text.color = waiting ? NewDef : Grey;
+            SetBase(labels[r], LabelCol);
+            ShowValue(values[r], s);
+            values[r].Interactive = false;
+            resets[r].Text.SetIfChanged(!waiting ? "Done" : it.Auto ? "Revert" : "Use new");
+            resets[r].Interactive = waiting;
+            resets[r].Text.color = waiting ? NewDef : Grey;
+            SetBase(resets[r], waiting ? BtnCol : LabelCol);
+            if (waiting && !it.Auto) SetStep(r, 3, "Keep");
         }
 
         // Rows, footer and description; the rest of Refresh sets the per-row parts when they are shown.
@@ -336,6 +365,7 @@ namespace ModSettings
             var pg = Pages.Cur;
             int idx = pg.Scroll * Rows + r;
             if (idx >= pg.Settings.Count) return;
+            if (pg.Updates) { if (dir == 2) Status(Pages.Decide(DefaultChanges.Find(pg.Settings[idx].Entry), "keep")); Refresh(); return; }
             Status(Pages.Change(pg.Settings[idx], dir));
             Refresh();
         }
@@ -344,7 +374,9 @@ namespace ModSettings
         {
             var pg = Pages.Cur;
             int idx = pg.Scroll * Rows + r;
-            if (idx < pg.Settings.Count) pg.Selected = pg.Selected == pg.Settings[idx] ? null : pg.Settings[idx];
+            if (idx >= pg.Settings.Count) return;
+            if (pg.Updates) Pages.JumpTo(pg.Settings[idx], Rows);
+            else pg.Selected = pg.Selected == pg.Settings[idx] ? null : pg.Settings[idx];
             Refresh();
         }
 
@@ -391,8 +423,11 @@ namespace ModSettings
                 values[r] = Make(new Vector2(0.055f, y), new Vector2(0.09f, Btn), "", 0.16f, BtnCol, () => Step(row, 1));
                 resets[r] = Make(new Vector2(0.28f, y), new Vector2(0.12f, Btn), "", 0.15f, BtnCol, () =>
                 {
-                    int idx = Pages.Cur.Scroll * Rows + row;
-                    if (idx < Pages.Cur.Settings.Count) Status(Pages.Reset(Pages.Cur.Settings[idx]));
+                    var pg = Pages.Cur;
+                    int idx = pg.Scroll * Rows + row;
+                    if (idx >= pg.Settings.Count) return;
+                    var it = pg.Updates ? DefaultChanges.Find(pg.Settings[idx].Entry) : null;
+                    Status(pg.Updates ? Pages.Decide(it, it?.Auto == true ? "revert" : "use new") : Pages.Reset(pg.Settings[idx]));
                     Refresh();
                 });
                 for (int k = 0; k < 4; k++)

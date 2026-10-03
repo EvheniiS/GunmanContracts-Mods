@@ -54,6 +54,18 @@ Check(!Ray(0, 0, float.NaN, 0, 0, 1), "nonfinite tracking rejected");
 Check(PointerGeometry.Hit(-.2f, 0, -1, .2f, 0, 1, 1, .72f, .56f, out var hx, out var hy)
       && Math.Abs(hx) < .00001f && hy == 0, "angled ray intersects at expected row");
 
+Check(DefaultRecord.Decide(null, "1", "3") == DefaultChange.Record, "unknown setting is only recorded");
+Check(DefaultRecord.Decide("1", "1", "3") == DefaultChange.Same, "same default: nothing to do");
+Check(DefaultRecord.Decide("3", "1", "3") == DefaultChange.AutoUpdate, "untouched old default moves to the new one");
+Check(DefaultRecord.Decide("3", "1", "1") == DefaultChange.AlreadyNew, "value already the new default");
+Check(DefaultRecord.Decide("3", "1", "2") == DefaultChange.Ask, "customised value asks");
+var recD = new Dictionary<string, string> { ["BillyClubs.ChestStunSeconds"] = "3", ["X.Text"] = "a\tb\\c\nd" };
+var recV = new Dictionary<string, string> { ["Daredevil"] = "1.1.0" };
+var backD = new Dictionary<string, string>(); var backV = new Dictionary<string, string>();
+DefaultRecord.Parse(DefaultRecord.Format(recD, recV), backD, backV);
+Check(backD.Count == 2 && backD["X.Text"] == "a\tb\\c\nd" && backD["BillyClubs.ChestStunSeconds"] == "3", "record round-trips defaults");
+Check(backV.Count == 1 && backV["Daredevil"] == "1.1.0", "record round-trips versions");
+
 var hold = new VRHolsterCustomization.AdjustmentHold();
 Check(!hold.TryStart(true, true, 0), "buttons already held when enabled cannot arm");
 Check(!hold.TryStart(false, true, 0), "release arms without starting");

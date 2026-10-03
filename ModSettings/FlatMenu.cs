@@ -149,10 +149,12 @@ namespace ModSettings
                 if (idx >= pg.Settings.Count) continue;
                 var s = pg.Settings[idx];
                 float x = x0;
+                if (pg.Updates) { UpdateRow(s, x0, y, inner, nameW, valW, stepW, resetW, row, gap); continue; }
 
                 var bg = s == pg.Selected ? new Color(0.45f, 0.1f, 0.1f) : new Color(0.2f, 0.2f, 0.23f);
                 var txt = s.IsDefault ? Color.white : new Color(1f, 0.82f, 0.35f);
-                if (Btn(new Rect(x, y, nameW, row), " " + s.Name + (s.Restart ? " *" : "") + (s.IsDefault ? " [default]" : " [changed]"), bg, txt, left: true))
+                bool newDefault = DefaultChanges.Find(s.Entry)?.Waiting == true;
+                if (Btn(new Rect(x, y, nameW, row), " " + s.Name + (s.Restart ? " *" : "") + (s.IsDefault ? " [default]" : " [changed]") + (newDefault ? " [new default]" : ""), bg, txt, left: true))
                     pg.Selected = pg.Selected == s ? null : s;
                 x += nameW + gap;
 
@@ -203,18 +205,39 @@ namespace ModSettings
             var sel = pg.Selected;
             bool wasEnabled = GUI.enabled;
             GUI.enabled = wasEnabled && Pages.CanResetSection;
-            if (Btn(new Rect(x0 + inner - 1.8f * bw, y, 1.8f * bw, row), "Reset section"))
+            if (Btn(new Rect(x0 + inner - 1.8f * bw, y, 1.8f * bw, row), pg.Updates ? "Use all new" : "Reset section"))
                 Status(Pages.ResetSection());
             GUI.enabled = wasEnabled;
             y += row + 2 * gap;
 
-            string text = sel == null
+            string text = pg.Updates ? DefaultChanges.Help : sel == null
                 ? "Click a setting's name to read what it does. Changes apply at once and are saved. * = needs a game restart. Mouse wheel scrolls. Ctrl+"
                   + ModSettingsMod.OpenKeyName + " closes."
                 : $"{sel.Name} = {sel.ValueText()}   (default {sel.Entry.GetDefaultValueAsString()})\n{sel.Entry.Description}" +
                   (sel.Restart ? "\nRestart the game to apply." : "") +
                   (sel.Kind == Kind.ReadOnly ? "\nEdit this one in UserData/MelonPreferences.cfg." : "");
             GUI.Label(new Rect(x0, y, inner, win.yMax - pad - y), text, desc);
+        }
+
+        // A row of the Updated defaults page (see Panel.UpdateRow): name (opens its section) | value | Keep | Use new / Revert.
+        static void UpdateRow(Setting s, float x0, float y, float inner, float nameW, float valW, float stepW, float resetW, float row, float gap)
+        {
+            var it = DefaultChanges.Find(s.Entry);
+            bool waiting = it != null && it.Waiting;
+            var blue = new Color(0.45f, 0.85f, 1f);
+            string state = it == null ? "" : !waiting ? it.Done : it.Auto ? "now the new default" : "yours kept";
+            if (Btn(new Rect(x0, y, nameW, row), $" {Page.CategoryTitle(s.Entry.Category)} · {s.Name}: {it?.OldDefault} -> {s.Entry.GetDefaultValueAsString()} ({state})",
+                    new Color(0.2f, 0.2f, 0.23f), waiting ? blue : Color.gray, left: true))
+                Pages.JumpTo(s, Rows);
+            float x = x0 + nameW + gap;
+            var vr = new Rect(x, y, valW, row);
+            if (s.Kind == Kind.Color && ColorUtility.TryParseHtmlString(s.ValueText(), out var col)) Fill(vr, col);
+            GUI.Label(vr, s.ValueText(), label);
+            x += valW + gap;
+            if (waiting && !it.Auto && Btn(new Rect(x + 3 * (stepW + gap), y, stepW, row), "Keep")) Status(Pages.Decide(it, "keep"));
+            var rr = new Rect(x0 + inner - resetW, y, resetW, row);
+            if (!waiting) GUI.Label(rr, "Done", label);
+            else if (Btn(rr, it.Auto ? "Revert" : "Use new", fg: blue)) Status(Pages.Decide(it, it.Auto ? "revert" : "use new"));
         }
 
         // Every section as a button, filled column by column; yellow = has changed values, red = the current one.

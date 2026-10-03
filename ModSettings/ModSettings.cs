@@ -9,7 +9,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.XR;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(ModSettings.ModSettingsMod), "Mod Settings", "1.1.0", "Evgeeso")]
+[assembly: MelonInfo(typeof(ModSettings.ModSettingsMod), "Mod Settings", "1.2.0", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace ModSettings
@@ -46,6 +46,9 @@ namespace ModSettings
             DebugLog = c.CreateEntry("DebugLog", false, description: "Log opening/closing and which fingertips were found; write the phone's home-screen layout to UserData/ModSettings_phone.txt once.");
             Log.Msg($"loaded - open with Ctrl+{OpenKey.Value}{(PhoneTile.Value ? " or the Mod Settings tile on the phone" : "")}");
         }
+
+        // Every mod has made its entries by now: move untouched settings to defaults that a mod update changed.
+        public override void OnLateInitializeMelon() => DefaultChanges.Scan();
 
         internal static string OpenKeyName => OpenKey.Value;
 

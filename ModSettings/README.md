@@ -1,4 +1,4 @@
-# Mod Settings 1.1.0
+# Mod Settings 1.2.0
 
 An in-VR settings board for every MelonLoader mod in Gunman Contracts, with a mouse-driven on-screen version for
 flat mode. It reads all categories from
@@ -28,6 +28,20 @@ flat mode. It reads all categories from
   names mark changed values. Mod-managed saved state remains protected from resetting; ordinary read-only text can
   be reset to its declared default. `*` = the description says it needs a game restart.
 - The VR board is now **72 × 56 cm** at scale 1 (previously 48 × 44), with larger controls and a dedicated reset column.
+
+### Updated defaults (mod updates)
+
+MelonLoader saves every value to the cfg, so a mod update that changes a default would never reach you. Mod Settings
+remembers each setting's default in `UserData/ModSettings_defaults.txt` (delete it to start over). When an update
+changes one:
+
+- if you had left it at the old default, it moves to the new one at start (**Revert** undoes that);
+- if you had changed it, your value stays until you press **Use new** or **Keep**.
+
+Both are listed on the **Updated defaults** page, which comes first and which the board opens on while a decision is
+waiting. Press a name to adjust it in its own section; **Use all new** takes the new default for every waiting row.
+The first run only records the defaults, so changes are shown from the next mod update on. Settings the mod manages
+itself are skipped.
 
 ### Flat mode (no headset)
 
