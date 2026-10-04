@@ -42,7 +42,7 @@ Changes update the mod's MelonPreferences entry immediately and are saved about 
 [b]2.[/b] Start the game once, then quit so MelonLoader can prepare its files.
 [b]3.[/b] Extract the ZIP's [b]Mods[/b] folder into the game folder and merge/replace when prompted.
 The DLL must be at [i]Gunman Contracts - Stand Alone\Mods\ModSettings.dll[/i].
-[b]4.[/b] Start the game. The console should show [b]Mod Settings v1.3.0[/b] among the loaded mods.
+[b]4.[/b] Start the game. The console should show [b]Mod Settings v1.3.1[/b] among the loaded mods.
 
 [b]Troubleshooting[/b]
 [list]
@@ -58,14 +58,18 @@ Under [b]Mod Settings[/b] on the board, or [b][ModSettings][/b] in [i]UserData\M
 [code]
 PhoneTile = true       show the phone tile
 OpenKey = "M"          Ctrl + this key opens/closes the menu
-PanelDistance = 0.4    opening distance in metres
-PanelScale = 1         board size: 72 × 56 cm at 1; applies on next opening
+PanelDistance = 1      opening distance in metres
+PanelScale = 1.6       board size: 72 × 56 cm at 1 (115 × 90 cm at 1.6); applies on next opening
 DebugLog = false       menu diagnostics and phone-layout logging
 [/code]
 [/spoiler]
 
 [size=4][b]Changelog[/b][/size]
 [spoiler]
+[b]1.3.1[/b]
+[list]
+[*]The board now opens bigger and farther away by default: PanelScale 1.6 (was 1) and PanelDistance 1 m (was 0.4). If you never changed these, the update popup offers the new values.
+[/list]
 [b]1.3.0[/b]
 [list]
 [*]After a mod update changes defaults, a small popup names the mod and asks once: Use new, Keep mine, Review or Later.

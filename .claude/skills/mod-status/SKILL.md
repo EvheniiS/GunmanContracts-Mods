@@ -16,6 +16,7 @@ Tested: 1.1.0 (2026-10-02)
 - Format: `Tested: <version> (<yyyy-mm-dd>)` (date optional) or `Tested: none`. First 40 lines of `<Mod>/README.md`.
 - Meaning: the **newest version the user actually played**. Not built, not installed, not "should work".
 - Bumping the source version automatically makes a mod "untested" (Tested no longer equals source). Nothing to edit until the user plays it.
+- **Exception: default-only patches (settled Oct 4 2026).** A release whose only change is the default value of existing settings (no logic, no new settings) does NOT need a new play test. Bump the version, set `Tested:` to the new version with today's date, and note "defaults only" in the changelog. Re-test only when behaviour changes (code paths, new or removed settings, fixes). Example: Mod Settings 1.3.1 (PanelScale 1.6, PanelDistance 1).
 - Free-text status in the README body ("built, untested", per-feature notes) stays as human context; the `Tested:` line is what the scripts read.
 
 ## Recording a result (on `dev`, any time)

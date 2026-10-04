@@ -1,6 +1,6 @@
-# Mod Settings 1.3.0
+# Mod Settings 1.3.1
 
-Tested: 1.3.0 (2026-10-04)
+Tested: 1.3.1 (2026-10-04)
 
 An in-VR settings board for every MelonLoader mod in Gunman Contracts, with a mouse-driven on-screen version for
 flat mode. It reads all categories from
@@ -9,7 +9,7 @@ flat mode. It reads all categories from
 ## Use
 
 - **Open / close:** take out the phone and press the **Mod Settings** tile in the middle row (an empty slot), or press
-  **Ctrl+M**. The board opens `PanelDistance` in front of your eyes (default 40 cm), above the phone, and moves with you when you move with the
+  **Ctrl+M**. The board opens `PanelDistance` in front of your eyes (default 1 m), above the phone, and moves with you when you move with the
   stick. It closes on X, on the tile again, on a
   scene load, or if you walk 5 m away.
 - **Move / tilt:** grip the top bar with an empty hand, nearby or with the laser aimed at it. Move and rotate your
@@ -76,8 +76,8 @@ clubs/holsters are built (`Mass`, `ThrowSearchDistance`, `Length`, `Radius`, `Bo
 
 ## Settings (`[ModSettings]`)
 
-`PhoneTile` (true), `OpenKey` (`M`, with Ctrl), `PanelDistance` (0.4 m; fingertips reach up to ~0.6 m, past
-that use the laser, which reaches 4 m, and raise `PanelScale` if the text gets small), `PanelScale` (1), `DebugLog`.
+`PhoneTile` (true), `OpenKey` (`M`, with Ctrl), `PanelDistance` (1 m; fingertips reach up to ~0.6 m, past
+that use the laser, which reaches 4 m, and raise `PanelScale` if the text gets small), `PanelScale` (1.6), `DebugLog`.
 With `DebugLog`, the phone's home-screen layout is written once to `UserData/ModSettings_phone.txt`.
 
 0.2.0 replaced the 0.1.0 right-pocket grip gesture (too hard to find: grips landed 19-27 cm from it) with the phone

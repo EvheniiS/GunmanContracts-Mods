@@ -38,7 +38,7 @@
 
 - **Death Details** (`DeathDetails/`, was Close Eyes; 0.7.1 release candidate Oct 2 2026, tested: dead enemies close their eyes, mouth slightly parted (`JawOpen` 0.1), writhing ("twitcher") enemies keep their pain face until they die and a melee head hit finishes them with the game's BluntHitHead sound (sound findings: `GAME_KNOWLEDGE.md` §7); the game's face animator + `ANBBlendShapeSync` rewrite face shapes every frame, so the mod freezes corpse faces; settings section `[DeathDetails]`).
 
-- **Melee Unlocks** (`MeleeUnlocks/`, 0.2.1 TESTED Oct 3 2026 (Katana2 unlocked + saved, dual wield works; `All` untested); 0.1.0 hooked the wrong method, 0.2.0 hit `makePurchase`'s `gameStarted` gate, both did nothing: unlocks knives on The Range wall the way the last kill does; default `Katana2` = the double katana, which no contract places; `All` = every knife, a selector on the board; writes the game save).
+- **Melee Unlocks** (`MeleeUnlocks/`, 0.2.1 TESTED Oct 3-4 2026 (Katana2 unlocked + saved, dual wield works; `All` unlocks all 10 wall knives, Oct 4); 0.1.0 hooked the wrong method, 0.2.0 hit `makePurchase`'s `gameStarted` gate, both did nothing: unlocks knives on The Range wall the way the last kill does; default `Katana2` = the double katana, which no contract places; `All` = every knife, a selector on the board; writes the game save).
 
 - **Flat mode:** per-mod audit in `ROADMAP.md` §4 (Knee Shot Stun, Enemy Awareness Fix, Radar Sense most likely already work flat, since flat guns wrap the HVR guns).
 

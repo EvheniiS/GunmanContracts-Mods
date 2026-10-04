@@ -1,0 +1,67 @@
+[size=5][b]Melee Unlocks[/b][/size]
+
+Unlocks knives on The Range knife wall as if you had made the kills. By default it unlocks the [b]double katana[/b], the second katana for [b]dual wielding[/b] that no contract ever places. One setting unlocks [b]every knife[/b] on the wall instead, and the unlocks are [b]saved in your game save[/b].
+
+[size=4][b]What it does[/b][/size]
+[list]
+[*][b]Default: the double katana.[/b] The wall has a spot for a second katana, but no contract map places one, so you can't get it by playing. The mod unlocks it, and you can wield a katana in each hand.
+[*][b]All:[/b] every knife on the wall: both katanas, the combat knives, the kitchen knives and the kitchen pens. No kill counts needed.
+[*][b]Off:[/b] the mod does nothing.
+[*][b]Your own list:[/b] unlock only the knives you pick (see Settings).
+[/list]
+It uses the game's own unlock call, the same one a knife triggers when its kill counter reaches zero, so the knife shows up on the wall, in the loadout and in the contract holsters like any earned knife. Change the setting while you are in The Range and the wall refills at once, no restart.
+
+[b]The unlocks stay in your game save and remain after you remove the mod.[/b] The Steam [i]Knifecollector[/i] stat is not raised. Everything else about the knives is the game's own code.
+
+[size=4][b]Install[/b][/size]
+Takes about 5 minutes the first time. Steps 1 and 2 are needed only once, for all MelonLoader mods.
+
+[b]Where is my game folder?[/b] In Steam, right-click [i]Gunman Contracts - Stand Alone[/i] →
+[i]Manage[/i] → [i]Browse local files[/i]. It's the folder with [i]GunmanContracts.exe[/i] in it.
+
+[b]1. Install MelonLoader[/b] (the mod loader)
+Download the installer from [url=https://github.com/LavaGang/MelonLoader/releases]MelonLoader releases[/url],
+run it, pick [i]GunmanContracts.exe[/i] in your game folder, and install [b]version 0.7.3 or newer[/b].
+[b]Version 0.6 does not work[/b] with this game.
+
+[b]2. Start the game once[/b], then quit.
+A black console window opens next to the game: that's MelonLoader working. The first start takes
+a minute or two, later ones are normal.
+
+[b]3. Add the mod[/b]
+Open the downloaded zip. Inside is a folder called [b]Mods[/b]. Drag that [b]Mods[/b] folder into your
+game folder, and if Windows asks, choose to replace / merge.
+You should end up with: [i]Gunman Contracts - Stand Alone\Mods\MeleeUnlocks.dll[/i]
+
+[b]4. Check it works[/b]
+Start the game. The MelonLoader console lists [b]Melee Unlocks v0.2.1[/b] among the loaded mods.
+Then open The Range: the double katana is on the knife wall.
+
+[size=4][b]Not working?[/b][/size]
+[spoiler]
+[list]
+[*][b]The mod isn't in the console list:[/b] check the file isn't at [i]Mods\Mods\MeleeUnlocks.dll[/i] (a folder
+too deep). Move it up so it sits directly in [i]Mods[/i].
+[*][b]No console window at all:[/b] MelonLoader isn't installed on this game. Repeat step 1 and make
+sure you picked [i]GunmanContracts.exe[/i].
+[*][b]Errors right at startup:[/b] you likely have MelonLoader 0.6. Install 0.7.3 or newer.
+[*][b]The knife isn't on the wall:[/b] the wall is checked when The Range loads. Reload The Range, or change the Unlock setting while you are there to refill it.
+[/list]
+[/spoiler]
+
+[size=4][b]Settings (optional)[/b][/size]
+[spoiler]
+After the first launch, edit [i]UserData\MelonPreferences.cfg[/i], section [b][MeleeUnlocks][/b]:
+[code]
+Unlock   = Katana2   Which knives to unlock: Katana2 (the double katana), All (every knife on the wall) or Off.
+[/code]
+Instead of one of those words you can give a comma-separated list of knife IDs, for example [i]Katana, Katana2, KitchenKnife_v1[/i]. The IDs are [i]Katana[/i], [i]Katana2[/i], [i]CombatKnife_v1[/i] to [i]v4[/i], [i]KitchenKnife_v1[/i] to [i]v4[/i], [i]KitchenPen_v1[/i] and [i]KitchenPen_v2[/i] (combat v2 and v3 are free in the game anyway).
+Or change it live in-VR with [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28][b]Mod Settings[/b][/url] (optional), where it is a selector — no restart, no text editor.
+[/spoiler]
+
+[size=4][b]Uninstall[/b][/size]
+Delete [i]Mods\MeleeUnlocks.dll[/i]. Knives it unlocked stay unlocked, because they were written to your save.
+
+[size=4][b]Source[/b][/size]
+[url=https://github.com/EvheniiS/GunmanContracts-Mods]GitHub[/url] (MIT). Tested on game version 0.3.1.1,
+MelonLoader 0.7.3.

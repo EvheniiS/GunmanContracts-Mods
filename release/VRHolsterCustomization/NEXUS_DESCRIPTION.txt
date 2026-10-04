@@ -1,6 +1,6 @@
 [size=5][b]VR Holster Customization[/b][/size]
 
-Move the game's [b]hip, knife and back holsters[/b] to suit your reach. [b]Grab an empty holster's position point with grip + trigger, then drag the holster by hand[/b]—even out in front of you. Fine-tune positions live in Mod Settings. Keep the [b]original game colours[/b] or choose another colour.
+Move the game's [b]hip, knife and back holsters[/b] to suit your reach. [b]Grab an empty holster's position point with grip + trigger, then drag the holster by hand[/b]—even out in front of you. Fine-tune positions live in Mod Settings. Keep the [b]original game colours[/b] or choose another colour. And [b]carry a katana or knife on your back[/b]: it hangs on your shoulder, comes out with a grip press, and flies back to your back after you throw it.
 
 [b]Required:[/b] [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28]Mod Settings[/url] — install the latest version. This is a hard dependency, not an optional menu.
 
@@ -26,23 +26,33 @@ The actual sockets move with their highlights, so the grab positions follow your
 
 Grip Mod Settings' top bar to move or tilt the board near your holsters, then point and press trigger to adjust from a distance. [b]Reset[/b] beside a position restores that parameter's declared default.
 
+[size=4][b]Katana and knives on your back[/b][/size]
+The game's [b]katanas and knives[/b] fit the two back slots, one blade per side.
+[list]
+[*][b]Put one away:[/b] take a blade in your hand, bring it over a shoulder (your hand buzzes over a free slot) and let go slowly. A fast release is a throw and stays a throw.
+[*][b]Draw it:[/b] reach over the shoulder and press grip, the same way as any back-slot item.
+[*][b]How it hangs:[/b] by its grip end with the flat of the blade against your back. Tilt, lean, spin and how far the grip hangs are adjustable in Mod Settings (BladeTiltDeg, BladeLeanDeg, BladeSpinDeg, BladeGripCm). Position and distance are shared with the other back-slot items.
+[*][b]Solid only when drawn:[/b] a blade on your back is non-solid, so it never catches on walls or enemies, and it is solid again the moment you draw it.
+[*][b]It comes back:[/b] a blade you drew from your back returns to your back after a throw or a drop, to its own side if free, otherwise to the other side. A blade from the belt holster or the wall uses the game's own return.
+[*][b]How fast it returns:[/b] a thrown or dropped knife or katana returns on its own. By default it comes back 1 second after it sticks in or kills an enemy and 5 seconds after it lands on the floor or a wall (the game's own delay is 10). Change both in Mod Settings (InEnemySeconds, OnGroundSeconds); 0 leaves the game's timer alone.
+[*][b]Carried into contracts:[/b] the blades on your back are saved in The Range and come with you into a contract, and are restored after a checkpoint retry.
+[*][b]Sounds:[/b] holstering and drawing in a back slot plays a holster sound (HolsterSounds, on by default). HolsterInSound and HolsterOutSound let you pick other game sounds.
+[*]Choose which blades fit with [b]BackBlades[/b]: [i]All[/i] (default), [i]Katana[/i] (katanas only) or [i]Off[/i]. Arrows and pens are never accepted.
+[/list]
+
 [size=4][b]Holster colours[/b][/size]
 The [b]Color[/b] setting defaults to [b]Default[/b], which preserves the game's original normal and hover colours. It does not use your personal saved colour as its default.
 Cycle colours in Mod Settings, or enter a custom [b]#RRGGBB[/b] value in the cfg. Reset returns to original game colours. Existing red/custom configurations stay custom until you reset them.
 
 [size=4][b]Loadout saving[/b][/size]
-Placing a gun or knife in a holster [b]in The Range[/b] schedules a loadout save about a second later. Contract holster activity does not trigger this automatic save, so putting a knife away while a pistol is drawn does not overwrite your prepared loadout with an empty pistol slot. Registered mod-item back slots also save in The Range and restore their prepared items after a same-scene checkpoint retry, including Weapon Framework's crowbar.
+Placing a gun or knife in a holster [b]in The Range[/b] schedules a loadout save about a second later. Contract holster activity does not trigger this automatic save, so putting a knife away while a pistol is drawn does not overwrite your prepared loadout with an empty pistol slot. Blades and registered mod-item back slots also save in The Range and restore their prepared items after a same-scene checkpoint retry, including Weapon Framework's crowbar.
 
 [size=4][b]Install[/b][/size]
 [b]Find the game folder:[/b] Steam → right-click [i]Gunman Contracts - Stand Alone[/i] → [i]Manage[/i] → [i]Browse local files[/i].
 
 [b]1.[/b] Install [url=https://github.com/LavaGang/MelonLoader/releases]MelonLoader[/url] for [i]GunmanContracts.exe[/i]. Tested with [b]0.7.3[/b]; 0.6.x does not work.
 [b]2.[/b] Start the game once, then quit.
-[b]3.[/b] Choose [b]one[/b] download:
-[list]
-[*][b]Standalone:[/b] contains VR Holster Customization only. Install [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28]the latest Mod Settings[/url] separately.
-[*][b]With Mod Settings:[/b] includes both required DLLs for a new installation. If you already use a newer Mod Settings version, choose standalone to keep it.
-[/list]
+[b]3.[/b] Install [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28]the latest Mod Settings[/url] if you don't have it yet. This download contains VR Holster Customization only.
 Extract the ZIP's [b]Mods[/b] folder into the game folder. You should have:
 [code]
 Mods\VRHolsterCustomization.dll
