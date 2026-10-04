@@ -16,21 +16,21 @@ change from what it shows. Check in that session:
 - **Enemy gunfire also exposes the player.** The same `else` branch in `FireBullet` runs for every enemy shot, so enemies shooting
   (at you or anywhere) reset your visibility. Probable game bug; a fix would skip `Expose` when `FromEnemy != 0`. Check that it
   happens in play first, and that the fix doesn't make enemies lose you mid-fight.
-- **Door kick loops** (an enemy kicks one door 20-200 times in 10 s, mostly during Fix searches; seen in logs, not noticed in play).
-  The Fix has no rate limit for it in code yet (Oct 4). Log 0.5.2 counts door loops: if the count is still high, rate-limit
-  `openDoor` per enemy + door; if not, close the item.
+- **Door kick loops** (an enemy kicks one door 20-200 times in 10 s, seen in logs, not noticed in play): a logging matter, covered
+  by Enemy Awareness Log (`doorLoops`, `longestDoorStreak` in the wave summary). Read the counts after the session; no Fix change
+  unless it becomes noticeable in play.
 - Story missions / contracts (beyond the Outpost and Restaurant challenge maps) have not been played with the Fix and Physical
   Dodge: check that story enemies still find you eventually (the anti-stall rules) and that bomb waves bring enemies to the bomb.
 
 **VR Holster Customization: better move-by-hand.** Moving the game's holsters is built (`[VRHolsters_Adjustment]`, settings per
 slot). Two improvements, because symmetric positions are hard to set one slot at a time:
-- **Move more than one holster at once.** Simplest useful form: a "mirror" setting so moving one side moves its pair (left/right hip,
-  knife, back) mirrored across the body. Optional later: grab one slot per hand and move both.
+- **Mirror pairs (do first).** A setting so moving one side moves its pair (left/right hip, knife, back) mirrored across the body.
+  Only if that is not enough: grab one slot per hand and move both.
 - **Highlight the real holster while moving it**, not only the blue marker sphere: show the slot's own highlight / hologram
   (the game's holster visual) during the gesture so you see where the gun will actually sit.
 - 0.3.12 (belt follow) is tested and held for these; consider shipping it first rather than waiting.
 
-**Slow Motion Hands → general hand feel.** Requests asked for better hand feel overall, not only in slow motion. The glove trails the
+**Slow Motion Hands → general hand feel** (work-in-progress mod; the name may change before a release). Requests asked for better hand feel overall, not only in slow motion. The glove trails the
 real controller (hand lag 16-24 ms plus grip delay on a club; a fast sideways swing can spin the hand body 160-180° when torque
 saturates). Build on the Slow Motion Hands work (hand spring/force/damper scaling, the gap log) for normal speed too, behind
 settings. Daredevil's levers (`HandStrengthScale`, `HandTorqueScale`, `ClubInertiaScale`, `ClubMaxSpin`, `HandProbe.cs`) are a
