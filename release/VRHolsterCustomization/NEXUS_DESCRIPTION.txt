@@ -2,7 +2,7 @@
 
 Move the game's [b]hip, knife and back holsters[/b] to suit your reach. [b]Grab an empty holster's position point with grip + trigger, then drag the holster by hand[/b]—even out in front of you. Fine-tune positions live in Mod Settings. Keep the [b]original game colours[/b] or choose another colour.
 
-[b]Required:[/b] [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28]Mod Settings[/url] — install version 0.4.1 or newer. This is a hard dependency, not an optional menu.
+[b]Required:[/b] [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28]Mod Settings[/url] — install the latest version. This is a hard dependency, not an optional menu.
 
 [size=4][b]Grab and move holsters by hand[/b][/size]
 This is the quickest way to place a holster where your hand naturally reaches: find its highlighted point, hold [b]grip + trigger[/b] to grab it, drag it into position, and release to save.
@@ -40,7 +40,7 @@ Placing a gun or knife in a holster [b]in The Range[/b] schedules a loadout save
 [b]2.[/b] Start the game once, then quit.
 [b]3.[/b] Choose [b]one[/b] download:
 [list]
-[*][b]Standalone:[/b] contains VR Holster Customization only. Install [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28]Mod Settings 0.4.1 or newer[/url] separately.
+[*][b]Standalone:[/b] contains VR Holster Customization only. Install [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28]the latest Mod Settings[/url] separately.
 [*][b]With Mod Settings:[/b] includes both required DLLs for a new installation. If you already use a newer Mod Settings version, choose standalone to keep it.
 [/list]
 Extract the ZIP's [b]Mods[/b] folder into the game folder. You should have:
@@ -48,7 +48,7 @@ Extract the ZIP's [b]Mods[/b] folder into the game folder. You should have:
 Mods\VRHolsterCustomization.dll
 Mods\ModSettings.dll
 [/code]
-[b]4.[/b] Start the game. The console should list [b]VR Holster Customization v0.2.2[/b] and Mod Settings.
+[b]4.[/b] Start the game. The MelonLoader console lists [b]VR Holster Customization v0.3.8[/b] among the loaded mods, along with Mod Settings.
 
 [b]Troubleshooting[/b]
 [list]
@@ -94,8 +94,20 @@ SpinDeg = 0
 SnapCm = 30
 DrawCm = 20
 SavedBackHolsters = ""
+BackBlades = "All"
+BladeGripCm = 0
+BladeTiltDeg = 35
+BladeLeanDeg = 10
+BladeSpinDeg = 0
+HolsterSounds = true
+HolsterInSound = "EQUIPTact_Equipment Metal Buckle Chain Jangle Latch Flap Belts 03_ESM_SG"
+HolsterOutSound = "S_WEP_Knife_Attack_01"
+
+[VRHolsters_KnifeReturn]
+InEnemySeconds = 1
+OnGroundSeconds = 5
 [/code]
-BackSlots controls supported mod items: position in centimetres, rotation in degrees, snap/draw distance and saved contents. SavedBackHolsters is managed automatically; do not edit it during play.
+BackSlots controls supported mod items: position in centimetres, rotation in degrees, snap/draw distance and saved contents. BackBlades (All, Katana or Off) chooses which of the game's blades fit the back slots; the Blade* values set how they hang. HolsterSounds, HolsterInSound and HolsterOutSound set the holster sounds (blank = a gun's click). InEnemySeconds and OnGroundSeconds set how long a thrown knife or katana stays in an enemy or on the ground before it returns to the back slot (0 = the game's own 10 s timer). SavedBackHolsters is managed automatically; do not edit it during play.
 No personal cfg is included in the download.
 [/spoiler]
 

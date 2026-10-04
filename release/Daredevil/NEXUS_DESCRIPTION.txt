@@ -1,6 +1,6 @@
 [size=5][b]Daredevil[/b][/size]
 
-Fight with a pair of [b]billy clubs[/b], send them into [b]ricochet throws[/b], and use [b]radar sense[/b] to see enemies through walls and hear their footsteps. Your clubs have their own [b]belt holsters and recall[/b], ready to carry from The Range into a contract.
+Fight with a pair of [b]billy clubs[/b], send them into [b]ricochet throws[/b], and use [b]radar sense[/b] to see enemies through walls and hear their footsteps. Your clubs have their own [b]belt holsters[/b] and return to them by themselves, ready to carry from The Range into a contract.
 
 [size=4][b]Billy clubs[/b][/size]
 [list]
@@ -10,7 +10,7 @@ Fight with a pair of [b]billy clubs[/b], send them into [b]ricochet throws[/b], 
 [*]Choose tip-first throws, natural hand spin, or end-over-end spinning. Enemy-to-enemy ricochets are optional and off by default.
 [*]Club hits to the legs drop enemies to one knee. Thrown body hits knock enemies down by default; choose a standing stun, a kneel, or the game's short flinch instead.
 [*]Body hits can knock an enemy out when their health runs out.
-[*]Press F8 to recall the pair into your club holsters, replacing missing clubs.
+[*]A club you threw or dropped returns to its belt holster by itself after a few seconds (ReturnClubs, on by default). One drawn from a back holster goes back to the back holster.
 [*]While holding a club, press A on the right controller or X on the left to kick open a doorway. Aim your controller knuckle at the marked kick point; the game's VR door-kick setting and range apply.
 [/list]
 
@@ -31,26 +31,26 @@ The game's normal crowbar remains available.
 Install these separately alongside Daredevil:
 [list]
 [*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/32][b]Gloves[/b][/url] — dark red gloves by default, with colour changes available in VR.
-[*][url=https://github.com/EvheniiS/GunmanContracts-Mods][b]Throw Assist[/b][/url] — assisted pistol throws with damage and stagger. Billy club throws are handled by Daredevil itself.
+[*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/39][b]Throw Assist[/b][/url] — assisted pistol throws with damage and stagger. Billy club throws are handled by Daredevil itself.
+[*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/37][b]Grab Fix[/b][/url] — version 1.1.2 or newer; holstered clubs and clubs on the wall need it to be drawn and grabbed properly.
 [*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28][b]Mod Settings[/b][/url] — the in-VR settings board for changing the clubs, radar sense, and companion mods.
+[*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/29][b]Weapon Framework[/b][/url] — adds Billy Clubs to the arsenal panel in The Range. Page to them, press Retrieve, and take the pair from the wall. This is how you get the clubs. It also requires VR Holster Customization.
 [/list]
 These are the companion mods expected by the Daredevil package. Daredevil still loads if one is missing and reports it in the log, but that companion's features will be absent.
 
 [size=4][b]Optional but highly recommended[/b][/size]
 For the full Daredevil experience, I highly recommend all three. [b]None is required to run Daredevil.[/b]
 [list]
-[*][url=https://github.com/EvheniiS/GunmanContracts-Mods][b]Heavy Melee[/b][/url] — harder punches, weapon strikes that stagger, and hits that keep counting against stunned or downed enemies.
-[*][url=https://github.com/EvheniiS/GunmanContracts-Mods][b]Physical Dodge[/b][/url] — enemies aim where you were a moment ago, giving physical steps, leans and ducks a chance to evade their shots. Its brief dodge slow motion also activates radar sense by default.
-[*][url=https://github.com/EvheniiS/GunmanContracts-Mods][b]Enemy Awareness Fix[/b][/url] — enemies search around where they last saw you instead of continuously tracking your exact position through walls.
+[*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/36][b]Heavy Melee[/b][/url] — harder punches, weapon strikes that stagger, and hits that keep counting against stunned or downed enemies.
+[*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/35][b]Physical Dodge[/b][/url] — enemies aim where you were a moment ago, giving physical steps, leans and ducks a chance to evade their shots. Its brief dodge slow motion also activates radar sense by default.
+[*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/34][b]Enemy Awareness Fix[/b][/url] — enemies search around where they last saw you instead of continuously tracking your exact position through walls.
 [/list]
 
 [size=4][b]Other optional companions[/b][/size]
 [list]
-[*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/29][b]Weapon Framework[/b][/url] — adds Billy Clubs to the arsenal panel in The Range. Page to them, press Retrieve, and take the pair from the wall. Without it, use F8 after visiting The Range.
-[*][url=https://github.com/EvheniiS/GunmanContracts-Mods][b]VR Holster Customization[/b][/url] — adds club back slots and tints the club holster tubes. Weapon Framework 0.3.0 also requires this mod.
+[*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/38][b]VR Holster Customization[/b][/url] — adds club back slots and tints the club holster tubes. Weapon Framework 0.3.0 requires this mod, so install it with Weapon Framework.
 [*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/26][b]Knee Shot Stun[/b][/url] — extends the kneeling reaction used by club leg hits and the Kneel throw reaction.
 [/list]
-GitHub links open the shared project repository for companions without a Nexus link here.
 
 [size=4][b]Install[/b][/size]
 Takes about 5 minutes the first time. Steps 1 and 2 are needed only once, for all MelonLoader mods.
@@ -74,7 +74,7 @@ You should end up with: [i]Gunman Contracts - Stand Alone\Mods\Daredevil.dll[/i]
 Install the required companion DLLs listed above into the same Mods folder. Remove legacy BillyClubs.dll and RadarSense.dll if present.
 
 [b]4. Check it works[/b]
-Start the game. The MelonLoader console lists [b]Daredevil v1.1.0[/b] among the loaded mods.
+Start the game. The MelonLoader console lists [b]Daredevil v1.1.2[/b] among the loaded mods.
 
 [b]Not working?[/b]
 [list]
@@ -88,10 +88,10 @@ sure you picked [i]GunmanContracts.exe[/i].
 [size=4][b]How to use[/b][/size]
 [list]
 [*]Visit The Range once after starting the game so the clubs can use its crowbar as their base.
-[*]Press F8 to spawn or recall your clubs, or retrieve them from the arsenal panel with [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/29]Weapon Framework[/url].
+[*]Retrieve your clubs from the arsenal panel with [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/29]Weapon Framework[/url]: page to Billy Clubs, press Retrieve, take the pair from the wall.
 [*]Draw from the club holsters on your belt. Release near a free holster to put a club away; holstered clubs carry across scene loads.
 [*]Enable the game's assisted-throw option for target-assisted throws. Throw toward an enemy, or aim down at the floor for a bouncing floor shot.
-[*]Use right B for focus. Radar Sense is on by default; retrieve a lost club by following its yellow highlight or pressing F8.
+[*]Use right B for focus. Radar Sense is on by default; find a lost club by following its yellow highlight; it also returns to your belt by itself.
 [*]Open [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28]Mod Settings[/url] and look for [b]Daredevil: Clubs[/b] and [b]Daredevil: Radar Sense[/b].
 [/list]
 
@@ -101,7 +101,6 @@ Change the settings on the in-VR board, or edit [i]UserData\MelonPreferences.cfg
 Default settings are shown below. Existing settings are preserved when updating.
 [b]Clubs — section [BillyClubs][/b]
 [code]
-SpawnKey                 = "F8"   # Keyboard key that brings your clubs back into the club holsters (from wherever they are) and spawns new ones if you have fewer than two (Input System key name, e.g. F8, B, Numpad1). Visit The Range once per game start first: the clubs are copied from its crowbar.
 Length                   = 0.6   # Club length in metres (visual only; the grip and hit shape stay the crowbar's, about 0.6 m).
 Radius                   = 0.018   # Primitive fallback radius in metres. The custom model uses its authored 34 mm grip diameter.
 Mass                     = 3   # Club mass in kg (the crowbar is 8). Applies live to every club, including one in your hand.
@@ -110,6 +109,8 @@ BodyColor                = "#5A080A"   # Primitive fallback body colour as #RRGG
 ThrowSpeed               = 18   # Top speed (m/s) of a club the mod steers (throw assist and ricochets). It flies at your throw speed, between MinSteerSpeed and this. Hand throws log 3-12 m/s; the crowbar's own assist used 20. Full damage needs only 3.5.
 ThrowSearchDistance      = 15   # How far the throw looks for a target, in metres (crowbar 6).
 ThrowMaxFlyDistance      = 20   # How far a homing throw flies before it gives up, in metres (crowbar 4).
+ReturnClubs               = true   # A club you threw or dropped goes back to its holster on your belt by itself, like the game's knives do. Off = clubs stay where they land (the arsenal terminal brings them back).
+ReturnSeconds             = 10   # How long a club lies where it landed before it returns to its holster, in seconds. Only used when ReturnClubs is on.
 HolsterLeft              = "-0.23,-0.12,-0.10"   # Left club holster: centre of the club relative to the belt, in metres, as right,up,forward. The game's hip holsters sit at +-0.27,0,0 and its knife holsters at +-0.17,0.05,0.13. The club hangs tip down.
 HolsterRight             = "0.23,-0.12,-0.10"   # Right club holster, same format.
 HolsterSnapDistance      = 0.4   # Let go of a club within this many metres of a free club holster and it snaps in.
@@ -183,7 +184,7 @@ Brightness               = 0.6   # Multiplies the silhouette colour, live. Overl
 ShowStill                = true   # Enemies you haven't seen that stand still also show, dimmed (StillBrightness), so you still see where they wait behind a wall. Moving ones, and everything while you focus, keep full Brightness. Needs Reveal Moving or All. Costs a little: the game's out-of-view hiding is switched off for every enemy in Range.
 StillBrightness          = 0.35   # Multiplies Brightness for standing-still enemies (ShowStill), live. 0.1 to 1.
 [/code]
-Reveal = All keeps more unseen enemies active and can cost more performance. Moving is the default.
+Setting Reveal to All keeps more unseen enemies active and can cost more performance. Moving is the default.
 Settings that mention a restart require one. SavedHolsters is managed by the mod.
 Glove colour and pistol throws have their own settings in the separately installed companions.
 [/spoiler]
@@ -191,8 +192,8 @@ Glove colour and pistol throws have their own settings in the separately install
 [size=4][b]Compatibility[/b][/size]
 [list]
 [*]Remove the old standalone BillyClubs.dll and RadarSense.dll before installing. Both features are included in Daredevil.dll; keeping the legacy DLLs would load them twice.
-[*][url=https://github.com/EvheniiS/GunmanContracts-Mods]Throw Assist[/url] leaves the billy clubs to Daredevil's own flight system, so the two mods do not steer the same club.
-[*][url=https://github.com/EvheniiS/GunmanContracts-Mods]Physical Dodge[/url] shares the slow-motion trigger used by radar sense. Turn off WithDodgeSlowMotion if you only want radar during your own focus.
+[*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/39]Throw Assist[/url] leaves the billy clubs to Daredevil's own flight system, so the two mods do not steer the same club.
+[*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/35]Physical Dodge[/url] shares the slow-motion trigger used by radar sense. Turn off WithDodgeSlowMotion if you only want radar during your own focus.
 [*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/26]Knee Shot Stun[/url] affects the kneeling reaction; ChestStunSeconds instead controls Daredevil's separate Stun throw reaction.
 [*]Other mods that change crowbar behaviour, club physics, enemy hit reactions, or enemy highlight materials may interact with these features.
 [/list]

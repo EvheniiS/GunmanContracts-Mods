@@ -57,7 +57,7 @@ You should end up with: [i]Gunman Contracts - Stand Alone\Mods\ThrowAssist.dll[/
 Turn on the game's own [b]Assisted Throw[/b] option in its settings, or this mod has nothing to steer.
 
 [b]4. Check it works[/b]
-Start the game. The MelonLoader console lists [b]Throw Assist v0.2.2[/b] among the loaded mods.
+Start the game. The MelonLoader console lists [b]Throw Assist v0.2.4[/b] among the loaded mods.
 
 [b]Not working?[/b]
 [list]
@@ -77,6 +77,7 @@ After the first launch, edit [i]UserData\MelonPreferences.cfg[/i], section [b][T
 PistolAssist       = true    Thrown pistols home in on enemies. The game ships its pistol assist switched off. Needs the game's own assisted throw option on.
 SteerOtherItems    = true    Steer knives and other eligible items with real velocity. Billy Clubs use Daredevil's own flight.
 MinAssistSpeed     = 3.5     Non-pistol props slower than this (m/s) get no assist. Knives use the game's own 3.5 m/s threshold.
+KnifeAssistMinSpeed = 2.5   A knife released at least this fast (m/s) can get the assist. 2.5 lets an early release, still speeding up when you let go, be assisted too. 3.5 = the game's own gate.
 PistolAssistMinSpeed = 3.5  Pistols slower than this or the game's threshold get no assist.
 PistolSteerMinSpeed = 13   Minimum flight speed after a pistol acquires an assist target; unassisted throws are unchanged.
 MaxSpeed           = 18      An assisted item flies at your own throw speed, up to this (m/s).
@@ -86,6 +87,10 @@ SearchDistance     = 15      How far the assist looks for a target (m). Pistols 
 MaxFlyDistance     = 20      How far an assisted throw flies before it gives up (m). Pistols as shipped: 4.
 AimHead            = true    Allow head assist only when the release points closer to the head than chest; false always aims at chest.
 HeadAimMaxAngle    = 25      Maximum angle in degrees from release direction to head. Lower = stricter head aim.
+AimByThrow         = true    When the game finds no target (it only looks where your headset points), look along the throw instead: the enemy closest to the throw direction within ThrowAimMaxAngle and SearchDistance.
+ThrowAimMaxAngle   = 25      AimByThrow: maximum angle (degrees) between the throw direction and an enemy's head, chest or legs.
+allowKneeHit       = false   Allow knee assist and make thrown-item leg hits trigger the knee-shot animation. Knee Shot Stun extends the kneel when installed.
+KneeAimMaxAngle    = 25      Maximum angle in degrees from the release direction to a knee. Requires allowKneeHit.
 PistolDamage       = true    A thrown pistol that hits an enemy does real damage (PistolThrowDamage). Off = the game's weak hit.
 PistolThrowDamage  = 3       Thrown pistol damage as a multiple of the game's melee damage (10). The game then doubles it on the torso and multiplies by 5 on the head: 3 = 60 to the body, a head hit kills.
 PistolStagger      = true    A thrown pistol that hits a standing enemy makes them stumble.
@@ -100,11 +105,6 @@ Knife and pistol release speed comes from the game's recent hand motion. Only Da
 separate short follow-through that can add speed from hand movement after release.
 Or change these live in-VR with [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28][b]Mod Settings[/b][/url] (optional) — no restart, no text editor.
 [/spoiler]
-
-[size=4][b]Compatibility[/b][/size]
-Required by [url=https://github.com/EvheniiS/GunmanContracts-Mods][b]Daredevil[/b][/url] — this mod
-deliberately leaves any object named [i]BillyClub-*[/i] to Daredevil's own throw system. Heavy Melee only
-affects [i]held[/i] guns, so there's no overlap with this mod's thrown-pistol damage.
 
 [size=4][b]Uninstall[/b][/size]
 Delete [i]Mods\ThrowAssist.dll[/i]. Thrown items go back to the game's own drag-and-zero-velocity assist.
