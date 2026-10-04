@@ -1,6 +1,6 @@
 [size=5][b]Daredevil[/b][/size]
 
-Fight with a pair of [b]billy clubs[/b], send them into [b]ricochet throws[/b], and use [b]radar sense[/b] to see enemies through walls and hear their footsteps. Your clubs have their own [b]belt holsters and recall[/b], ready to carry from The Range into a contract.
+Fight with a pair of [b]billy clubs[/b], send them into [b]ricochet throws[/b], and use [b]radar sense[/b] to see enemies through walls and hear their footsteps. Your clubs have their own [b]belt holsters[/b] and return to them by themselves, ready to carry from The Range into a contract.
 
 [size=4][b]Billy clubs[/b][/size]
 [list]
@@ -10,7 +10,7 @@ Fight with a pair of [b]billy clubs[/b], send them into [b]ricochet throws[/b], 
 [*]Choose tip-first throws, natural hand spin, or end-over-end spinning. Enemy-to-enemy ricochets are optional and off by default.
 [*]Club hits to the legs drop enemies to one knee. Thrown body hits knock enemies down by default; choose a standing stun, a kneel, or the game's short flinch instead.
 [*]Body hits can knock an enemy out when their health runs out.
-[*]Press F8 to recall the pair into your club holsters, replacing missing clubs.
+[*]A club you threw or dropped returns to its belt holster by itself after a few seconds (ReturnClubs, on by default). One drawn from a back holster goes back to the back holster.
 [*]While holding a club, press A on the right controller or X on the left to kick open a doorway. Aim your controller knuckle at the marked kick point; the game's VR door-kick setting and range apply.
 [/list]
 
@@ -19,7 +19,9 @@ Fight with a pair of [b]billy clubs[/b], send them into [b]ricochet throws[/b], 
 [*]Radar Sense is on by default and reveals enemies through walls as red silhouettes. Set it to SlowMotion if you prefer it active only during focus.
 [*]By default, directly visible enemies are not painted red: radar highlights what is hidden.
 [*]Your own focus reveals all enemies within the configured range. Outside that override, the default reveal mode also picks up moving enemies, as if you hear their steps.
-[*]Radar runs all the time by default. Set it to SlowMotion if you prefer it active only during focus.
+[*]Enemies you haven't spotted that stand still show as a dim silhouette, so you still know where someone waits behind a wall. Moving enemies, and everyone while you focus, show at full brightness.
+[*]Enemies peeking over cover keep their outline until you can actually see most of them.
+[*]Tune the look live: silhouette colour, brightness, opacity, and how much of the body is outlined (Core, Body, Clothes or Full).
 [*]Louder, directional enemy footsteps help you locate people by sound. Footsteps stay on all the time by default and can be limited to radar sense or switched off.
 [*]Dropped or thrown clubs glow yellow through obstacles, making them easier to find. Clubs within two metres of your head are excluded by default.
 [/list]
@@ -29,26 +31,26 @@ The game's normal crowbar remains available.
 Install these separately alongside Daredevil:
 [list]
 [*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/32][b]Gloves[/b][/url] — dark red gloves by default, with colour changes available in VR.
-[*][url=https://github.com/EvheniiS/GunmanContracts-Mods][b]Throw Assist[/b][/url] — assisted pistol throws with damage and stagger. Billy club throws are handled by Daredevil itself.
+[*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/39][b]Throw Assist[/b][/url] — assisted pistol throws with damage and stagger. Billy club throws are handled by Daredevil itself.
+[*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/37][b]Grab Fix[/b][/url] — version 1.1.2 or newer; holstered clubs and clubs on the wall need it to be drawn and grabbed properly.
 [*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28][b]Mod Settings[/b][/url] — the in-VR settings board for changing the clubs, radar sense, and companion mods.
+[*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/29][b]Weapon Framework[/b][/url] — adds Billy Clubs to the arsenal panel in The Range. Page to them, press Retrieve, and take the pair from the wall. This is how you get the clubs. It also requires VR Holster Customization.
 [/list]
 These are the companion mods expected by the Daredevil package. Daredevil still loads if one is missing and reports it in the log, but that companion's features will be absent.
 
 [size=4][b]Optional but highly recommended[/b][/size]
 For the full Daredevil experience, I highly recommend all three. [b]None is required to run Daredevil.[/b]
 [list]
-[*][url=https://github.com/EvheniiS/GunmanContracts-Mods][b]Heavy Melee[/b][/url] — harder punches, weapon strikes that stagger, and hits that keep counting against stunned or downed enemies.
-[*][url=https://github.com/EvheniiS/GunmanContracts-Mods][b]Physical Dodge[/b][/url] — enemies aim where you were a moment ago, giving physical steps, leans and ducks a chance to evade their shots. Its brief dodge slow motion also activates radar sense by default.
-[*][url=https://github.com/EvheniiS/GunmanContracts-Mods][b]Enemy Awareness Fix[/b][/url] — enemies search around where they last saw you instead of continuously tracking your exact position through walls.
+[*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/36][b]Heavy Melee[/b][/url] — harder punches, weapon strikes that stagger, and hits that keep counting against stunned or downed enemies.
+[*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/35][b]Physical Dodge[/b][/url] — enemies aim where you were a moment ago, giving physical steps, leans and ducks a chance to evade their shots. Its brief dodge slow motion also activates radar sense by default.
+[*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/34][b]Enemy Awareness Fix[/b][/url] — enemies search around where they last saw you instead of continuously tracking your exact position through walls.
 [/list]
 
 [size=4][b]Other optional companions[/b][/size]
 [list]
-[*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/29][b]Weapon Framework[/b][/url] — adds Billy Clubs to the arsenal panel in The Range. Page to them, press Retrieve, and take the pair from the wall. Without it, use F8 after visiting The Range.
-[*][url=https://github.com/EvheniiS/GunmanContracts-Mods][b]VR Holster Customization[/b][/url] — adds club back slots and tints the club holster tubes. Weapon Framework 0.3.0 also requires this mod.
+[*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/38][b]VR Holster Customization[/b][/url] — adds club back slots and tints the club holster tubes. Weapon Framework 0.3.0 requires this mod, so install it with Weapon Framework.
 [*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/26][b]Knee Shot Stun[/b][/url] — extends the kneeling reaction used by club leg hits and the Kneel throw reaction.
 [/list]
-GitHub links open the shared project repository for companions without a Nexus link here.
 
 [size=4][b]Install[/b][/size]
 Takes about 5 minutes the first time. Steps 1 and 2 are needed only once, for all MelonLoader mods.
@@ -72,7 +74,7 @@ You should end up with: [i]Gunman Contracts - Stand Alone\Mods\Daredevil.dll[/i]
 Install the required companion DLLs listed above into the same Mods folder. Remove legacy BillyClubs.dll and RadarSense.dll if present.
 
 [b]4. Check it works[/b]
-Start the game. The MelonLoader console lists [b]Daredevil v1.0.0[/b] among the loaded mods.
+Start the game. The MelonLoader console lists [b]Daredevil v1.1.2[/b] among the loaded mods.
 
 [b]Not working?[/b]
 [list]
@@ -86,10 +88,10 @@ sure you picked [i]GunmanContracts.exe[/i].
 [size=4][b]How to use[/b][/size]
 [list]
 [*]Visit The Range once after starting the game so the clubs can use its crowbar as their base.
-[*]Press F8 to spawn or recall your clubs, or retrieve them from the arsenal panel with [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/29]Weapon Framework[/url].
+[*]Retrieve your clubs from the arsenal panel with [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/29]Weapon Framework[/url]: page to Billy Clubs, press Retrieve, take the pair from the wall.
 [*]Draw from the club holsters on your belt. Release near a free holster to put a club away; holstered clubs carry across scene loads.
 [*]Enable the game's assisted-throw option for target-assisted throws. Throw toward an enemy, or aim down at the floor for a bouncing floor shot.
-[*]Use right B for focus. Radar Sense is on by default; retrieve a lost club by following its yellow highlight or pressing F8.
+[*]Use right B for focus. Radar Sense is on by default; find a lost club by following its yellow highlight; it also returns to your belt by itself.
 [*]Open [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28]Mod Settings[/url] and look for [b]Daredevil: Clubs[/b] and [b]Daredevil: Radar Sense[/b].
 [/list]
 
@@ -99,76 +101,90 @@ Change the settings on the in-VR board, or edit [i]UserData\MelonPreferences.cfg
 Default settings are shown below. Existing settings are preserved when updating.
 [b]Clubs — section [BillyClubs][/b]
 [code]
-SpawnKey                 = "F8"   # Keyboard key that brings your clubs back into the club holsters (from wherever they are) and spawns new ones if you have fewer than two (Input System key name, e.g. F8, B, Numpad1). Visit The Range once per game start first: the clubs are copied from its crowbar.
 Length                   = 0.6   # Club length in metres (visual only; the grip and hit shape stay the crowbar's, about 0.6 m).
 Radius                   = 0.018   # Primitive fallback radius in metres. The custom model uses its authored 34 mm grip diameter.
-Mass                     = 3   # Club mass in kg (the crowbar is 8).
+Mass                     = 3   # Club mass in kg (the crowbar is 8). Applies live to every club, including one in your hand.
+SwingLog                 = false   # Log how the club follows your hand (one line per swing: tip lag in ms and cm, which link causes it, overshoot after you stop) plus the hand and joint physics numbers once per grip. For tuning the club's weight and feel. Also logs the delay of every hand movement behind the real controller (HandProbe.cs).
 BodyColor                = "#5A080A"   # Primitive fallback body colour as #RRGGBB. The custom model uses its baked burgundy texture.
-UseCustomModel           = true   # Use the bundled textured billy club model. Off uses the old cylinder visuals. Restart the game after changing this.
 ThrowSpeed               = 18   # Top speed (m/s) of a club the mod steers (throw assist and ricochets). It flies at your throw speed, between MinSteerSpeed and this. Hand throws log 3-12 m/s; the crowbar's own assist used 20. Full damage needs only 3.5.
-MinSteerSpeed            = 13   # Slowest speed (m/s) of a steered club, so a soft throw or a ricochet off a wall still reaches its target.
 ThrowSearchDistance      = 15   # How far the throw looks for a target, in metres (crowbar 6).
 ThrowMaxFlyDistance      = 20   # How far a homing throw flies before it gives up, in metres (crowbar 4).
+ReturnClubs               = true   # A club you threw or dropped goes back to its holster on your belt by itself, like the game's knives do. Off = clubs stay where they land (the arsenal terminal brings them back).
+ReturnSeconds             = 10   # How long a club lies where it landed before it returns to its holster, in seconds. Only used when ReturnClubs is on.
 HolsterLeft              = "-0.23,-0.12,-0.10"   # Left club holster: centre of the club relative to the belt, in metres, as right,up,forward. The game's hip holsters sit at +-0.27,0,0 and its knife holsters at +-0.17,0.05,0.13. The club hangs tip down.
 HolsterRight             = "0.23,-0.12,-0.10"   # Right club holster, same format.
 HolsterSnapDistance      = 0.4   # Let go of a club within this many metres of a free club holster and it snaps in.
 SavedHolsters            = ""   # Managed by the mod: which club holsters are full (L, R). Restored after every scene load.
-DebugLog                 = false   # Log template building, spawns, holstering, grabs, throws and ricochets.
+DebugLog                 = false   # Log template building, spawns, holstering, grabs, throws, ricochets and unsuccessful door-kick presses.
+UseCustomModel           = true   # Use the bundled textured billy club model. Off uses the old cylinder visuals. Restart the game after changing this.
 ThrowStyle               = "TipFirst"   # How a thrown club flies: TipFirst (turns from upright to metal tip forward, then holds it), Natural (keeps whatever spin your hand gave it) or SpinEnd (spinning end over end). Ctrl+T cycles them in game.
-RicochetFromEnemy        = false   # A club that hits an enemy bounces on to the next enemy. Off = only walls and the floor send it on (the enemy it then hits stops it).
 SpinSpeed                = 5   # Turns per second for SpinEnd.
-HandThrowBoost           = 1.3   # Scales club release velocity before guided-speed clamping, and free throws. 1 = unscaled release speed.
-TipTurnTime              = 0.04   # TipFirst: how quickly the club turns its metal tip to the front, in seconds (time constant: about 90% there after twice this). Smaller = snappier.
 Ricochets                = 2   # How many times a thrown club bounces on to the next enemy in sight after hitting an enemy or a wall. 0 = off.
 RicochetRange            = 12   # How far (m) a ricochet looks for the next enemy.
-FloorShotAngle           = 15   # Throw at least this many degrees below horizontal and it is a floor shot: the game's homing is skipped, the club hits the floor and ricochets off it to the nearest enemy in sight. 0 = off (a club that happens to hit the floor still ricochets).
-RicochetAimHead          = false   # Ricochets aim at the head (a fast club hit to the head is a kill). Off = the chest.
-FollowThroughVerboseLog  = false   # With DebugLog on, include follow-through windows that added no speed. Off logs only actual speed increases.
-DirectThrowAssist        = true    # Guide direct club throws to the game-selected target. False keeps direct throws free.
-ThrowAssistMaxTurnAngle  = 25      # Maximum degrees the club can turn toward a direct target. Wider throws stay free.
+RicochetAimHead          = false   # Ricochets aim at the head (a fast club hit to the head is a kill). Off = the chest. A normal assisted throw follows Throw Assist's AimHead.
 GripSlide                = 0   # Moves the club in the hand along its length, in metres. + = the hand sits closer to the grip end. In game: Ctrl+J / Ctrl+L.
 GripTiltA                = 0   # Tilts the club in the hand, in degrees (first axis). In game: Ctrl+K / Ctrl+I.
 GripTiltB                = 0   # Tilts the club in the hand, in degrees (second axis). In game: Ctrl+[ / Ctrl+]. Ctrl+R resets the grip.
+FloorShotAngle           = 15   # Throw at least this many degrees below horizontal and it is a floor shot: the game's homing is skipped, the club hits the floor and ricochets off it to the nearest enemy in sight. 0 = off (a club that happens to hit the floor still ricochets).
 SwingDamageMultiplier    = 1.5   # Club damage in your hand, as a multiple of the game's crowbar damage (fast hit 34, medium 10, slow 5; enemies have 100 health). 1 = the game's.
 ThrowDamageMultiplier    = 2   # Damage of a thrown or ricocheting club, as a multiple of the crowbar damage. 2 = a fast throw to the body does 68: the enemy reacts (ThrowReaction) and the next hit knocks them out. 3 (102) knocks a full-health enemy out in one throw.
-KneelOnLegHits           = true   # A club hit to the legs (thrown or swung) drops the enemy to one knee, like a knee shot, instead of the game's stumble. Knee Shot Stun makes the kneel longer.
-ThrowReaction            = "Kneel"   # What a thrown club does to the body of an enemy it doesn't knock out: Stun (flinches and is stunned for ChestStunSeconds), Kneel (drops to one knee, the game's leg-hit stun; Knee Shot Stun makes it longer), Knockdown (falls to the ground), None (the game's short flinch).
-ChestStunSeconds         = 3   # ThrowReaction = Stun: seconds an enemy stays stunned (can't act) after a thrown club to the body. The game's own blunt-hit stun is much shorter.
 BodyKnockout             = true   # A club hit to the body that takes the last health knocks the enemy out. The game only allows that for the head (other hits leave 1 health). Leg hits knock out only an enemy that is already down.
 SameEnemyCooldown        = 0.3   # Seconds before a club can hurt the same enemy again. A different enemy can always be hit (the game makes the weapon wait 0.6 s after any hit, which made ricochets harmless).
-FollowThroughTime        = 0.12   # Seconds after you let go during which the club still picks up speed from your swing, so opening the hand early in the throw still counts the full swing. 0 = off (HVR's release velocity only).
-MiddleGrip               = false   # Keep the crowbar's second grab point in the middle of the club. Off = the hand always takes the club at its grip end. Applies to clubs not in a hand at once, and to new ones.
+RicochetFromEnemy        = false   # A club that hits an enemy bounces on to the next enemy. Off = only walls and the floor send it on (the enemy it then hits stops it).
+TipTurnTime              = 0.04   # TipFirst: how quickly the club turns its metal tip to the front, in seconds (time constant: about 90% there after twice this). Smaller = snappier.
+MinSteerSpeed            = 13   # Slowest speed (m/s) of a steered club, so a soft throw or a ricochet off a wall still reaches its target.
+FollowThroughTime        = 0.12   # Seconds after release to sample the hand. If the hand is faster than the club and no impact occurred, the club can gain speed. Many throws receive no extra speed. 0 = off.
+ThrowReaction            = "Knockdown"   # What a thrown club does to the body of an enemy it doesn't knock out: Stun (flinches and is stunned for ChestStunSeconds), Kneel (drops to one knee, the game's leg-hit stun; Knee Shot Stun makes it longer), Knockdown (falls to the ground), None (the game's short flinch).
+HandThrowBoost           = 1.3   # Multiplies the club's release velocity before direct assist chooses its 13-18 m/s steering speed. Also affects free throws and the follow-through hand-speed comparison. 1 = unscaled release speed.
+KneelOnLegHits           = true   # A club hit to the legs (thrown or swung) drops the enemy to one knee, like a knee shot, instead of the game's stumble. Knee Shot Stun makes the kneel longer.
+ChestStunSeconds         = 1   # ThrowReaction = Stun: seconds an enemy stays stunned (can't act) after a thrown club to the body. The game's own blunt-hit stun is much shorter.
 HolsterGhost             = "Hover"   # Club holster tubes on the belt: Hover (like the game's holsters: shown while you hold a club, bright when it's close enough to snap), Always (always faintly visible when empty), Off.
+MiddleGrip               = false   # Keep the crowbar's second grab point in the middle of the club. Off = the hand always takes the club at its grip end. Applies to clubs not in a hand at once, and to new ones.
 WallLayout               = "Diagonal"   # How the pair hangs on the arsenal wall: Diagonal (two parallel clubs, one above the other, tilted by WallAngle), Upright (side by side, tip down) or Cross (an X). Used on the next retrieve.
 WallAngle                = 45   # Diagonal layout: tilt of the clubs from horizontal, in degrees (grip lower left, tip upper right).
 WallSpacing              = 0.1   # Distance between the two clubs on the arsenal wall (Diagonal and Upright), in metres.
 WallShift                = "0,0,0"   # Moves the pair on the arsenal wall, in metres, as right,up,out-from-the-board. Used on the next retrieve.
+DirectThrowAssist        = true   # Guide a direct club throw to an enemy selected by the game's assisted throw. Turn off for free throws at a wall or past an enemy; ricochets have their own setting.
+ThrowAssistMaxTurnAngle  = 25   # Maximum angle in degrees the club can turn from its release direction to a direct assist target. A throw farther off line stays free. 0 requires nearly exact aim; 180 allows every game-selected target.
+FollowThroughVerboseLog  = false   # Log every follow-through window. Off logs only throws where follow-through actually increased club speed when DebugLog is on.
+ClubDoorKick             = true   # Press A (right hand) / X (left hand) while holding a Billy Club to kick open a marked door. Uses the game's VR door-kick setting and range.
+SwingLogMinSpeed         = 4   # SwingLog: only swings where your controller moved the club tip faster than this (m/s) are logged. A fast baton swing is 6-10.
+HandStrengthScale        = 1   # Advanced: scales how hard the physics hand is pulled toward your controller's POSITION (both hands, whatever they hold). 2 = the hand follows with about half the lag; the damper is scaled to stay critically damped. 1 = the game's value. Too high and the hands jitter against walls. Live; range 0.5 to 4.
+HandTorqueScale          = 1.6   # Scales how hard the physics hand is turned toward your controller's ROTATION. 1 = the game's value (500 spring, 50 damper, 75 N*m max), which is too weak for a swung club: a fast sideways swing keeps turning the hand after you stop. 1.6 (default) is the tested value. Live; range 0.5 to 6.
+ClubInertiaScale         = 1   # Advanced: scales the club's resistance to being turned (its rotational inertia) without changing its mass. 0.4 = it turns much more easily, still feels 3 kg when lifted or hit. 1 = the game's value. Live; range 0.1 to 1.5.
+ClubMaxSpin              = 80   # Fastest a held club can turn, in radians per second. The game's value is 30 (about 5 turns a second); a fast wrist flick is faster, which makes the club lag the hand. Live; range 10 to 150.
 [/code]
 [b]Radar sense — section [RadarSense][/b]
 [code]
 Enabled                  = true   # Master switch for seeing enemies through walls.
 ActiveWhen               = "Always"   # SlowMotion (the sense is on only while slow motion is) or Always (always on).
-FocusRevealsAll          = true   # While your own slow motion (focus, right B) is on, every enemy in Range shows, even ones you haven't detected, whatever Reveal is set to.
 WithDodgeSlowMotion      = true   # The brief slow motion on a dodge (Physical Dodge) turns the sense on too, not only your own slow motion.
 Color                    = "#FF1010"   # Colour of the silhouettes.
 Opacity                  = 0.6   # How solid the silhouettes are, 0.05 to 1.
 Style                    = "Hidden"   # Hidden (enemies you can see directly get no highlight; the rest show the parts hidden behind something), Behind (every enemy, including ones you can see, shows its hidden parts) or Blocked (the whole body, only on enemies you can't see).
-Reveal                   = "Moving"   # Which enemies you haven't seen show. The game hides enemies out of view for a few seconds (no mesh, no animation) to save performance. Awake (only enemies the game still shows: seen recently, or woken up, e.g. shouting), Moving (also enemies walking or running, as if you hear their steps; the default) or All (every enemy in Range; the biggest performance cost).
-StepSpeed                = 0.5   # For Reveal = Moving: an enemy moving faster than this (m/s) is heard.
 Range                    = 60   # Enemies further away than this (m) don't show.
 SkipParts                = "eye,teeth,tooth,tongue,lash,brow"   # Body parts left out, by renderer or mesh name (comma separated). Parts inside the head would show through the face.
 Shader                   = "Auto"   # Auto picks the first that loads: Hidden/Internal-Colored, then UI/Default. Or a shader name. Applies after a game restart.
-ClubHighlight            = true   # Billy Clubs that are away from you (dropped, thrown, stuck behind something) show through walls too, so you can find them.
-ClubColor                = "#FFC000"   # Colour of the club highlight.
-ClubMinDistance          = 2   # A club closer to your head than this (m) isn't highlighted, so clubs in your hand or holster don't glow where your glove covers them.
+DebugLog                 = false   # Log which shader is used, each enemy's body parts once, and one line each time the sense turns on/off.
+PerfLog                  = false   # Once a minute, log frame times split by sense off / on / on and keeping unseen enemies shown, plus the mod's own cost. For comparing the Reveal settings.
+Reveal                   = "Moving"   # Which enemies you haven't seen show. The game hides enemies out of view for a few seconds (no mesh, no animation) to save performance. Awake (only enemies the game still shows: seen recently, or woken up, e.g. shouting), Moving (also enemies walking or running, as if you hear their steps; the default) or All (every enemy in Range; the biggest performance cost).
+StepSpeed                = 0.5   # For Reveal = Moving: an enemy moving faster than this (m/s) is heard.
 LoudSteps                = "Always"   # Louder enemy footsteps, played on each enemy's own sound source so gunfire can't cut them off. Always (all the time), Sense (only while the radar sense is on) or Off (the game's own steps).
 HearDistance             = 30   # Enemy steps are heard up to this far (m). The game plays none beyond its own limit (logged).
 LoudRadius               = 3   # Steps are at full volume within this distance (m) and fade with distance beyond it. Bigger = louder from far away.
-StepVolume               = 3   # Step volume multiplier times the game's sound effects volume; values above 1 make steps louder.
-PerfLog                  = false   # Once a minute, log frame times split by sense off / on / on and keeping unseen enemies shown, plus the mod's own cost. For comparing the Reveal settings.
-DebugLog                 = false   # Log which shader is used, each enemy's body parts once, and one line each time the sense turns on/off.
+StepVolume               = 3   # Step volume multiplier times the game's sound effects volume. Values above 1 make steps louder than the game's normal effect volume.
+FocusRevealsAll          = true   # While your own slow motion (focus, right B) is on, every enemy in Range shows, even ones you haven't detected, whatever Reveal is set to.
+ClubHighlight            = true   # Billy Clubs that are away from you (dropped, thrown, stuck behind something) show through walls too, so you can find them.
+ClubColor                = "#FFC000"   # Colour of the club highlight.
+ClubMinDistance          = 2   # A club closer to your head than this (m) isn't highlighted, so clubs in your hand or holster don't glow where your glove covers them.
+SeenFraction             = 0.7   # How much of an enemy you must see for it to count as seen directly (no highlight with Style Hidden/Blocked). The game counts an enemy as in view when ONE of its 14 sight points has a clear line to your head, so a head over a doorframe or counter switched the whole silhouette off. This is the share of sight points that must be clear: 0.7 = 10 of 14. 0 = the game's own rule (one point).
+Detail                   = "Body"   # How much of an enemy's body is outlined, live. Core (the skin mesh and the vest: the plainest silhouette, cheapest), Body (+ shirt/jacket, trousers, sleeves, hands), Clothes (+ shoes) or Full (everything, hair, beard, tie and holster too).
+IncludeLods              = false   # Also outline the lower detail levels (LOD1-4) of an enemy's body. Off by default: the game switches LODs without turning the other levels' renderers off, so this draws every level on top of each other (about 4x the silhouette meshes) and did not fix any missing outline. Applies to enemies seen after the change.
+Brightness               = 0.6   # Multiplies the silhouette colour, live. Overlapping body meshes stack their opacity, so a bright colour reaches full brightness and the game's bloom turns it into a red aura around the enemies. Lower = darker red and less glow (0.3 to 1).
+ShowStill                = true   # Enemies you haven't seen that stand still also show, dimmed (StillBrightness), so you still see where they wait behind a wall. Moving ones, and everything while you focus, keep full Brightness. Needs Reveal Moving or All. Costs a little: the game's out-of-view hiding is switched off for every enemy in Range.
+StillBrightness          = 0.35   # Multiplies Brightness for standing-still enemies (ShowStill), live. 0.1 to 1.
 [/code]
-Reveal = All keeps more unseen enemies active and can cost more performance. Moving is the default.
+Setting Reveal to All keeps more unseen enemies active and can cost more performance. Moving is the default.
 Settings that mention a restart require one. SavedHolsters is managed by the mod.
 Glove colour and pistol throws have their own settings in the separately installed companions.
 [/spoiler]
@@ -176,8 +192,8 @@ Glove colour and pistol throws have their own settings in the separately install
 [size=4][b]Compatibility[/b][/size]
 [list]
 [*]Remove the old standalone BillyClubs.dll and RadarSense.dll before installing. Both features are included in Daredevil.dll; keeping the legacy DLLs would load them twice.
-[*][url=https://github.com/EvheniiS/GunmanContracts-Mods]Throw Assist[/url] leaves the billy clubs to Daredevil's own flight system, so the two mods do not steer the same club.
-[*][url=https://github.com/EvheniiS/GunmanContracts-Mods]Physical Dodge[/url] shares the slow-motion trigger used by radar sense. Turn off WithDodgeSlowMotion if you only want radar during your own focus.
+[*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/39]Throw Assist[/url] leaves the billy clubs to Daredevil's own flight system, so the two mods do not steer the same club.
+[*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/35]Physical Dodge[/url] shares the slow-motion trigger used by radar sense. Turn off WithDodgeSlowMotion if you only want radar during your own focus.
 [*][url=https://www.nexusmods.com/gunmancontractsstandalone/mods/26]Knee Shot Stun[/url] affects the kneeling reaction; ChestStunSeconds instead controls Daredevil's separate Stun throw reaction.
 [*]Other mods that change crowbar behaviour, club physics, enemy hit reactions, or enemy highlight materials may interact with these features.
 [/list]

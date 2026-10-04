@@ -77,3 +77,35 @@ behavior across the cases below.
   should not start a new kneel. Held-item contacts should not trigger this feature.
 - Turn off the game's assist and land an actual leg hit with a tracked free throw. Confirm that the reaction
   works without steering. Verify Billy Clubs still use their own settings.
+
+## Katana throws failing — 2026-10-03 03:23–03:24 (fixed in 0.2.3, untested)
+
+Source: `MelonLoader/Latest.log`, Throw Assist 0.2.2 at The Range, `DebugLog` switched on at 03:23:24.
+Six assisted katana throws (`Knife-Katana`, `Knife-Katana-double`): the first four stabbed (spine, two
+legs with kneel, head). The last three (03:24:12, :20, :26; 2.1–3.1 m) logged `no stab; no body collision
+observed; 4 s timeout` with last speeds 30.0, 35.3 and 12.0 m/s and the tip 56/40/116 degrees off the
+flight path. The player saw the blade stuck and thrashing inside the enemy, then flying off.
+
+Cause from the code: steering aimed the centre of mass, so the 1 m blade's tip was ~0.5 m into the body
+before the middle arrived; past the aim point steering reversed (not detected as an impact, since the
+check compares against the steered direction) and `BladeFirst` turned the blade round inside the body.
+Steering caps at 17 m/s, so 30+ m/s came from physics depenetration. 0.2.3 steers by the tip and stops
+steering at 0.3 m or once past the aim point. Test: katana and double katana throws at chest, head and
+knee; expect stabs, `steering: reached the aim point`, and `top` near 17 m/s.
+
+**0.2.3 test (03:34–03:35) disproved that cause.** Steering behaved (`reached the aim point` at 0.06–0.12 s,
+closest 0.19–0.28 m), yet the single katana still failed 3 times: no body collision, 4 s timeout, top 38–42 m/s
+(about 4 s of free fall: through the enemy, the wall and the floor). Every failure in both sessions came after
+VR Holster Customization logged `(returned)` for that blade; no success did. The return docks the knife while its
+colliders are already triggers, so the holster recorded none and the draw restored none. Fixed in VR Holster
+Customization 0.3.5. Lesson: "no body collision" plus a top speed far above the steer speed = a non-solid item;
+check its colliders before the flight code.
+
+## 0.2.3 + VR Holster Customization 0.3.5 session, 03:43–03:57 — collisions fixed; 0.2.4 for the misses
+
+Every return logged `(3 already were, solid again on the draw)`; no throw fell out of the map. 149 knife releases:
+124 assisted (stabs on head/chest, kneels on legs), 25 not assisted: 12 below the game's 3.5 m/s gate (2.8–3.2,
+early releases; e.g. 03:48:54 both katanas flicked 0.24 s after the draw at 2.9/3.2 m/s while the hand peaked at
+4.4 m/s afterwards) and 13 "no target in view" at 4–10 m/s (03:56:24 and 03:56:40 hit a leg anyway). 0.2.4 adds
+`KnifeAssistMinSpeed` and `AimByThrow`. Test: flick-throws at a knee while looking at the chest or away; expect
+`early release ... assisted` and `by throw direction` lines, and no `docked` on real throws.

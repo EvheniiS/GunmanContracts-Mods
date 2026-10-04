@@ -18,6 +18,47 @@ Unity hand rig or controller alignment; do this pass in the headset before relea
   must update the actual mod, restore DEFAULT, and survive restart. Test a mod-managed saved-state row: no Reset.
 - Compare desktop mode: each changed row has Reset, values save, cursor/weapon controls restore on close.
 
+## Section list (1.1.0)
+
+- Press List, then Back; press the section name: same list. Sections are alphabetical, current one red, changed ones
+  yellow. Pick one far down (VR Holsters): it opens on that page and no row under the finger gets pressed.
+- `X` closes from the list; reopening starts on the settings view. `<` / `>` from the list switch section and close it.
+- `PanelDistance` 1.4: the board opens ~1.4 m away at the same angle below the eyes; laser hover and press work.
+- Flat (Ctrl+M): List / title → click a section → lands there; wheel pages the list if it doesn't fit.
+
+## Updated defaults (1.2.0) and the Mods updated popup (1.3.0)
+
+**1.3.0:** the first board open after an update shows a small popup (Use new / Keep mine / Review / Later, or OK / Review)
+instead of opening on the page. Scenario pass T0-T7: project skill `defaults-test`; spec `UPDATE_POPUP_SPEC.md`. Steps
+below that say "the board opens on Updated defaults" now mean "the popup appears; Review opens the page".
+
+**Easiest: the Defaults Test fixture** (`Tools/DefaultsTest/`, a throwaway mod with 1.0.0 and 1.1.0 builds covering every case; touches only its own DLL, cfg section and record lines, never your real mods): `.\Test-Defaults.ps1 Setup` -> start game, quit -> `Update` -> start game, open the board -> quit -> `Check`. Details in the script header.
+
+**Removed settings file (1.2.1).** In the fixture: after the Update test, start the game once more and quit (so the changed-setting counts are saved), then `.\Test-Defaults.ps1 ResetCfg` (removes only the `[DefaultsTest]` cfg section) and start the game: the log must say `Settings were reset: Defaults Test ...`, the board opens on **Updated defaults** showing that message with no rows, and the next start does not repeat it. `Check` verifies the log line. Do not delete your real `MelonPreferences.cfg` to test this.
+
+**Real update test (Daredevil 1.0.0 -> 1.1.0).** DLLs staged in `feature/defaults-test/1.0.0/` and `1.1.0/`. The only
+default that changed between them is `BillyClubs.ChestStunSeconds` (3 -> 1), so one round tests one case:
+
+1. Game closed: delete `UserData/ModSettings_defaults.txt`, copy `1.0.0/Daredevil.dll` into `Mods/`.
+2. Start: board → BillyClubs → `ChestStunSeconds`. Round A: **Reset** (3 = old default, "untouched").
+   Round B: set it to 2 ("customised"). Quit.
+3. Copy `1.1.0/Daredevil.dll` into `Mods/`. Start, open the board: it opens on **Updated defaults**, description
+   says `Updated: Daredevil 1.0.0 -> 1.1.0`. A: value is now 1, row has **Revert**. B: value still 2, **Use new / Keep**.
+
+Or simulate one by editing `UserData/ModSettings_defaults.txt` with the game closed.
+
+- First start: the file appears, the log says `recorded the defaults of N settings`, no page, no notice.
+- **Untouched:** set `BillyClubs.ChestStunSeconds` to `3` in the cfg and in the record file. Start: log line
+  `default 3 -> 1; ... now uses the new one`, the cfg value is 1. The board opens on **Updated defaults** (first in
+  List, yellow) with the row in blue; **Revert** puts 3 back and the row reads Done. Next open: starts on your last page.
+- **Customised:** pick another number entry, set its record-file default to something else and its cfg value to a
+  third value. Start: listed with **Use new** and **Keep**; the board opens on the page every time until decided.
+  Restart without deciding: still listed. **Keep** → value unchanged, gone after restart. **Use new** → new default.
+- Changing that setting in its own section (steps or Reset) also counts as a decision (row reads Done / changed).
+- Press a row name: opens its own section with it selected and scrolled to. **Use all new** handles every waiting row.
+- Change `@Daredevil` in the record file: the description shows `Updated: Daredevil x -> 1.1.0`.
+- Flat (Ctrl+M): same page, rows, Keep / Use new / Revert, Use all new.
+
 ## Direct holster adjustment
 
 - Enable VR Holsters: move by hand. Check blue markers for each empty hip, knife and back socket. An occupied socket

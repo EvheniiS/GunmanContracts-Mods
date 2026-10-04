@@ -46,9 +46,9 @@ namespace RadarSense
     public class RadarSenseMod
     {
         internal static MelonLogger.Instance Log;
-        internal static MelonPreferences_Entry<bool> Enabled, WithDodgeSlowMotion, FocusRevealsAll, ClubHighlight, PerfLog, DebugLog;
-        internal static MelonPreferences_Entry<string> ClubColor, LoudSteps, Reveal, ActiveWhen, Color, Style, ShaderName, SkipParts;
-        internal static MelonPreferences_Entry<float> ClubMinDistance, Opacity, Range, StepSpeed, HearDistance, LoudRadius, StepVolume;
+        internal static MelonPreferences_Entry<bool> ShowStill, IncludeLods, Enabled, WithDodgeSlowMotion, FocusRevealsAll, ClubHighlight, PerfLog, DebugLog;
+        internal static MelonPreferences_Entry<string> Detail, ClubColor, LoudSteps, Reveal, ActiveWhen, Color, Style, ShaderName, SkipParts;
+        internal static MelonPreferences_Entry<float> StillBrightness, Brightness, SeenFraction, ClubMinDistance, Opacity, Range, StepSpeed, HearDistance, LoudRadius, StepVolume;
 
         internal static void Init(MelonLogger.Instance log)
         {
@@ -59,10 +59,16 @@ namespace RadarSense
             FocusRevealsAll = c.CreateEntry("FocusRevealsAll", true, description: "While your own slow motion (focus, right B) is on, every enemy in Range shows, even ones you haven't detected, whatever Reveal is set to.");
             WithDodgeSlowMotion = c.CreateEntry("WithDodgeSlowMotion", true, description: "The brief slow motion on a dodge (Physical Dodge) turns the sense on too, not only your own slow motion.");
             Color = c.CreateEntry("Color", "#FF1010", description: "Colour of the silhouettes.");
+            Brightness = c.CreateEntry("Brightness", 0.6f, description: "Multiplies the silhouette colour, live. Overlapping body meshes stack their opacity, so a bright colour reaches full brightness and the game's bloom turns it into a red aura around the enemies. Lower = darker red and less glow (0.3 to 1).");
+            ShowStill = c.CreateEntry("ShowStill", true, description: "Enemies you haven't seen that stand still also show, dimmed (StillBrightness), so you still see where they wait behind a wall. Moving ones, and everything while you focus, keep full Brightness. Needs Reveal Moving or All. Costs a little: the game's out-of-view hiding is switched off for every enemy in Range.");
+            StillBrightness = c.CreateEntry("StillBrightness", 0.35f, description: "Multiplies Brightness for standing-still enemies (ShowStill), live. 0.1 to 1.");
             Opacity = c.CreateEntry("Opacity", 0.6f, description: "How solid the silhouettes are, 0.05 to 1.");
             Style = c.CreateEntry("Style", "Hidden", description: "Hidden (enemies you can see directly get no highlight; the rest show the parts hidden behind something), Behind (every enemy, including ones you can see, shows its hidden parts) or Blocked (the whole body, only on enemies you can't see).");
             Reveal = c.CreateEntry("Reveal", "Moving", description: "Which enemies you haven't seen show. The game hides enemies out of view for a few seconds (no mesh, no animation) to save performance. Awake (only enemies the game still shows: seen recently, or woken up, e.g. shouting), Moving (also enemies walking or running, as if you hear their steps; the default) or All (every enemy in Range; the biggest performance cost).");
             StepSpeed = c.CreateEntry("StepSpeed", 0.5f, description: "For Reveal = Moving: an enemy moving faster than this (m/s) is heard.");
+            Detail = c.CreateEntry("Detail", "Body", description: "How much of an enemy's body is outlined, live. Core (the skin mesh and the vest: the plainest silhouette, cheapest), Body (+ shirt/jacket, trousers, sleeves, hands), Clothes (+ shoes) or Full (everything, hair, beard, tie and holster too).");
+            IncludeLods = c.CreateEntry("IncludeLods", false, description: "Also outline the lower detail levels (LOD1-4) of an enemy's body. Off by default: the game switches LODs without turning the other levels' renderers off, so this draws every level on top of each other (about 4x the silhouette meshes) and did not fix any missing outline. Applies to enemies seen after the change.");
+            SeenFraction = c.CreateEntry("SeenFraction", 0.7f, description: "How much of an enemy you must see for it to count as seen directly (no highlight with Style Hidden/Blocked). The game counts an enemy as in view when ONE of its 14 sight points has a clear line to your head, so a head over a doorframe or counter switched the whole silhouette off. This is the share of sight points that must be clear: 0.7 = 10 of 14. 0 = the game's own rule (one point).");
             Range = c.CreateEntry("Range", 60f, description: "Enemies further away than this (m) don't show.");
             SkipParts = c.CreateEntry("SkipParts", "eye,teeth,tooth,tongue,lash,brow", description: "Body parts left out, by renderer or mesh name (comma separated). Parts inside the head would show through the face.");
             ShaderName = c.CreateEntry("Shader", "Auto", description: "Auto picks the first that loads: Hidden/Internal-Colored, then UI/Default. Or a shader name. Applies after a game restart.");
@@ -100,8 +106,8 @@ namespace RadarSense
         static void W(string s) => RadarSenseMod.Log.Msg(s);
         static bool Debug => RadarSenseMod.DebugLog.Value;
 
-        class Part { public SkinnedMeshRenderer Src, Copy; }
-        class Enemy { public ANBBasicNPC Npc; public bool Shown; public Vector3 LastPos; public float LastT = -1; public readonly List<Part> Parts = new(); }
+        class Part { public SkinnedMeshRenderer Src, Copy; public int Rank; public bool Dim; }
+        class Enemy { public ANBBasicNPC Npc; public bool Shown; public Vector3 LastPos; public float LastT = -1; public readonly List<Part> Parts = new(); public int InView = -1, DiagLines; public float NextDiag, NextSig, MovingUntil, NextRescan; public bool Dim; }
 
         static readonly Dictionary<IntPtr, Enemy> Enemies = new();
         class MPart { public MeshRenderer Src, Copy; }
@@ -110,7 +116,7 @@ namespace RadarSense
         static Material clubMat;
         static float nextClubScan;
         static readonly HashSet<string> LoggedBodies = new();
-        static Material mat;
+        static Material mat, matDim;
         static string matMode;          // "Internal-Colored" or "UI" = how the depth test is set
         static bool shaderFailed, on;
         static float onSince, nextScan, nextShow;
@@ -220,6 +226,23 @@ namespace RadarSense
         }
         static readonly Regex LowerLod = new(@"(?i)LOD[1-9]");
 
+        // Full = the baked whole-body mesh contract enemies use (the separate skin/clothes meshes are off there), so it is Core.
+        // Detail levels: Core 0, Body 1, Clothes 2, Full 3. A part is outlined when its rank is at most the level.
+        // Names from the logged enemy bodies: CC_Combined = the skin mesh, Vest_1, Male_Shirt/Suit_Jacket, Suit_Pants,
+        // Sleeves, Hands, DressShoes; hair (Receded_, Hair_, Side_Part, Short_Middle_Part), Beard_, ANB_tie, Holster and
+        // anything unknown count as Full.
+        static readonly Regex CoreRx = new(@"(?i)^(CC_Combined|Vest|Full$)");
+        static readonly Regex BodyRx = new(@"(?i)^(Male_Shirt|Suit_Jacket|Suit_Pants|Sleeves|Hands)");
+        static readonly Regex ClothesRx = new(@"(?i)^DressShoes");
+        static int RankOf(string name) => CoreRx.IsMatch(name) ? 0 : BodyRx.IsMatch(name) ? 1 : ClothesRx.IsMatch(name) ? 2 : 3;
+        static int DetailLevel()
+        {
+            string d = RadarSenseMod.Detail.Value?.Trim() ?? "";
+            return d.Equals("Core", StringComparison.OrdinalIgnoreCase) ? 0
+                 : d.Equals("Body", StringComparison.OrdinalIgnoreCase) ? 1
+                 : d.Equals("Clothes", StringComparison.OrdinalIgnoreCase) ? 2 : 3;
+        }
+
         static Enemy Build(ANBBasicNPC n)
         {
             var e = new Enemy { Npc = n };
@@ -230,8 +253,8 @@ namespace RadarSense
                 if (src == null || src.sharedMesh == null) continue;
                 string name = src.name, mesh = src.sharedMesh.name;
                 if (name == "RadarSense") continue;
-                if (SkipRx().IsMatch(name) || SkipRx().IsMatch(mesh) || LowerLod.IsMatch(name)) { skipped.Add(name); continue; }
-                e.Parts.Add(new Part { Src = src, Copy = MakeCopy(src) });
+                if (SkipRx().IsMatch(name) || SkipRx().IsMatch(mesh) || (!RadarSenseMod.IncludeLods.Value && LowerLod.IsMatch(name))) { skipped.Add(name); continue; }
+                e.Parts.Add(new Part { Src = src, Copy = MakeCopy(src), Rank = RankOf(name) });
                 used.Add(name);
             }
             if (Debug)
@@ -241,6 +264,55 @@ namespace RadarSense
                     W($"enemy body '{n.name}': {used.Count} parts [{string.Join(", ", used)}], skipped [{string.Join(", ", skipped)}]");
             }
             return e;
+        }
+
+        // Renderers added to an enemy after Build. Ones whose name says hair/beard/tie/holster keep their rank; anything
+        // else new is treated as body (Core), since a runtime-made renderer on an enemy is most likely the merged body.
+        static readonly Regex Extras = new(@"(?i)(hair|beard|tie|holster|shadow|afro|receded|part|holo)");
+        static int rescanLines;
+        static void Rescan(Enemy e)
+        {
+            var n = e.Npc;
+            e.Parts.RemoveAll(p => !RadarSenseMod.Alive(p.Src) || !RadarSenseMod.Alive(p.Copy));   // the old body, destroyed on re-dress
+            var have = new HashSet<IntPtr>();
+            foreach (var p in e.Parts) if (RadarSenseMod.Alive(p.Src)) have.Add(p.Src.Pointer);
+            var added = new List<string>();
+            int all = 0, live = 0;
+            foreach (var src in n.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                if (src == null || src.name == "RadarSense") continue;
+                all++;
+                bool on = src.enabled && src.gameObject.activeInHierarchy;
+                if (on) live++;
+                if (have.Contains(src.Pointer) || src.sharedMesh == null) continue;
+                string name = src.name, mesh = src.sharedMesh.name;
+                if (SkipRx().IsMatch(name) || SkipRx().IsMatch(mesh) || (!RadarSenseMod.IncludeLods.Value && LowerLod.IsMatch(name))) continue;
+                int rank = RankOf(name);
+                if (rank == 3 && !Extras.IsMatch(name)) rank = 0;
+                e.Parts.Add(new Part { Src = src, Copy = MakeCopy(src), Rank = rank });
+                added.Add($"{name} [{mesh}] {(on ? "on" : "off")} r{rank}");
+            }
+            if (!Debug || rescanLines >= 40) return;
+            if (added.Count > 0) { rescanLines++; W($"rescan #{Math.Abs(n.GetInstanceID()) % 100000}: {added.Count} new renderers: {string.Join(", ", added)}"); }
+            else if (live == 0 || e.DiagLines < 3)
+            {
+                rescanLines++;
+                // nothing new: list what IS switched on anywhere under the enemy (any Renderer type), to find what draws it
+                var drawn = new List<string>();
+                foreach (var r in n.GetComponentsInChildren<Renderer>(false))
+                    if (r != null && r.enabled && r.name != "RadarSense" && drawn.Count < 12) drawn.Add($"{r.name}:{r.GetIl2CppType().Name}");
+                W($"rescan #{Math.Abs(n.GetInstanceID()) % 100000}: nothing new, skinned {live}/{all} on; renderers on: {string.Join(", ", drawn)}");
+            }
+        }
+
+        static void SetMat(Part p, bool dim)
+        {
+            var m = dim ? matDim : mat;
+            int subs = Math.Max(1, p.Copy.sharedMesh != null ? p.Copy.sharedMesh.subMeshCount : 1);
+            var mats = new Il2CppReferenceArray<Material>(subs);
+            for (int i = 0; i < subs; i++) mats[i] = m;
+            p.Copy.sharedMaterials = mats;
+            p.Dim = dim;
         }
 
         static SkinnedMeshRenderer MakeCopy(SkinnedMeshRenderer src)
@@ -279,7 +351,8 @@ namespace RadarSense
             bool revealAll = rv.Equals("All", StringComparison.OrdinalIgnoreCase) || (RadarSenseMod.FocusRevealsAll.Value && Focus());
             bool revealMoving = revealAll || !rv.Equals("Awake", StringComparison.OrdinalIgnoreCase);
             float stepSpeed = RadarSenseMod.StepSpeed.Value;
-            int shown = 0, kept = 0;
+            bool showStill = RadarSenseMod.ShowStill.Value && revealMoving;
+            int shown = 0, kept = 0, level = DetailLevel();
             foreach (var e in Enemies.Values)
             {
                 bool show;
@@ -298,30 +371,148 @@ namespace RadarSense
                         float t = Time.time, dt = t - e.LastT;
                         if (e.LastT >= 0 && dt > 0.001f) moving = (pos - e.LastPos).magnitude / dt > stepSpeed;
                         e.LastPos = pos; e.LastT = t;
+                        if (moving) e.MovingUntil = t + 1f;     // no flicker between bright and dim when it pauses
                     }
-                    if (near && (revealAll || moving))
+                    bool bright = revealAll || moving || Time.time < e.MovingUntil;
+                    bool still = near && showStill && !bright;
+                    e.Dim = still;
+                    if (near && (bright || still))
                     {
                         if (moving && !n.isInView) Heard.Add(n.Pointer);
                         if (n.outOfViewObjectsOff) Unhidden.Add(n.Pointer);
                         if (!n.isInView) kept++;
                         n.outOfViewTime = 0f;   // the game shows it again (or never hides it)
                     }
-                    show = near && (!onlyUnseen || !n.isInView);
+                    show = near && (!onlyUnseen || !SeenDirectly(n, eye));
+                    if (Debug && near) { ViewDiag(e, n, eye); PartsDiag(e, Body(n), eye); }
                 }
                 catch { show = false; }
                 if (show) shown++;
                 if (!show && !e.Shown) continue;    // already off: dead, pooled, far or in view
                 e.Shown = show;
+                int srcOn = 0;
                 foreach (var p in e.Parts)
                 {
                     if (!RadarSenseMod.Alive(p.Copy)) continue;
-                    bool s = show && RadarSenseMod.Alive(p.Src) && p.Src.enabled && p.Src.gameObject.activeInHierarchy;
+                    bool live = RadarSenseMod.Alive(p.Src) && p.Src.enabled && p.Src.gameObject.activeInHierarchy;
+                    if (live) srcOn++;
+                    bool s = show && p.Rank <= level && live;
                     if (s && p.Copy.sharedMesh != p.Src.sharedMesh) p.Copy.sharedMesh = p.Src.sharedMesh;
+                    if (s && p.Dim != e.Dim && RadarSenseMod.Alive(matDim)) SetMat(p, e.Dim);
                     if (p.Copy.enabled != s) p.Copy.enabled = s;
+                }
+                // Only the vest (or nothing) switched on while the enemy is wanted: the game may have given it renderers
+                // that didn't exist when Build ran (pooled enemies are re-dressed / merged on respawn). Look again.
+                if (show && srcOn <= 2 && Time.unscaledTime >= e.NextRescan)
+                {
+                    e.NextRescan = Time.unscaledTime + 2f;
+                    try { Rescan(e); } catch (Exception ex) { if (Debug) W($"rescan: {ex.GetType().Name}: {ex.Message}"); }
                 }
             }
             if (shown > shownPeak) shownPeak = shown;
             KeptNow = kept;
+        }
+
+        // Why does an enemy behind a wall count as "in view" when it is close (the highlight vanishes)? Logs the inputs of
+        // the game's isInView (checkVisibility): VisCheck.isVisible, useRaycastVisCheck, and with it on, which sight dots
+        // (children of HiddenPosCheckDots) have a clear ray from your head (BlockedSight reverse: head -> dot, length
+        // distance - 0.1, viewBlockMask). Own ray head -> body centre says what is really in between.
+        // Lines: every isInView flip within 8 m, and every 1 s while "in view" with a wall in the way within 8 m. 12 per enemy.
+        // The game's isInView with a stricter test: renderer visible and at least SeenFraction of the sight dots clear
+        // from your head (same rays as the game's checkVisibility: head -> dot, length distance - 0.1, viewBlockMask).
+        static bool SeenDirectly(ANBBasicNPC n, Vector3 eye)
+        {
+            if (!n.isInView) return false;
+            float frac = RadarSenseMod.SeenFraction.Value;
+            var root = n.HiddenPosCheckDots;
+            if (frac <= 0f || !n.useRaycastVisCheck || !RadarSenseMod.Alive(root)) return true;
+            int total = root.childCount;
+            if (total == 0) return true;
+            int need = (int)Math.Ceiling(Math.Min(frac, 1f) * total - 1e-4f), clear = 0;
+            var pt = n.Playertarget;
+            Vector3 head = RadarSenseMod.Alive(pt) ? pt.position : eye;
+            int mask = n.viewBlockMask.value;
+            for (int i = 0; i < total; i++)
+            {
+                Vector3 d = root.GetChild(i).position - head;
+                float len = d.magnitude - 0.1f;
+                if (len <= 0f || !Physics.Raycast(head, d.normalized, len, mask)) clear++;
+                if (clear >= need) return true;
+                if (clear + (total - 1 - i) < need) return false;
+            }
+            return false;
+        }
+
+        // Which body meshes the game has switched on, once per distinct set (so a Core/Body outline that shows only the
+        // vest can be explained): [name:rank, ...] of the enabled source meshes, for enemies within 8 m.
+        static readonly HashSet<string> LoggedSets = new();
+        static void PartsDiag(Enemy e, Vector3 body, Vector3 eye)
+        {
+            float now = Time.unscaledTime;
+            if (now < e.NextSig || LoggedSets.Count >= 40 || Vector3.Distance(eye, body) > DiagRange) return;
+            e.NextSig = now + 2f;
+            var on = new List<string>();
+            foreach (var p in e.Parts)
+                if (RadarSenseMod.Alive(p.Src) && p.Src.enabled && p.Src.gameObject.activeInHierarchy) on.Add($"{p.Src.name}:{p.Rank}");
+            string sig = string.Join(",", on);
+            if (LoggedSets.Add(sig)) W($"enabled meshes ({on.Count}): {sig}");
+        }
+
+        const float DiagRange = 8f;
+        static bool diagHeader;
+        static string DiagRay(Vector3 from, Vector3 to, int mask)
+        {
+            Vector3 d = to - from;
+            float len = d.magnitude - 0.1f;
+            if (len <= 0f) return "clear(0)";
+            return Physics.Raycast(from, d.normalized, out RaycastHit h, len, mask)
+                ? $"HIT '{h.collider.name}' L{h.collider.gameObject.layer} {h.distance:0.00}/{len + 0.1f:0.00} m"
+                : "clear";
+        }
+
+        static void ViewDiag(Enemy e, ANBBasicNPC n, Vector3 eye)
+        {
+            if (e.DiagLines >= 60) return;
+            Vector3 body = Body(n);
+            float dist = Vector3.Distance(eye, body);
+            bool seen = SeenDirectly(n, eye);       // seen = no highlight
+            int sv = seen ? 1 : 0;
+            if (dist > DiagRange) { e.InView = sv; return; }
+            bool flip = e.InView >= 0 && e.InView != sv;
+            e.InView = sv;
+            float now = Time.unscaledTime;
+            int srcOn = 0, copyOn = 0, lvl = DetailLevel();
+            foreach (var p in e.Parts)
+            {
+                if (p.Rank <= lvl && RadarSenseMod.Alive(p.Src) && p.Src.enabled && p.Src.gameObject.activeInHierarchy) srcOn++;
+                if (RadarSenseMod.Alive(p.Copy) && p.Copy.enabled) copyOn++;
+            }
+            bool notDrawn = !seen && srcOn == 0;    // highlight wanted, but the game has the body meshes off
+            var pt = n.Playertarget;
+            Vector3 head = RadarSenseMod.Alive(pt) ? pt.position : eye;
+            int mask = n.viewBlockMask.value;
+            string own = DiagRay(head, body + Vector3.up * 0.2f, mask);
+            bool stuck = seen && own.StartsWith("HIT");     // no highlight although a wall is in the way
+            if (now < e.NextDiag || !(flip || notDrawn || stuck)) return;
+            e.NextDiag = now + (flip ? 0.3f : 1f);
+            e.DiagLines++;
+            if (!diagHeader)
+            {
+                diagHeader = true;
+                W($"view diag: viewBlockMask {mask:X}, useRaycastVisCheck {n.useRaycastVisCheck}, vischeck pulse {n.vischeckPulseRate:0.00} s, VisCheck '{(RadarSenseMod.Alive(n.VisCheck) ? n.VisCheck.name : "null")}'");
+            }
+            string vis = RadarSenseMod.Alive(n.VisCheck) ? (n.VisCheck.isVisible ? "visible" : "NOT visible") : "no renderer";
+            string dots = "";
+            var root = n.HiddenPosCheckDots;
+            if (n.useRaycastVisCheck && RadarSenseMod.Alive(root))
+            {
+                int clear = 0, total = root.childCount;
+                for (int i = 0; i < total; i++)
+                    if (DiagRay(head, root.GetChild(i).position, mask).StartsWith("clear")) clear++;
+                dots = $", dots clear {clear}/{total}";
+            }
+            string kind = notDrawn ? "NOT DRAWN" : flip ? (seen ? "SEEN" : "HIGHLIGHT") : "STAY";
+            W($"view {kind} #{Math.Abs(n.GetInstanceID()) % 100000} d={dist:0.0} m: isInView {n.isInView}, renderer {vis}{dots}, chest {own}, body meshes on {srcOn}/{e.Parts.Count}, copies on {copyOn}, game hid {n.outOfViewObjectsOff}");
         }
 
         // ------------------------------------------------------------------ clubs
@@ -428,9 +619,11 @@ namespace RadarSense
                 var sh = FindShader(name);
                 if (sh == null) { if (Debug) W($"shader '{name}' not in the build"); continue; }
                 mat = new Material(sh) { name = "RadarSense", hideFlags = HideFlags.DontUnloadUnusedAsset };
+                matDim = new Material(sh) { name = "RadarSenseDim", hideFlags = HideFlags.DontUnloadUnusedAsset };
                 clubMat = new Material(sh) { name = "RadarSenseClub", hideFlags = HideFlags.DontUnloadUnusedAsset };
                 matMode = mat.HasProperty("_ZTest") ? "Internal-Colored" : "UI";
                 mat.renderQueue = 3100;         // after every opaque wall has written its depth
+                matDim.renderQueue = 3100;
                 clubMat.renderQueue = 3100;
                 lastKey = null;
                 ApplyMaterial();
@@ -445,13 +638,17 @@ namespace RadarSense
         static string lastKey;
         static void ApplyMaterial()
         {
-            string key = $"{RadarSenseMod.Color.Value}|{RadarSenseMod.ClubColor.Value}|{RadarSenseMod.Opacity.Value}|{RadarSenseMod.Style.Value}";
+            string key = $"{RadarSenseMod.StillBrightness.Value}|{RadarSenseMod.Brightness.Value}|{RadarSenseMod.Color.Value}|{RadarSenseMod.ClubColor.Value}|{RadarSenseMod.Opacity.Value}|{RadarSenseMod.Style.Value}";
             if (key == lastKey) return;
             lastKey = key;
             if (!ColorUtility.TryParseHtmlString(RadarSenseMod.Color.Value?.Trim(), out var col)) col = new Color(1f, 0.06f, 0.06f);
             col.a = Mathf.Clamp(RadarSenseMod.Opacity.Value, 0.05f, 1f);
+            float br = Mathf.Clamp(RadarSenseMod.Brightness.Value, 0.1f, 1f);
+            col = new Color(col.r * br, col.g * br, col.b * br, col.a);
             int test = (int)(Blocked() ? CompareFunction.Always : CompareFunction.Greater);   // Hidden, Behind: Greater
             SetUp(mat, col, test);
+            float sb = Mathf.Clamp(RadarSenseMod.StillBrightness.Value, 0.1f, 1f);
+            if (RadarSenseMod.Alive(matDim)) SetUp(matDim, new Color(col.r * sb, col.g * sb, col.b * sb, col.a), test);
             if (!ColorUtility.TryParseHtmlString(RadarSenseMod.ClubColor.Value?.Trim(), out var cc)) cc = new Color(1f, 0.75f, 0f);
             cc.a = col.a;
             if (RadarSenseMod.Alive(clubMat)) SetUp(clubMat, cc, (int)CompareFunction.Greater);   // a club in plain sight: no glow

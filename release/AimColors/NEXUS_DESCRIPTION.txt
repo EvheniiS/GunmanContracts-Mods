@@ -1,0 +1,75 @@
+[size=5][b]Aim Colors[/b][/size]
+
+Recolours what you aim with: the [b]laser[/b] (beam and dot), the [b]iron sights[/b] and the [b]red dot sight reticle[/b]. Change the colour, make them [b]brighter[/b] (easy to see even through wireless-stream compression) and resize the reticle dot. The defaults are a dark red look, tuned in VR.
+
+[size=4][b]What it does[/b][/size]
+[list]
+[*][b]Laser:[/b] colour and brightness of the beam and the dot, on pistols and the bow. Default is the game's own red, five times brighter.
+[*][b]Iron sights:[/b] the default sights on pistols and rifles. Default is a dark red instead of the game's yellow-orange.
+[*][b]Red dot reticle:[/b] colour, brightness and size of the dot in collimator sights (pistol and AB15 rifle). Default is a vivid red instead of the game's amber, slightly larger.
+[*][b]Enemy weapons:[/b] their lasers follow your laser settings (can be switched off). Iron sights and reticles are shared by every gun, so enemy guns follow those too.
+[/list]
+Set the values back to the game's own (listed under Settings) and you get vanilla back. The guns themselves are not recoloured, and shooting is the game's own code.
+
+[size=4][b]Install[/b][/size]
+Takes about 5 minutes the first time. Steps 1 and 2 are needed only once, for all MelonLoader mods.
+
+[b]Where is my game folder?[/b] In Steam, right-click [i]Gunman Contracts - Stand Alone[/i] →
+[i]Manage[/i] → [i]Browse local files[/i]. It's the folder with [i]GunmanContracts.exe[/i] in it.
+
+[b]1. Install MelonLoader[/b] (the mod loader)
+Download the installer from [url=https://github.com/LavaGang/MelonLoader/releases]MelonLoader releases[/url],
+run it, pick [i]GunmanContracts.exe[/i] in your game folder, and install [b]version 0.7.3 or newer[/b].
+[b]Version 0.6 does not work[/b] with this game.
+
+[b]2. Start the game once[/b], then quit.
+A black console window opens next to the game: that's MelonLoader working. The first start takes
+a minute or two, later ones are normal.
+
+[b]3. Add the mod[/b]
+Open the downloaded zip. Inside is a folder called [b]Mods[/b]. Drag that [b]Mods[/b] folder into your
+game folder, and if Windows asks, choose to replace / merge.
+You should end up with: [i]Gunman Contracts - Stand Alone\Mods\AimColors.dll[/i]
+
+[b]4. Check it works[/b]
+Start the game. The MelonLoader console lists [b]Aim Colors v0.1.0[/b] among the loaded mods.
+
+[b]Not working?[/b]
+[list]
+[*][b]The mod isn't in the console list:[/b] check the file isn't at [i]Mods\Mods\AimColors.dll[/i] (a folder
+too deep). Move it up so it sits directly in [i]Mods[/i].
+[*][b]No console window at all:[/b] MelonLoader isn't installed on this game. Repeat step 1 and make
+sure you picked [i]GunmanContracts.exe[/i].
+[*][b]Errors right at startup:[/b] you likely have MelonLoader 0.6. Install 0.7.3 or newer.
+[/list]
+
+[size=4][b]Settings (optional)[/b][/size]
+[spoiler]
+After the first launch, edit [i]UserData\MelonPreferences.cfg[/i], section [b][AimColors][/b]. Changes apply within about two seconds:
+[code]
+LaserColor     = #FF3640   Laser beam and dot as #RRGGBB. #FF3640 is the game's own red.
+LaserBoost     = 5         Laser brightness, 0.2 to 8. 1 = the game's own brightness.
+SightColor     = #5A080A   Iron sights as #RRGGBB. #FFB03B is the game's own yellow-orange.
+SightBoost     = 1         Iron-sight glow, 0.2 to 8. 1 = the game's glow.
+ReticleColor   = #5A080A   Red dot reticle as #RRGGBB. #E8992E is the game's own amber.
+ReticleBoost   = 5         Reticle brightness, 0.2 to 8. 1 = the game's brightness.
+ReticleSize    = 1.2       Reticle dot size, 0.3 to 4. 1 = the game's size.
+IncludeEnemies = true      Also recolour enemy weapons' lasers.
+[/code]
+[b]Back to vanilla:[/b] LaserBoost = 1, ReticleBoost = 1, ReticleSize = 1, LaserColor = #FF3640, SightColor = #FFB03B, ReticleColor = #E8992E.
+Or change these live in-VR with [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28][b]Mod Settings[/b][/url] (optional) — no restart, no text editor.
+[/spoiler]
+
+[size=4][b]Compatibility[/b][/size]
+Works alongside my other mods. It only changes colours, so it shares no buttons or hooks with
+[url=https://www.nexusmods.com/gunmancontractsstandalone/mods/22]Better Bow[/url] (the bow's laser is recoloured too),
+[url=https://www.nexusmods.com/gunmancontractsstandalone/mods/25]Fire Selector[/url],
+[url=https://www.nexusmods.com/gunmancontractsstandalone/mods/26]Knee Shot Stun[/url] or
+[url=https://www.nexusmods.com/gunmancontractsstandalone/mods/32]Gloves[/url] (which does the same for glove colour).
+
+[size=4][b]Uninstall[/b][/size]
+Delete [i]Mods\AimColors.dll[/i]. Laser, sights and reticle revert to the game's own look next launch.
+
+[size=4][b]Source[/b][/size]
+[url=https://github.com/EvheniiS/GunmanContracts-Mods]GitHub[/url] (MIT). Tested on game version 0.3.1.1,
+MelonLoader 0.7.3.

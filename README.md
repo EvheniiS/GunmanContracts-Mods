@@ -15,13 +15,18 @@ of the others (see [Mod structure](#mod-structure)).
 | [Throw Assist](ThrowAssist/README.md) | Real-physics steering for the game's own throw assist, and thrown pistols | 0.2.2 packaged release candidate; 3.5 m/s default assist gate |
 | [Mod Settings](ModSettings/README.md) | Movable VR settings board with native pointing pose, laser input and per-setting reset; mouse menu in flat mode | 1.0.0 packaged (0.2.2 released on [Nexus](https://www.nexusmods.com/gunmancontractsstandalone/mods/28)) |
 | [Grab Log](GrabLog/README.md) | Diagnostic: grip timing, prompt and hover changes, hand alignment, item distances, detection volumes, actual grab results, and pickup state after release/throw | 0.1.0, in testing |
+| [Sound Probe](SoundProbe/README.md) | Diagnostic: lists every sound the game plays by clip name, to find the clip a holster, pickup or hit makes | 0.1.0 diagnostic; untested |
 | [Frame Probe](FrameProbe/README.md) | Diagnostic frame timing and draw-call summaries for controlled mod-performance comparisons; optional Jev log filter | 0.1.0 diagnostic; in-game verification pending |
 | [Challenge NPC Limit](ChallengeNpcLimit/README.md) | Raises the selectable enemy count in takedown challenges above the game's 30 limit (60 by default) | 0.1.0, built and installed for local testing; in-game verification pending |
 | [Grab Fix](GrabFix/GrabFix.cs) | Finger + palm-aimed pickup together (wider near sphere, grip buffer, thrown-item catch), so more grabs land without accidental grabs (grip is still a deliberate button) | 0.2.0, in testing |
 | [Daredevil](Daredevil/README.md) | Billy clubs, belt holsters, arsenal panel entry with Weapon Framework, radar sense, and club door kicks. Club back slots use VR Holster Customization. | 1.0.0 packaged release candidate; checkpoint and door kick tested in game |
+| [Slow Motion Hands](SlowMotionHands/README.md) | Hands keep up with your controllers in slow motion: normal-rate physics plus hand drives scaled by the time scale | 0.1.3 tested: slow motion feels much better (rifle/club not yet logged) |
+| [Aim Colors](AimColors/README.md) | Recolour the weapon laser (beam and dot, with a brightness boost), the iron sights and the collimator reticle (colour, brightness, size), live from Mod Settings | 0.1.0 release candidate (tested in game Oct 2 2026) |
+| [Melee Unlocks](MeleeUnlocks/README.md) | Unlocks knives on The Range knife wall as if you had made the kills; by default the double katana (second katana for dual wielding), which no contract places. `All` unlocks every knife. Saved in the game save | 0.2.1, tested Oct 3 2026 (double katana unlocked and saved; `All` untested) |
 | [Gloves](Gloves/README.md) | Recolours the player's gloves: dark red by default, any colour from the Mod Settings board, applied at once | 0.1.0, released on [Nexus](https://www.nexusmods.com/gunmancontractsstandalone/mods/32); required by Daredevil |
 | [Weapon Framework](WeaponFramework/README.md) | Adds mod weapons to the arsenal panel in The Range; uses VR Holster Customization for item docking and test crowbar back slots. Guide: [MODDING_GUIDE.md](WeaponFramework/MODDING_GUIDE.md) | 0.3.0 on dev; requires VR Holster Customization |
 | [VR Holster Customization](VRHolsterCustomization/README.md) | Adjust game holsters on three axes or move empty slots by hand; hologram colors and mod-item back slots | 0.2.2 packaged release candidate; back-slot checkpoint reset tested; requires Mod Settings |
+| [Death Details](DeathDetails/README.md) | Dead enemies close their eyes, mouth slightly parted (the faces' own ARKit shapes; corpse faces cost less than vanilla); enemies writhing in pain keep their pain face until they die, and a melee hit to the head finishes them with a head-hit sound. Optional, experimental: bleed-out, any hit finishes them | 0.7.1 release candidate (tested); experimental options off, untested |
 
 Settings for each mod are in `UserData\MelonPreferences.cfg`, one section per mod, and on the in-VR Mod Settings board.
 
@@ -51,7 +56,7 @@ Daredevil.dll            clubs (Daredevil/BillyClubs/) + radar sense (Daredevil/
 - **Gloves** replaces the old `[BillyClubs] GloveColor` setting with `[Gloves] Color`.
 - **Weapon Framework** is for any mod: register a weapon and it appears on the arsenal panel (API in its README). Version 0.3.0 requires VR Holster Customization.
 
-Parked ideas (hardcore "no free misses") with the game code behind them: [IDEAS.md](IDEAS.md).
+How the game works (hooks, addresses, mechanisms, sound, flat mode): [GAME_KNOWLEDGE.md](GAME_KNOWLEDGE.md). Per-version history: [HISTORY.md](HISTORY.md). Open work and parked ideas: [ROADMAP.md](ROADMAP.md).
 
 ## Install
 
@@ -79,15 +84,15 @@ Or put your path in `<ModFolder>/GameDir.local.props` (git-ignored):
 ## Repository layout
 
 - `BetterBow/`, `KneeShotStun/`, `FireSelector/`, `HeavyMelee/`, `PhysicalDodge/`, `EnemyAwarenessFix/`, `ChallengeNpcLimit/`,
-  `EnemyAwarenessLog/`, `ThrowAssist/`, `ModSettings/`, `Gloves/`, `WeaponFramework/`, `VRHolsterCustomization/`, `GrabLog/`, `GrabFix/`, `FrameProbe/`: one
+  `EnemyAwarenessLog/`, `ThrowAssist/`, `ModSettings/`, `Gloves/`, `WeaponFramework/`, `VRHolsterCustomization/`, `GrabLog/`, `MeleeUnlocks/`, `GrabFix/`, `FrameProbe/`, `DeathDetails/`: one
   folder per mod, source and its own project.
 - `Daredevil/`: the package project, with `BillyClubs/` and `RadarSense/` source folders and `Tests/` (the model
   loader test). There are no separate `BillyClubs/` or `RadarSense/` projects any more.
 - `BlenderRefs/`: the billy club model (`out/billy_club.obj` + textures, embedded in Daredevil) and
   `render_arsenal_icon.py` / `make_arsenal_icon.py`, which render its arsenal panel picture.
 - `release/<Mod>/`: the prebuilt DLL of the last release and the Nexus Mods page text.
-- `release/NEXUS_TEMPLATE.txt`: the shared skeleton behind every `NEXUS_DESCRIPTION.txt` (Install,
-  Settings, Compatibility, Uninstall, Source boilerplate) — start a new mod's page from it.
+- `.claude/skills/nexus-release/` and `.claude/skills/nexus-status/`: the Nexus workflow (page-text template, packaging, what is live).
+  `Tools/Pack-Release.ps1` builds + zips + lints a release; `Tools/Check-Nexus.ps1` asks the Nexus API what is live.
 - `il2cpp_tools/`: small Python tools for reading the game without Cpp2IL/Il2CppDumper:
   `il2.py` (global-metadata v31 + GameAssembly method/field map), `disx.py` (named disassembly),
   `xref.py` (direct callers), `scanoff.py` (which methods touch a field offset), `slot.py` (string literals and generic types a method uses), `dumpt.py` (fields/methods of a type), `disa.py` (whole-method disassembly

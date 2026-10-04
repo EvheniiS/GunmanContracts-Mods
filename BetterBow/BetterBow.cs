@@ -12,7 +12,7 @@ using MelonLoader;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(BetterBow.BetterBowMod), "Better Bow", "1.2.0", "Evgeeso")]
+[assembly: MelonInfo(typeof(BetterBow.BetterBowMod), "Better Bow", "1.3.0", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace BetterBow
@@ -41,7 +41,7 @@ namespace BetterBow
             Settings.Create();
             _stringGrab = new StringGrab();
             _quiver = new Quiver();
-            LoggerInstance.Msg("loaded - string grab buffer, quiver, dagger grip, arrow throw assist, one-arrow barrels, arrow door breach, pause/phone hand fix.");
+            LoggerInstance.Msg("loaded - bow hand lock, string grab buffer, quiver, dagger grip, arrow throw assist, one-arrow barrels, arrow door breach, pause/phone hand fix.");
         }
 
         public override void OnSceneWasInitialized(int buildIndex, string sceneName)
@@ -52,6 +52,7 @@ namespace BetterBow
             _quiver.OnScene();
             PauseHands.OnScene();
             ThrowAssist.OnScene();
+            HandSwap.OnScene();
             _fallbackScanAt = U.Now + 3.0;
             if (!_warmed) { _warmed = true; WarmUp(); }
         }
@@ -68,6 +69,7 @@ namespace BetterBow
             PauseHands.Update();                                        // runs with or without a bow
             if (Loaders.Count == 0) return;                             // no bow in the scene
 
+            HandSwap.Update();
             _stringGrab.Update();
             _quiver.Update();
         }
@@ -116,7 +118,7 @@ namespace BetterBow
     internal static class Settings
     {
         internal static MelonPreferences_Entry<bool> StringGrab, RetrySpawn, ExplosiveBarrels, BreachDoors,
-            Quiver, HeadFallback, Haptics, GripSwitch, ThrowAssist, HandsKeepParentAfterPause, PhoneSettingsRescue, DebugLog;
+            Quiver, HeadFallback, BowHandSwap, Haptics, GripSwitch, ThrowAssist, HandsKeepParentAfterPause, PhoneSettingsRescue, DebugLog;
         internal static MelonPreferences_Entry<float> StringGrabRadius, StringGrabBuffer, RetryWindow,
             QuiverRadius, QuiverBuffer, NockRadius, SlipNockRadius, DropLifetime, DaggerFromNock, ThrowAssistSpeed, ThrowStabReach, ThrowStabBack, FullDrawAt, ArrowSpeed;
         internal static MelonPreferences_Entry<bool> ThrowAssistAvoidVest;
@@ -137,6 +139,8 @@ namespace BetterBow
 
             ExplosiveBarrels = c.CreateEntry("ExplosiveArrowsDetonateBarrels", true, description: "One arrow hit detonates an explosive barrel (the game otherwise needs three).");
             BreachDoors = c.CreateEntry("ArrowsBreachDoors", true, description: "An arrow shot at a door's 'shoot here to burst open door' mark breaches it, like a gunshot.");
+
+            BowHandSwap = c.CreateEntry("BowHandSwap", false, description: "Let the other hand take the bow out of the hand holding it (the game's own behaviour). Off = while one hand holds the bow, only the string can be grabbed with the other hand, so a grip near the riser no longer swaps hands. Taking the bow off a holster works with either hand either way.");
 
             Quiver = c.CreateEntry("Quiver", true, description: "Draw arrows from the holster the bow came from, with the hand that isn't holding the bow.");
             QuiverRadius = c.CreateEntry("QuiverRadius", 0.20f, description: "Metres around the quiver spot within which a grip press draws an arrow.");

@@ -1,0 +1,20 @@
+{
+  "_": "Optional hand-written text appended to a mod's Status cell in the root README by Sync-Readme.ps1. Static config; keep volatile data (versions, test state) out of it.",
+  "notes": {
+    "HeavyMelee": "not a priority right now",
+    "PhysicalDodge": "only preference fine-tuning left (personal taste)",
+    "EnemyAwarenessFix": "[Enemy Awareness Log](EnemyAwarenessLog/EnemyAwarenessLog.cs) ships alongside it as an optional file",
+    "GrabLog": "diagnostic, retired (disabled in game)",
+    "FrameProbe": "diagnostic",
+    "SoundProbe": "diagnostic",
+    "ThrowAssist": "required by Daredevil; 2.5 m/s default knife assist gate",
+    "ModSettings": "required by VR Holster Customization",
+    "Gloves": "required by Daredevil",
+    "WeaponFramework": "requires VR Holster Customization",
+    "VRHolsterCustomization": "requires Mod Settings",
+    "Daredevil": "requires Gloves, Throw Assist, Mod Settings and Weapon Framework",
+    "DeathDetails": "experimental options off, untested",
+    "MeleeUnlocks": "`All` untested",
+    "SlowMotionHands": "rifle and club not yet logged"
+  }
+}

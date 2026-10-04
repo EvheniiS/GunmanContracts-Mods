@@ -1,0 +1,78 @@
+[size=5][b]Death Details[/b][/size]
+
+Small touches for how enemies die: [b]dead enemies close their eyes[/b] and their mouth stays [b]slightly parted[/b] instead of gaping, enemies writhing on the floor keep their [b]pain face[/b] until they die, and a [b]melee hit to the head[/b] finishes a writhing enemy like a headshot.
+
+[size=4][b]What it does[/b][/size]
+[list]
+[*][b]Eyes and mouth:[/b] a corpse's eyelids ease shut a moment after death and the face then stays as it is. The game's death face often leaves the jaw wide open; this eases it to slightly parted. Beards follow the face. Far-away bodies have no face detail to change, so their eyes stay as they are.
+[*][b]Pain face:[/b] an enemy killed by a body shot can lie writhing before it dies for good. It keeps its pain face while it writhes, and the eyes close when it stops.
+[*][b]Finish them with a hit:[/b] the game ignores melee hits on dead bodies, so a club to a writhing enemy's head did nothing. Now a hit to the head (club, bat, crowbar, swung or thrown; a gun or bow swung like a club; a fist) finishes it, with the game's own head-hit sound. Body and leg hits don't, and a light tap below the speed setting doesn't count.
+[*][b]Cheaper than vanilla:[/b] the game keeps animating every dead face. This mod switches a corpse's face off once its eyes are shut, so a corpse costs less than in the base game.
+[/list]
+Two extras are [b]off by default[/b] and experimental: enemies can bleed out instead of writhing for ever, and any hit can finish a writhing enemy, leg shots included. Damage, shooting and enemy AI are the game's own code.
+
+[size=4][b]Install[/b][/size]
+Takes about 5 minutes the first time. Steps 1 and 2 are needed only once, for all MelonLoader mods.
+
+[b]Where is my game folder?[/b] In Steam, right-click [i]Gunman Contracts - Stand Alone[/i] →
+[i]Manage[/i] → [i]Browse local files[/i]. It's the folder with [i]GunmanContracts.exe[/i] in it.
+
+[b]1. Install MelonLoader[/b] (the mod loader)
+Download the installer from [url=https://github.com/LavaGang/MelonLoader/releases]MelonLoader releases[/url],
+run it, pick [i]GunmanContracts.exe[/i] in your game folder, and install [b]version 0.7.3 or newer[/b].
+[b]Version 0.6 does not work[/b] with this game.
+
+[b]2. Start the game once[/b], then quit.
+A black console window opens next to the game: that's MelonLoader working. The first start takes
+a minute or two, later ones are normal.
+
+[b]3. Add the mod[/b]
+Open the downloaded zip. Inside is a folder called [b]Mods[/b]. Drag that [b]Mods[/b] folder into your
+game folder, and if Windows asks, choose to replace / merge.
+You should end up with: [i]Gunman Contracts - Stand Alone\Mods\DeathDetails.dll[/i]
+
+[b]4. Check it works[/b]
+Start the game. The MelonLoader console lists [b]Death Details v0.7.1[/b] among the loaded mods.
+
+[b]Not working?[/b]
+[list]
+[*][b]The mod isn't in the console list:[/b] check the file isn't at [i]Mods\Mods\DeathDetails.dll[/i] (a folder
+too deep). Move it up so it sits directly in [i]Mods[/i].
+[*][b]No console window at all:[/b] MelonLoader isn't installed on this game. Repeat step 1 and make
+sure you picked [i]GunmanContracts.exe[/i].
+[*][b]Errors right at startup:[/b] you likely have MelonLoader 0.6. Install 0.7.3 or newer.
+[/list]
+
+[size=4][b]Settings (optional)[/b][/size]
+[spoiler]
+After the first launch, edit [i]UserData\MelonPreferences.cfg[/i], section [b][DeathDetails][/b]:
+[code]
+Enabled         = true    Dead enemies close their eyes.
+WaitForTwitch   = true    Leave the pain face alone while an enemy lies writhing; eyes close when it stops.
+HeadHitEndsPain = true    A melee hit to the head of a writhing enemy finishes it, like a headshot.
+HeadHitSfx      = true    Play the game's own blunt head-hit sound on that finishing hit.
+HeadHitSpeed    = 2       How fast (m/s) the weapon or hand must hit the head. Lower = a light tap counts.
+BleedOut        = false   Experimental, untested. Writhing enemies die after the game's own bleed-out time.
+MaxPainSeconds  = 0       With BleedOut: longest an enemy writhes, in seconds. 0 = the game's own time.
+AnyHitEndsPain  = false   Experimental, untested. Any hit finishes a writhing enemy, leg shots included.
+EyesClosed      = 1       How far the eyelids close: 1 = fully shut, 0.8 = a slit left open.
+JawOpen         = 0.1     How far the mouth stays open: 0 closed, 1 fully open, -1 = the game's own death face.
+CloseSeconds    = 0.6     Seconds the eyelids take to close.
+Delay           = 0.3     Seconds after death before the eyelids start to close.
+DebugLog        = false   One line per death and one when the eyes are shut.
+[/code]
+Or change these live in-VR with [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28][b]Mod Settings[/b][/url] (optional) — no restart, no text editor.
+[/spoiler]
+
+[size=4][b]Compatibility[/b][/size]
+Works alongside my other mods. The head-hit finish listens to the same melee contacts as
+[url=https://github.com/EvheniiS/GunmanContracts-Mods]Heavy Melee[/url] and
+[url=https://github.com/EvheniiS/GunmanContracts-Mods]Daredevil[/url] (which both skip dead bodies), so a club or pistol whip that Heavy Melee or Daredevil would ignore on a dead body now finishes a writhing enemy.
+[url=https://www.nexusmods.com/gunmancontractsstandalone/mods/26]Knee Shot Stun[/url] changes living enemies' leg-shot reaction and doesn't overlap.
+
+[size=4][b]Uninstall[/b][/size]
+Delete [i]Mods\DeathDetails.dll[/i]. Corpses go back to the game's own faces next launch.
+
+[size=4][b]Source[/b][/size]
+[url=https://github.com/EvheniiS/GunmanContracts-Mods]GitHub[/url] (MIT). Tested on game version 0.3.1.1,
+MelonLoader 0.7.3.

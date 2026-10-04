@@ -1,5 +1,7 @@
 # Heavy Melee
 
+Tested: 1.0.0
+
 Stronger fists and held gun/bow hits, with capped damage and support for hitting and keeping downed enemies down.
 Settings are in `[HeavyMelee]` in `UserData/MelonPreferences.cfg` or the in-VR Mod Settings menu.
 

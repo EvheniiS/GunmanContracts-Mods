@@ -1,5 +1,7 @@
 # Frame Probe (diagnostic, 0.1.0)
 
+Tested: none
+
 Frame Probe records low-overhead, 30-second summaries of frame time, CPU main and render thread time, GPU time when Unity reports it, and draw calls. It does not change rendering or gameplay. Output is `UserData/FrameProbe/session-*.csv`; the MelonLoader log records the loaded mod names and versions.
 
 This is a measurement aid, not a per-mod profiler. Run the **same scene and settings** with (1) FrameProbe alone, (2) FrameProbe plus the full mod set, then isolate any measured difference by groups. Keep FrameProbe installed in every comparison. At 120 Hz the frame budget is 8.33 ms; at 90 Hz it is 11.11 ms. Warm up for two minutes and record at least three minutes per run. Use the VR runtime overlay to check reprojection and dropped frames. Change DLLs only while the game is closed. The full protocol is in [IDEAS.md](../IDEAS.md#vr-frame-time-baseline-and-mod-isolation-sep-29-2026).

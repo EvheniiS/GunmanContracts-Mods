@@ -1,4 +1,6 @@
-# Throw Assist 0.2.2
+# Throw Assist 0.2.4
+
+Tested: 0.2.4 (2026-10-03)
 
 Throw assist with real physics, and thrown pistols that hurt. Required by the Daredevil package (Billy Clubs + Radar
 Sense). Moved out of Billy Clubs 0.10.x.
@@ -18,6 +20,34 @@ Sense). Moved out of Billy Clubs 0.10.x.
   but those items have not been broadly tested. There is no need to test props to validate knife throwing.
 - **Billy Clubs** fly their own club flight (ricochets, spin styles, floor shots): objects named `BillyClub-*` are left
   to that mod, so the two never steer the same throw.
+
+## 0.2.4: early releases and throws you aren't looking along (played Oct 3 2026; both on by default)
+
+The 03:43-03:57 session: 124 of 149 knife releases were assisted and nearly all stuck. The 25 misses never got an
+assist: 12 were early releases at 2.8-3.2 m/s (the hand still speeding up, just under the game's 3.5 gate), 13 were
+real throws (4-10 m/s) where the game found "no target in view", because its search is **gaze-based** (headset
+position + forward, `assistedThrowViewAngle`), not throw-based. Two of those hit a leg anyway, unassisted.
+
+- `KnifeAssistMinSpeed` (default 2.5; 3.5 = the game's own gate, unchanged): a knife released at least this fast is
+  assisted. The game's gate is lowered for that one `releaseKnife` call and restored after it (also on an exception).
+  Logged as `early release at <speed> m/s assisted`.
+- `AimByThrow` (default on) + `ThrowAimMaxAngle` (25): when the game finds no target, the
+  enemy nearest the throw direction (head, chest or a leg collider within the angle, within `SearchDistance`) is
+  used. One `FindObjectsByType` per such throw, nothing per frame. Logged as `(by throw direction, N deg; none in view)`.
+- A flight ends as `docked` if the item turns kinematic (put in a holster), so a fast put-back is never steered.
+
+## 0.2.3: long blades (played Oct 3 2026)
+
+Assisted knives are steered by their **tip** (`ANBKnife.StabOrient`, measured along the stab line at release),
+not their centre of mass, and steering stops once the steered point is within 0.3 m of the aim point or has
+passed it. The item then flies straight on its own momentum, and steering can never reverse inside a body.
+
+**Correction (same night):** this was built for katanas that went through enemies and flew off, but the 0.2.3 test
+showed the real cause: every failing katana had been auto-returned to the back by VR Holster Customization, which
+left it non-solid. Fixed there in 0.3.5. The tip steering stays; it tested fine (closest approach 0.19-0.28 m).
+
+The flight summary now ends with `top <speed>` and, for steered throws,
+`steering: <why it stopped> at <s>, closest <m>`; the release line says `by the tip (<m> ahead)` for knives.
 
 ## Settings (`[ThrowAssist]`)
 

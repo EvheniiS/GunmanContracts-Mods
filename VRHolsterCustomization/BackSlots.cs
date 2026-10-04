@@ -4,6 +4,7 @@ using System.Globalization;
 using Il2Cpp;
 using Il2CppHurricaneVR.Framework.Core;
 using Il2CppHurricaneVR.Framework.Core.Grabbers;
+using Il2CppHurricaneVR.Framework.Core.Sockets;
 using Il2CppHurricaneVR.Framework.Core.Utils;
 using Il2CppInterop.Runtime;
 using MelonLoader;
@@ -20,6 +21,7 @@ namespace VRHolsterCustomization
         public string Id;                     // saved in the cfg; letters and digits
         public Func<GameObject, bool> IsMine; // is this object one of yours
         public Func<GameObject> Spawn;        // a new item for a restore; null if you can't make one now
+        public bool Blade;                    // a sword or knife: hangs by its grip end in the blade pose (Blade* settings)
     }
 
     // Back holsters for mod items (Sep 29 2026, first version).
@@ -38,7 +40,7 @@ namespace VRHolsterCustomization
     {
         static readonly List<HolsterKind> kinds = new();
         static readonly Dictionary<string, Shape> shapes = new();
-        struct Shape { public Vector3 Center, Axis; public float Length; }
+        struct Shape { public Vector3 Center, Axis, Flat; public float Length; }
 
         sealed class Slot
         {
@@ -54,9 +56,12 @@ namespace VRHolsterCustomization
         static readonly List<GameObject> tracked = new();   // items whose release this mod watches
         static readonly List<GameObject> drawn = new();     // back items that may still exist after a checkpoint reset
         static readonly Dictionary<IntPtr, bool> wasHeld = new();
+        static readonly Dictionary<IntPtr, List<Collider>> ghosted = new(); // per holstered item: colliders we made non-solid
+        static readonly Dictionary<IntPtr, bool> home = new(); // blade last drawn from the back: true = left side
 
-        static MelonPreferences_Entry<bool> Enabled;
-        static MelonPreferences_Entry<int> Out, Up, Back, Drop, Tilt, Lean, Spin, Snap, DrawReach;
+        static MelonPreferences_Entry<bool> Enabled, Sounds;
+        static MelonPreferences_Entry<string> SoundIn, SoundOut;
+        static MelonPreferences_Entry<int> Out, Up, Back, Drop, Tilt, Lean, Spin, Snap, DrawReach, BladeGrip, BladeTilt, BladeLean, BladeSpin;
         static MelonPreferences_Entry<string> Saved;
         static MelonPreferences_Category cat;
 
@@ -72,6 +77,10 @@ namespace VRHolsterCustomization
         {
             cat = MelonPreferences.CreateCategory("VRHolsters_BackSlots", "VR Holster Customization: back slots");
             Enabled = cat.CreateEntry("BackHolsters", true, description: "Mod weapons (framework items, Billy Clubs) can go in the back holsters. Each side holds one weapon: a game gun or a mod item.");
+            Sounds = cat.CreateEntry("HolsterSounds", true, description: "Holstering and drawing a mod weapon in a back holster plays the game's own holster sound, like a gun or the bow.");
+            SoundIn = cat.CreateEntry("HolsterInSound", "EQUIPTact_Equipment Metal Buckle Chain Jangle Latch Flap Belts 03_ESM_SG", description: "Sound when a mod weapon goes into a back holster: the name of a game sound clip (find names with the Sound Probe mod). The default is the sound of taking a katana from its wall spot. Blank = a gun's holster click.");
+            SoundOut = cat.CreateEntry("HolsterOutSound", "S_WEP_Knife_Attack_01", description: "Sound when a mod weapon is drawn from a back holster: the name of a game sound clip. The default is the sound of drawing a knife or katana from the belt. Blank = a gun's holster click.");
+            wantIn = SoundIn.Value; wantOut = SoundOut.Value;
             Out = cat.CreateEntry("OutCm", -13, description: "Moves the mod item in the back holster away from the spine (cm, both sides mirrored).");
             Up = cat.CreateEntry("UpCm", 0, description: "Moves it up (cm).");
             Back = cat.CreateEntry("BackCm", 7, description: "Moves it back, away from your body (cm).");
@@ -82,6 +91,13 @@ namespace VRHolsterCustomization
             Snap = cat.CreateEntry("SnapCm", 30, description: "Let go of a mod item within this distance of a free back holster (slowly) and it goes in (cm).");
             DrawReach = cat.CreateEntry("DrawCm", 20, description: "Press grip with your hand within this distance of a mod item on your back and it comes out (cm). You can't see behind you, so this is wider than a normal grab.");
             Saved = cat.CreateEntry("SavedBackHolsters", "", description: "Managed by the mod: which mod item is in which back holster (L=kind;R=kind). Restored after every scene load.");
+            // Blades hang by the grip end, so one pose fits a katana and a short knife; the anchor (OutCm, UpCm,
+            // BackCm) is shared with the mod items. Default: grip where the crowbar's grip sits, diagonal across the back.
+            BladeGrip = cat.CreateEntry("BladeGripCm", 0, description: "How far a katana's or knife's grip end hangs below the back holster point (cm). Negative = above it.");
+            BladeTilt = cat.CreateEntry("BladeTiltDeg", 35, description: "Tilts a blade's tip towards the spine (degrees). 0 = straight down, 45 = diagonal across the back.");
+            BladeLean = cat.CreateEntry("BladeLeanDeg", 10, description: "Leans a blade's tip back, away from your body (degrees).");
+            BladeSpin = cat.CreateEntry("BladeSpinDeg", 0, description: "Turns a blade around its own length (degrees). 0 = the flat of the blade against your back.");
+            BackBlades.Init(cat, Saved.Value);
         }
 
         public static void RegisterKind(HolsterKind k)
@@ -138,6 +154,7 @@ namespace VRHolsterCustomization
                     return false;
                 }
                 Put(best, item, kind);
+                Sound(best, item, true);
                 HolsterLog.ModHolster(best.Name, Label(kind, item), true);
                 Save();
                 return true;
@@ -172,6 +189,8 @@ namespace VRHolsterCustomization
             checkpointRestoreAt = float.PositiveInfinity;
             drawn.Clear();
             ignoresPlayer.Clear();
+            ghosted.Clear();
+            home.Clear();
         }
 
         internal static void PlayerLoadoutReset(ANBGameLogic game)
@@ -211,6 +230,8 @@ namespace VRHolsterCustomization
                 if (!VRHolsterCustomizationMod.Alive(s.Item)) { s.Item = null; s.Kind = null; Save(); continue; }
                 if (!VRHolsterCustomizationMod.Alive(s.Socket) || Dock.IsHeld(s.Item)) continue;
                 if (!s.Item.activeSelf) s.Item.SetActive(true);
+                if (s.Kind != null && s.Kind.Blade) BackBlades.KeepDocked(s.Item);
+                KeepGhost(s.Item);
                 PinIn(s);
             }
 
@@ -237,9 +258,12 @@ namespace VRHolsterCustomization
             {
                 if (!VRHolsterCustomizationMod.Alive(s.Item) || !t.IsChildOf(s.Item.transform)) continue;
                 var item = s.Item; var kind = s.Kind;
+                if (kind != null) home[item.Pointer] = s.Left; // any kind: a mod's own return (Daredevil's clubs) uses it too
                 if (!drawn.Exists(go => VRHolsterCustomizationMod.Alive(go) && go.Pointer == item.Pointer)) drawn.Add(item);
                 s.Item = null; s.Kind = null;
+                Ghost(item, false);
                 Dock.Unpin(item);
+                Sound(s, item, false);
                 HolsterLog.ModHolster(s.Name, Label(kind, item), false);
                 Save();
                 return;
@@ -461,12 +485,109 @@ namespace VRHolsterCustomization
         static void Put(Slot s, GameObject item, HolsterKind kind)
         {
             s.Item = item; s.Kind = kind;
+            home.Remove(item.Pointer);
             Dock.Unhang(item);
             Dock.Manage(item);
             var ato = item.GetComponent<Il2Cpp.ANBAssistedThrowingObject>();
             if (ato != null) { ato.StopAllCoroutines(); ato.homingTarget = null; }
             IgnorePlayer(item, s.Socket.transform.root);
+            Ghost(item, true);
             PinIn(s);
+        }
+
+        // The sound of a mod item going into or out of a back holster. It never enters the shoulder socket, so the socket
+        // plays nothing. The game's own clips are picked by name (HolsterInSound / HolsterOutSound; Oct 3 2026 probe: a katana
+        // drawn from the belt plays 'S_WEP_Knife_Attack_01' and the belt knife holster has no clip of its own, taking one
+        // from the wall plays the 'Belts' jangle). A name is found among the loaded clips or learned the first time the game
+        // plays it. Blank, or not found: a gun's click (ANBGunSounds.HolsterIn / HolsterOut, the bow's if seen; for a
+        // blade, nothing). Played the way the game does, ANBGameLogic.PlayAudioClip at the slot. Not on a restore: the game
+        // is silent while it loads too.
+        static readonly Dictionary<string, AudioClip> named = new();
+        static string wantIn, wantOut;
+        static float nextNamedScan;
+        static AudioClip gunIn, gunOut;
+        static bool gunInBow, gunOutBow;
+
+        // From the sound pool's postfix: remember the clips we are looking for.
+        internal static void Heard(AudioClip clip)
+        {
+            if (wantIn == null && wantOut == null) return;
+            var n = clip.name;
+            if ((n == wantIn || n == wantOut) && !named.ContainsKey(n)) named[n] = clip;
+        }
+
+        static AudioClip Named(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return null;
+            if (named.TryGetValue(name, out var c) && VRHolsterCustomizationMod.Alive(c)) return c;
+            if (Time.time < nextNamedScan) return null;
+            nextNamedScan = Time.time + 5f;
+            try
+            {
+                foreach (var o in Resources.FindObjectsOfTypeAll(Il2CppType.Of<AudioClip>()))
+                {
+                    var ac = o.TryCast<AudioClip>();
+                    if (ac != null && ac.name == name) { named[name] = ac; return ac; }
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        internal static void LearnGunClips(Il2CppHurricaneVR.Framework.Weapons.ANBGunSounds gs, bool into)
+        {
+            try
+            {
+                if (!VRHolsterCustomizationMod.Alive(gs)) return;
+                var clip = into ? gs.HolsterIn : gs.HolsterOut;
+                if (!VRHolsterCustomizationMod.Alive(clip)) return;
+                var owner = VRHolsterCustomizationMod.Alive(gs.gunbase) ? gs.gunbase.name : gs.name;
+                bool bow = owner.IndexOf("bow", StringComparison.OrdinalIgnoreCase) >= 0;
+                if (into ? (gunIn == null || (bow && !gunInBow)) : (gunOut == null || (bow && !gunOutBow)))
+                {
+                    if (into) { gunIn = clip; gunInBow = bow; } else { gunOut = clip; gunOutBow = bow; }
+                    if (VRHolsterCustomizationMod.DebugOn) VRHolsterCustomizationMod.Log.Msg($"gun holster click learned from '{owner}': {(into ? "in" : "out")} '{clip.name}'");
+                }
+            }
+            catch { }
+        }
+
+        static void ScanGunClips()
+        {
+            try
+            {
+                foreach (var o in Object.FindObjectsByType(Il2CppType.Of<Il2CppHurricaneVR.Framework.Weapons.ANBGunSounds>(), FindObjectsInactive.Include, FindObjectsSortMode.None))
+                {
+                    var gs = o.TryCast<Il2CppHurricaneVR.Framework.Weapons.ANBGunSounds>();
+                    LearnGunClips(gs, true); LearnGunClips(gs, false);
+                }
+            }
+            catch { }
+        }
+
+        static void Sound(Slot s, GameObject item, bool into)
+        {
+            if (!Sounds.Value || !VRHolsterCustomizationMod.Alive(s.Socket)) return;
+            try
+            {
+                string want = into ? SoundIn.Value : SoundOut.Value;
+                wantIn = SoundIn.Value; wantOut = SoundOut.Value;
+                AudioClip clip = Named(want);
+                string from = $"clip '{want}'";
+                if (!VRHolsterCustomizationMod.Alive(clip) && !string.IsNullOrEmpty(want) && VRHolsterCustomizationMod.DebugOn)
+                    VRHolsterCustomizationMod.Log.Msg($"{s.Name}: sound '{want}' not found (not loaded or played yet)");
+                bool blade = s.Kind != null && s.Kind.Blade;
+                if (!VRHolsterCustomizationMod.Alive(clip) && string.IsNullOrEmpty(want) || !VRHolsterCustomizationMod.Alive(clip) && !blade)
+                {
+                    if (gunIn == null && gunOut == null) ScanGunClips();
+                    clip = into ? gunIn : gunOut; from = (into ? gunInBow : gunOutBow) ? "bow" : "gun";
+                }
+                var game = ANBStaticGameManager.ANBmain;
+                if (!VRHolsterCustomizationMod.Alive(clip) || !VRHolsterCustomizationMod.Alive(game)) return;
+                game.PlayAudioClip(clip, s.Socket.transform.position, false, "default", false, -1f, -1f);
+                if (VRHolsterCustomizationMod.DebugOn) VRHolsterCustomizationMod.Log.Msg($"{s.Name}: {(into ? "holster" : "draw")} sound '{clip.name}' ({from})");
+            }
+            catch (Exception e) { VRHolsterCustomizationMod.Log.Warning($"holster sound: {e.Message}"); }
         }
 
         // Pose in the frame of the socket's parent (the body), from the live settings.
@@ -475,15 +596,28 @@ namespace VRHolsterCustomization
             var parent = s.Socket.transform.parent;
             if (parent == null) return;
             var sh = ShapeOf(s.Kind, s.Item);
+            bool blade = s.Kind != null && s.Kind.Blade;
             float sign = s.Left ? -1f : 1f;
             Vector3 outDir = Vector3.right * sign, up = Vector3.up, back = Vector3.back;
-            float tilt = Tilt.Value * Mathf.Deg2Rad, lean = Lean.Value * Mathf.Deg2Rad;
+            float tilt = (blade ? BladeTilt.Value : Tilt.Value) * Mathf.Deg2Rad, lean = (blade ? BladeLean.Value : Lean.Value) * Mathf.Deg2Rad;
             var tip = -up * Mathf.Cos(tilt) - outDir * Mathf.Sin(tilt);        // down, towards the spine
             tip = (tip * Mathf.Cos(lean) + back * Mathf.Sin(lean)).normalized;  // and away from the body
             var anchor = s.Socket.transform.localPosition + (outDir * Out.Value + up * Up.Value + back * Back.Value) / 100f;
-            var rot = Quaternion.AngleAxis(Spin.Value * sign, tip) * Quaternion.FromToRotation(sh.Axis, tip);
-            var center = anchor + tip * (Drop.Value / 100f);
-            Dock.Pin(s.Item, parent, center - rot * sh.Center, rot);
+            if (!blade)
+            {
+                var rot = Quaternion.AngleAxis(Spin.Value * sign, tip) * Quaternion.FromToRotation(sh.Axis, tip);
+                var center = anchor + tip * (Drop.Value / 100f);
+                Dock.Pin(s.Item, parent, center - rot * sh.Center, rot);
+                return;
+            }
+            // Blade: grip end at the anchor (+ BladeGripCm along the blade), the flat of the blade against the back.
+            var r0 = Quaternion.FromToRotation(sh.Axis, tip);
+            float flat = Vector3.SignedAngle(Vector3.ProjectOnPlane(r0 * sh.Flat, tip), Vector3.ProjectOnPlane(back, tip), tip);
+            var brot = Quaternion.AngleAxis(flat + BladeSpin.Value * sign, tip) * r0;
+            var scale = s.Item.transform.localScale;
+            float half = Vector3.Scale(scale, sh.Axis * sh.Length).magnitude * 0.5f;
+            var bcenter = anchor + tip * (BladeGrip.Value / 100f + half);
+            Dock.Pin(s.Item, parent, bcenter - brot * Vector3.Scale(scale, sh.Center), brot);
         }
 
         static Vector3 AnchorWorld(Slot s)
@@ -530,6 +664,81 @@ namespace VRHolsterCustomization
                 if (modItem) continue;
                 foreach (var c in mine) Physics.IgnoreCollision(c, pc, true);
             }
+        }
+
+        // A holstered item collides with nothing, like the game's socketed guns (HVRSocket.DisableCollision ->
+        // HVRGrabbable.SetAllToTrigger): its solid colliders become triggers, so a gun or bow drawn from the other
+        // shoulder passes through it (Oct 3 2026: the bow on the right caught on a katana on the left). The draw assist
+        // and the hand's grab bag still find it. Drawn again: exactly those colliders turn solid. Same as Daredevil's belt clubs.
+        static void Ghost(GameObject item, bool on)
+        {
+            if (!VRHolsterCustomizationMod.Alive(item)) return;
+            if (!on)
+            {
+                if (ghosted.TryGetValue(item.Pointer, out var list))
+                    foreach (var c in list) if (VRHolsterCustomizationMod.Alive(c)) c.isTrigger = false;
+                ghosted.Remove(item.Pointer);
+                return;
+            }
+            if (!ghosted.TryGetValue(item.Pointer, out var mine)) ghosted[item.Pointer] = mine = new List<Collider>();
+            foreach (var c in item.GetComponentsInChildren<Collider>(true))
+            {
+                if (c.isTrigger) continue;
+                var mesh = c.TryCast<MeshCollider>();
+                if (mesh != null && !mesh.convex) continue; // a concave mesh can't be a trigger
+                c.isTrigger = true;
+                if (!mine.Exists(x => x.Pointer == c.Pointer)) mine.Add(c);
+            }
+            // A knife can arrive already non-solid: the game turns its colliders into triggers while it flies or sticks
+            // in an enemy, and an auto-return (ReturnToBack) docks it in that state. Recording only the solid ones left
+            // nothing to restore, so every katana drawn after a return passed through enemies, walls and floors
+            // (Oct 3 2026). The knife's own list of normally solid colliders is restored on the draw as well.
+            int already = 0;
+            var knife = item.GetComponent<ANBKnife>();
+            var native = knife != null ? knife.nonTriggerColliders : null;
+            if (native != null)
+                for (int i = 0; i < native.Count; i++)
+                {
+                    var c = native[i];
+                    if (!VRHolsterCustomizationMod.Alive(c) || mine.Exists(x => x.Pointer == c.Pointer)) continue;
+                    var mesh = c.TryCast<MeshCollider>();
+                    if (mesh != null && !mesh.convex) continue;
+                    c.isTrigger = true;
+                    mine.Add(c); already++;
+                }
+            if (VRHolsterCustomizationMod.DebugOn && mine.Count > 0)
+                VRHolsterCustomizationMod.Log.Msg($"'{item.name}': {mine.Count} collider(s) non-solid while holstered{(already > 0 ? $" ({already} already were, solid again on the draw)" : "")}");
+        }
+
+        // The item's own scripts may turn a collider solid again (a knife's switchCollisions): re-assert, cheaply.
+        static void KeepGhost(GameObject item)
+        {
+            if (!ghosted.TryGetValue(item.Pointer, out var list)) return;
+            foreach (var c in list) if (VRHolsterCustomizationMod.Alive(c) && !c.isTrigger) c.isTrigger = true;
+        }
+
+        // The game's knife auto-return (ANBKnife.returnKnife) only knows the belt knife holster and the wall spot. A blade
+        // last drawn from the back goes back there instead: its own side if free, else the other free side, else the
+        // game's return. True = it is on the back now. Public for mods that send their own items home (Daredevil's clubs).
+        public static bool ReturnHome(GameObject item)
+        {
+            if (Enabled == null || !Enabled.Value || !VRHolsterCustomizationMod.Alive(item) || !home.TryGetValue(item.Pointer, out bool left)) return false;
+            var kind = KindOf(item);
+            if (kind == null) return false;
+            var s = left ? slots[0] : slots[1];
+            if (!Free(s)) s = left ? slots[1] : slots[0];
+            if (!Free(s)) return false;
+            Put(s, item, kind);
+            Sound(s, item, true);
+            HolsterLog.ModHolster(s.Name, Label(kind, item) + " (returned)", true);
+            Save();
+            return true;
+        }
+
+        // Taken from somewhere else (the belt knife holster, the wall): the game's return applies again.
+        public static void ForgetHome(GameObject item)
+        {
+            if (VRHolsterCustomizationMod.Alive(item)) home.Remove(item.Pointer);
         }
 
         // ---------- save / restore ----------
@@ -644,7 +853,8 @@ namespace VRHolsterCustomization
 
         static bool Available(GameObject item, HolsterKind kind)
         {
-            if (!VRHolsterCustomizationMod.Alive(item) || Holds(item)) return false;
+            // Not one the game (a knife holster, a wall spot) or a hand holds.
+            if (!VRHolsterCustomizationMod.Alive(item) || Holds(item) || Dock.IsHeld(item)) return false;
             try { return kind.IsMine(item); } catch { return false; }
         }
 
@@ -670,8 +880,13 @@ namespace VRHolsterCustomization
         static Shape ShapeOf(HolsterKind kind, GameObject item)
         {
             if (kind != null && shapes.TryGetValue(kind.Id, out var s)) return s;
-            ItemShape.Measure(item, out var c, out var a, out var l);
-            s = new Shape { Center = c, Axis = a, Length = l };
+            Vector3 c, a, f = Vector3.forward; float l;
+            ghosted.TryGetValue(item.Pointer, out var ghost);
+            Func<Collider, bool> solid = col => !col.isTrigger || (ghost != null && ghost.Exists(x => x.Pointer == col.Pointer));
+            bool ok = kind != null && kind.Blade ? ItemShape.MeasureBlade(item, out c, out a, out l, out f, solid)
+                : ItemShape.Measure(item, out c, out a, out l, solid);
+            if (!ok) VRHolsterCustomizationMod.Log.Warning($"'{Label(kind, item)}': no solid box collider to measure, using a default shape");
+            s = new Shape { Center = c, Axis = a, Flat = f, Length = l };
             if (kind != null)
             {
                 shapes[kind.Id] = s;
@@ -704,6 +919,31 @@ namespace VRHolsterCustomization
         {
             if (!__result) return;
             try { if (Holsters.BlocksGameSocket(__instance, grabbable)) __result = false; } catch { }
+        }
+    }
+
+    // The game's guns and the bow have no clip on the shoulder socket or their HVRSocketable (Oct 3 2026 log: all empty for the
+    // AB15); their holster click is ANBGunSounds.HolsterIn / HolsterOut, played by the gun itself. Learn those clips from
+    // the real thing the first time a gun is holstered or drawn (the bow preferred), for Holsters.Sound.
+    [HarmonyLib.HarmonyPatch(typeof(Il2CppHurricaneVR.Framework.Weapons.ANBGunSounds), nameof(Il2CppHurricaneVR.Framework.Weapons.ANBGunSounds.PlayHolsterIn))]
+    static class GunHolsterInProbe
+    {
+        static void Postfix(Il2CppHurricaneVR.Framework.Weapons.ANBGunSounds __instance) { Holsters.LearnGunClips(__instance, true); }
+    }
+
+    [HarmonyLib.HarmonyPatch(typeof(Il2CppHurricaneVR.Framework.Weapons.ANBGunSounds), nameof(Il2CppHurricaneVR.Framework.Weapons.ANBGunSounds.PlayHolsterOut))]
+    static class GunHolsterOutProbe
+    {
+        static void Postfix(Il2CppHurricaneVR.Framework.Weapons.ANBGunSounds __instance) { Holsters.LearnGunClips(__instance, false); }
+    }
+
+    // Learns the clips named by HolsterInSound / HolsterOutSound the first time the game plays them.
+    [HarmonyLib.HarmonyPatch(typeof(Il2CppHurricaneVR.Framework.Core.Utils.SFXPlayer), nameof(Il2CppHurricaneVR.Framework.Core.Utils.SFXPlayer.PlaySFX))]
+    static class HeardClipPatch
+    {
+        static void Postfix(AudioClip clip)
+        {
+            try { if (VRHolsterCustomizationMod.Alive(clip)) Holsters.Heard(clip); } catch { }
         }
     }
 }

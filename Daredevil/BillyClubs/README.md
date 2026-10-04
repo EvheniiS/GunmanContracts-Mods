@@ -15,6 +15,8 @@ Daredevil package will require. Billy Clubs keeps its club flight; Throw Assist 
 0.10.1: the pistol assist is less aggressive. A throw slower than `PistolAssistMinSpeed` (6 m/s) gets no assist, and an
 assisted pistol flies at your own throw speed (0.10.0 homed every lob and sped it up to 13 m/s, the clubs' minimum).
 
+Swing diagnostics (Oct 1 2026): `SwingLog = true` logs one line per swing (tip lag in ms/cm, hand vs grip share, overshoot after you stop) and the hand/joint physics numbers once per grip; `SwingLogMinSpeed` (4 m/s). `Mass` now applies live. Experiments (live, defaults = the game's values): `HandStrengthScale`, `HandTorqueScale`, `ClubInertiaScale`, `ClubMaxSpin`; a `FLIP` log line explains a club that turns far around the hand.
+
 Daredevil-style clubs based on the game's crowbar, with belt holsters, F8 recall, throw styles and ricochets.
 
 Current follow-through diagnostics: `DebugLog` reports speed changes made after release. Set

@@ -1,4 +1,6 @@
-# Mod Settings 1.0.0
+# Mod Settings 1.3.0
+
+Tested: 1.3.0 (2026-10-04)
 
 An in-VR settings board for every MelonLoader mod in Gunman Contracts, with a mouse-driven on-screen version for
 flat mode. It reads all categories from
@@ -7,7 +9,7 @@ flat mode. It reads all categories from
 ## Use
 
 - **Open / close:** take out the phone and press the **Mod Settings** tile in the middle row (an empty slot), or press
-  **Ctrl+M**. The board opens 40 cm in front of your eyes, above the phone, and moves with you when you move with the
+  **Ctrl+M**. The board opens `PanelDistance` in front of your eyes (default 40 cm), above the phone, and moves with you when you move with the
   stick. It closes on X, on the tile again, on a
   scene load, or if you walk 5 m away.
 - **Move / tilt:** grip the top bar with an empty hand, nearby or with the laser aimed at it. Move and rotate your
@@ -16,7 +18,10 @@ flat mode. It reads all categories from
 - **Point and press trigger** with either empty hand to select from up to 4 m away, or press with an index fingertip,
   coming in from the front (sliding across the board doesn't press). Hands aimed at or near the board use the game's
   menu pointing pose. Held weapons keep their own pose. Release the opening gesture before interacting.
-- `<` / `>` at the top switch mods; `Up` / `Down` scroll a mod's settings; poke a setting's **name** to read its
+- **Section list:** press **List** (or the section name) at the top for a grid of every section, alphabetical,
+  column by column. The current one is red, sections with changed values have yellow names. Press one to jump
+  straight to it; **Back** returns. With more than 30 sections, `<` / `>` page the list while it is open.
+- `<` / `>` at the top switch mods (alphabetical order); `Up` / `Down` scroll a mod's settings; poke a setting's **name** to read its
   description, default and restart note; `Reset` puts the selected setting back to its default.
 - Numbers get `-big -small value +small +big` steps (from the default: 18 → 1/10, 0.6 → 0.01/0.1). Switches toggle.
   Choices written in the description (`TipFirst (...), Natural (...) or SpinEnd (...)`) and `#RRGGBB` colours cycle
@@ -26,10 +31,37 @@ flat mode. It reads all categories from
   be reset to its declared default. `*` = the description says it needs a game restart.
 - The VR board is now **72 × 56 cm** at scale 1 (previously 48 × 44), with larger controls and a dedicated reset column.
 
+### Updated defaults (mod updates)
+
+MelonLoader saves every value to the cfg, so a mod update that changes a default would never reach you. Mod Settings
+remembers each setting's default in `UserData/ModSettings_defaults.txt` (delete it to start over). When an update
+changes one:
+
+- if you had left it at the old default, it moves to the new one at start;
+- if you had changed it, your value stays and you are asked.
+
+**Mods updated popup (1.3.0).** The first time you open the board after such an update, a small card with a blue frame
+comes up instead of the board and says what happened ("4 settings have new default values: 2 you never changed, 2 you
+changed"). Its buttons:
+
+- **Use new**: your changed settings take the new defaults too. **Keep mine**: keep your values, stop asking.
+- **Review**: opens the **Updated defaults** page: one row per setting (yours first), Keep / Use per row, **Undo** on
+  the ones that moved by themselves, **Use all new** at the bottom; press a name to adjust it in its own section.
+- **Later** (or closing the board): decide nothing; the popup comes back at the next game start.
+- **OK** / **Review** when nothing needs a decision (only untouched settings moved).
+
+The popup shows once per game session. The first run only records the defaults, so changes are shown from the next mod
+update on. Settings the mod manages itself are skipped.
+
+**Removed settings file (1.2.1).** The record also keeps how many settings you had changed per mod when the game last
+ran. If a mod had two or more changed settings and now has none (you deleted `MelonPreferences.cfg`, or its section),
+the log warns "Settings were reset: ..." and the popup says so once, with **OK** (it is kept until the board has shown
+it). One setting reset by hand does not count.
+
 ### Flat mode (no headset)
 
 **Ctrl+M** opens the same menu in the middle of the screen; use it with the mouse (wheel scrolls). Same pages and
-buttons as the board: click a name for its description, `<` `>` for mods, `X` or Ctrl+M closes. While it's open the
+buttons as the board: click a name for its description, `<` `>` for mods, **List** (or the title) for the section grid, `X` or Ctrl+M closes. While it's open the
 flat controller's cursor lock is released, so mouse look and firing stop and the cursor shows; walking still works and
 the game is not paused. Closing locks the cursor again (unless the game's own menu is open). Flat = no headset running
 (`XRSettings.isDeviceActive` false), or the flat controller is up and no VR hands exist.
@@ -44,7 +76,8 @@ clubs/holsters are built (`Mass`, `ThrowSearchDistance`, `Length`, `Radius`, `Bo
 
 ## Settings (`[ModSettings]`)
 
-`PhoneTile` (true), `OpenKey` (`M`, with Ctrl), `PanelDistance` (0.4 m), `PanelScale` (1), `DebugLog`.
+`PhoneTile` (true), `OpenKey` (`M`, with Ctrl), `PanelDistance` (0.4 m; fingertips reach up to ~0.6 m, past
+that use the laser, which reaches 4 m, and raise `PanelScale` if the text gets small), `PanelScale` (1), `DebugLog`.
 With `DebugLog`, the phone's home-screen layout is written once to `UserData/ModSettings_phone.txt`.
 
 0.2.0 replaced the 0.1.0 right-pocket grip gesture (too hard to find: grips landed 19-27 cm from it) with the phone

@@ -9,7 +9,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.XR;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(ModSettings.ModSettingsMod), "Mod Settings", "1.0.0", "Evgeeso")]
+[assembly: MelonInfo(typeof(ModSettings.ModSettingsMod), "Mod Settings", "1.3.0", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace ModSettings
@@ -41,11 +41,17 @@ namespace ModSettings
             var c = MelonPreferences.CreateCategory("ModSettings", "Mod Settings");
             PhoneTile = c.CreateEntry("PhoneTile", true, description: "Put a Mod Settings tile in an empty slot of the phone's middle row. Press it to open / close this menu.");
             OpenKey = c.CreateEntry("OpenKey", "M", description: "Keyboard: Ctrl + this key opens / closes the menu (Input System key name).");
-            Distance = c.CreateEntry("PanelDistance", 0.4f, description: "How far in front of your eyes the menu opens, in metres.");
+            Distance = c.CreateEntry("PanelDistance", 0.4f, description: "How far in front of your eyes the menu opens, in metres. Fingertips reach it up to about 0.6; farther, point and press trigger (the laser reaches 4 m). Raise PanelScale if the text gets too small.");
             Scale = c.CreateEntry("PanelScale", 1f, description: "Menu size (1 = 72 x 56 cm). Applies the next time it opens. Grip the top bar to move or tilt the board.");
             DebugLog = c.CreateEntry("DebugLog", false, description: "Log opening/closing and which fingertips were found; write the phone's home-screen layout to UserData/ModSettings_phone.txt once.");
             Log.Msg($"loaded - open with Ctrl+{OpenKey.Value}{(PhoneTile.Value ? " or the Mod Settings tile on the phone" : "")}");
         }
+
+        // Every mod has made its entries by now: move untouched settings to defaults that a mod update changed.
+        public override void OnLateInitializeMelon() => DefaultChanges.Scan();
+
+        // Remember how many settings the player has changed, so a removed settings file is noticed next start.
+        public override void OnApplicationQuit() => DefaultChanges.SaveCounts();
 
         internal static string OpenKeyName => OpenKey.Value;
 

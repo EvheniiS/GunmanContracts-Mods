@@ -1,5 +1,29 @@
 # Radar Sense (part of Daredevil)
 
+**Oct 2 2026: silhouettes vanishing on close enemies (floating vest / nothing): FIXED, confirmed in play.** Pooled enemies
+get a brand-new body (new skinned meshes) on respawn; the cached part list pointed at the destroyed one. An enemy that
+should show with ≤ 2 meshes on is rescanned (at most every 2 s), dead parts are dropped, new ones outlined. Debug lines:
+`rescan #id: N new renderers ...` / `nothing new ... renderers on: ...`. Tested session: 0 `NOT DRAWN` (was 563), mod
+cost 0.02-0.05 ms/frame. **`ShowStill` (on) + `StillBrightness` (0.35, live):** unseen enemies standing still show
+dimmed instead of not at all; moving ones and everything during focus stay at full `Brightness`. Tester: "much more accurate".
+
+**`Brightness` (0.6, live):** multiplies the silhouette colour. Overlapping body meshes stack their opacity (3 layers of 60% = 94%), so the red reached full brightness and the game's bloom added an aura that merged neighbouring enemies. `Detail` now defaults to Body (tester: the cleanest silhouette).
+
+**Oct 1 2026: `Detail` (live) and `IncludeLods` (untested).** `Detail` = Core (skin mesh + vest), Body (+ shirt/jacket, trousers,
+sleeves, hands), Clothes (+ shoes) or Full (default: everything). Switch it on the settings board and compare the look; each
+level draws fewer meshes per enemy. `IncludeLods` (default on) also outlines the lower detail levels (LOD1-4): the game
+swaps an enemy to a lower level when it isn't shown to you, and with only LOD0 outlined such an enemy showed nothing or
+just its vest (the 22:49 session logged 81 `NOT DRAWN` lines, all body meshes off at 2-4 m, game hiding flag off).
+
+**Oct 1 2026: outline vanished on close enemies behind walls: FIXED (`SeenFraction`, untested in play).** Cause, from a
+debug session (`view FLIP/STAY` lines, 109 samples): the game's `isInView` is true when the `VisCheck` renderer is on screen
+and **ONE** of the 14 sight dots (`HiddenPosCheckDots`, feet to just above head) has a clear ray from your head
+(`BlockedSight`, reverse, length distance - 0.1, `viewBlockMask`). Enemies behind a doorframe, column, counter or half wall
+nearly always have a head-height dot clear, so `Style = Hidden` treated them as seen and dropped the whole silhouette.
+Wall-blocked enemies had 2-6 of 14 dots clear; really visible ones 11-14. New `SeenFraction` (0.7 = 10 of 14 dots; 0 =
+the game's rule): below it the enemy keeps the highlight, which with the depth test Greater shows only the parts that are
+hidden. Costs up to 14 raycasts per enemy the game calls in view, 10 times a second.
+
 **Sep 28 2026 (Daredevil 0.3.1+): clubs now come from Billy Clubs' own list** (`BillyClubsMod.CopyClubs`, same DLL,
 every 0.5 s) instead of searching every loaded `HVRGrabbable` every 2 s, which had raised the mod's own cost from
 0.125 to 0.23 ms/frame with 3 enemies. **Measured after the fix (13:21 session, 3 enemies, 3 clubs): 0.002-0.005

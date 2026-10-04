@@ -1,4 +1,6 @@
-# VR Holster Customization 0.2.2 (release candidate)
+# VR Holster Customization 0.3.8
+
+Tested: 0.3.8 (2026-10-03)
 
 This MelonLoader mod customizes the game's hip, knife, and back holsters and requires Mod Settings. It also owns the back slots for mod items, their grab and draw behavior, and their saved state. Weapon Framework uses its docking API for wall items and its back slot API for the test crowbar. Daredevil uses the back slot API for clubs.
 
@@ -47,9 +49,57 @@ and spawns one only if the original is gone. The user confirmed this fix in game
 
 ## Mod item back slots
 
-`[VRHolsters_BackSlots]` controls the pose, snap distance, and draw reach for non-game items registered through `Holsters.RegisterKind`. `SavedBackHolsters` is managed by the mod. Mods can call `Holsters.TryHolster(item)` when releasing an item, or `Holsters.Watch(item)` to have the mod watch for its release. `Holsters.Holds(item)` checks whether it is on the back.
+`[VRHolsters_BackSlots]` controls the pose, snap distance, and draw reach for non-game items registered through `Holsters.RegisterKind`. `HolsterSounds` (on) plays a sound when a mod weapon goes into or out of a back holster (0.3.8). `HolsterInSound` / `HolsterOutSound` name the game clip to play (defaults: the wall-pickup jangle `EQUIPTact_Equipment Metal Buckle Chain Jangle Latch Flap Belts 03_ESM_SG` in, the belt-draw `S_WEP_Knife_Attack_01` out; find other names with the [Sound Probe](../SoundProbe/README.md) mod); blank = a gun's holster click, never used for a blade. `SavedBackHolsters` is managed by the mod. Mods can call `Holsters.TryHolster(item)` when releasing an item, or `Holsters.Watch(item)` to have the mod watch for its release. `Holsters.Holds(item)` checks whether it is on the back.
+
+> **⚠ Daredevil depends on this API: change one, check the other.** Daredevil (the Billy Clubs) calls `RegisterKind`,
+> `TryHolster`, `Holds`, `ReturnHome` and `ForgetHome` (public since 0.3.7, for the club return in Daredevil 1.1.2).
+> Don't rename or change those signatures without updating `Daredevil/BillyClubs/Arsenal.cs`. `ReturnHome` needs the
+> side memory of `BeforeGrab`, which records it for every kind, not just blades. Daredevil's belt clubs also copy
+> this mod's ghost-collider and holster logic, so a fix to one usually belongs in the other. Rebuild and retest both,
+> and ship them together.
 
 These settings moved from `[WeaponFrameworkHolsters]`. Existing tuned values can be copied into the new category in `UserData/MelonPreferences.cfg` while the game is closed. The old category is no longer used.
+
+## Katana and knives on the back (0.3.0)
+
+The game's katanas and knives fit the two back slots too, one item per side, like a mod item.
+
+- `[VRHolsters_BackSlots] BackBlades`: `All` (katanas and knives, default), `Katana` (katanas only) or `Off`.
+  Arrows and pens are never accepted.
+- Take a blade in your hand, bring it over a shoulder (the hand buzzes over a free slot) and let go slowly. A fast
+  release is a throw and stays a throw. Draw it with the same grip press as a crowbar (`DrawCm`).
+- It hangs by its grip end, the flat of the blade against your back: `BladeGripCm` (grip below the holster point),
+  `BladeTiltDeg` (35 = diagonal), `BladeLeanDeg`, `BladeSpinDeg`. `OutCm`, `UpCm` and `BackCm` are shared with mod items.
+- **0.3.1:** anything in a back slot (blade, crowbar, club) is non-solid while it is holstered, like the game's own
+  holstered guns: its solid colliders become triggers, so a bow or gun drawn from the other shoulder passes through it.
+  They turn solid again when you draw it.
+- **0.3.2:** a blade you drew from your back returns to your back after a throw or a drop (its own side if free,
+  else the other free side), not to the belt knife holster. Taken from the belt holster or the wall, or put in the belt
+  holster, the game's own return applies again. If both back sides are full, the game's return applies.
+- **0.3.5 fix:** a blade auto-returned to the back could arrive already non-solid (the game makes a knife's colliders
+  triggers while it flies or sticks in an enemy). Only solid colliders were recorded, so nothing turned solid on the
+  draw, and every katana thrown after a return flew through enemies, walls and the floor (Oct 3 2026 logs: no body
+  collision, then ~40 m/s = falling out of the map). The knife's own list of normally solid colliders
+  (`ANBKnife.nonTriggerColliders`) is now restored on the draw too; the log line says `(N already were, solid again on the draw)`.
+- The game sends a dropped knife back to its holster or wall spot after a few seconds. That timer is held at zero while
+  the blade is on your back.
+- Saved like a mod item (`Knife-<id>` in `SavedBackHolsters`, The Range only). After a scene load or a checkpoint
+  reset the blade comes from where the game gets its holster knives: in The Range the knife wall (if that knife is
+  already in a knife holster, the back side stays empty), in a contract a new copy of the knife (0.3.4; contracts have
+  no knife wall). In the main menu it waits for the next scene.
+
+## Knife return time (0.3.6)
+
+A thrown or dropped knife or katana returns to its holster (or back slot) on its own. `[VRHolsters_KnifeReturn]` sets
+how long it waits, in seconds, both live from Mod Settings. Defaults: 1 s in an enemy, 5 s on the ground (the game's own delay is 10 s; with `DebugLog` it is
+logged at the first release). 0 = leave the game's timer alone.
+
+- `InEnemySeconds`: how long it stays in an enemy, counted from when it sticks in or kills one. 0.5 = back half a
+  second after the hit; 5 = it stays a while.
+- `OnGroundSeconds`: how long it lies where it landed (floor, wall), counted from when it comes to rest. While it is
+  still flying it never returns, however short this is.
+
+The game's own knife auto-return must be on; with it off, nothing changes.
 
 ## Build
 

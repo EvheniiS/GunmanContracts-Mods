@@ -1,7 +1,7 @@
 # Weapon Framework roadmap (Sep 29 2026)
 
 What happens when mods are removed, how to make adding a weapon easier (JSON packs), how to move holstering into the
-framework, and what flat mode needs. Flat-mode findings for all mods: [../FLAT_MODE.md](../FLAT_MODE.md).
+framework, and what flat mode needs. Flat-mode findings for all mods: [../ROADMAP.md](../ROADMAP.md) §4 and [../GAME_KNOWLEDGE.md](../GAME_KNOWLEDGE.md) §8.
 
 Status legend: **checked** = read in the game code or files; **inferred** = follows from the code but not seen in game;
 **untested** = needs a run.
@@ -103,7 +103,7 @@ UserData/WeaponFramework/Weapons/Machete/
 ```
 
 - **Bases:** Crowbar is proven (Billy Clubs). Knife exists (`ANBKnife`, has its own game holsters, but see the socket
-  rule above). IDEAS.md also names a katana: scan The Range with `il2cpp_tools/gunwall_scan.py` /
+  rule above). the old ideas list also named a katana: scan The Range with `il2cpp_tools/gunwall_scan.py` /
   `prefab_tree.py` for the full list before promising more.
 - **Model convention** (the only thing a modeller must get right): origin at the grip centre, blade/head along +Z,
   metres, Y up. The collider stays the base item's, scaled to the mesh bounds along Z.
@@ -153,14 +153,14 @@ Holsters.UseSlot("BeltRightBack", "BillyClub");
   one and a log line. This is the actual simplification: authors pick a name, players tune one place.
 - **Persistence in the framework's own file** (`UserData/WeaponFramework/holsters.json`, kind id per slot), never the
   game save. A kind whose mod is missing is kept but skipped, so re-installing the mod brings its items back.
-- **Put back on the wall:** releasing an item near its wall mount hangs it there (IDEAS.md item).
+- **Put back on the wall:** releasing an item near its wall mount hangs it there (open idea, see ../ROADMAP.md).
 - **Migration:** Daredevil moves to it (removes the belt code in `BillyClubs.cs`, `HolsterVisual.cs`, `Optimiser.cs`),
   reading `[BillyClubs] SavedHolsters` once so nobody loses their clubs.
 - JSON packs get holsters through the `"holster"` field for free.
 
 ## 4. Flat mode
 
-Details in [../FLAT_MODE.md](../FLAT_MODE.md). For the framework:
+Details in [../ROADMAP.md](../ROADMAP.md) §4 and [../GAME_KNOWLEDGE.md](../GAME_KNOWLEDGE.md) §8. For the framework:
 
 - The arsenal panel and `pickWeapon` are shared by both modes, so a mod entry will show and slide out in flat.
   **Taking it is the problem:** flat pickup is `ANBFpsInteraction.grabGun(ANBFpsInteractionObject)` on the slot's

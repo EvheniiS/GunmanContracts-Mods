@@ -4,7 +4,7 @@ using Il2CppHurricaneVR.Framework.Core.Grabbers;
 using MelonLoader;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(VRHolsterCustomization.VRHolsterCustomizationMod), "VR Holster Customization", "0.2.2", "Evgeeso")]
+[assembly: MelonInfo(typeof(VRHolsterCustomization.VRHolsterCustomizationMod), "VR Holster Customization", "0.3.8", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 [assembly: MelonAdditionalDependencies("ModSettings")]
 
@@ -28,6 +28,7 @@ namespace VRHolsterCustomization
             debug = c.CreateEntry("DebugLog", false, description: "Log holster in/out events and final holster positions.");
             Holsters.Init();
             VanillaHolsters.Init();
+            KnifeReturn.Init();
             Log.Msg("loaded");
         }
 
@@ -35,12 +36,14 @@ namespace VRHolsterCustomization
         {
             HolsterLog.Scene();
             Holsters.Scene();
+            BackBlades.Scene();
+            KnifeReturn.Scene();
             VanillaHolsters.Scene();
         }
 
         public override void OnUpdate()
         {
-            try { HolsterLog.Tick(); Dock.Tick(); Holsters.Tick(); VanillaHolsters.Tick(); }
+            try { HolsterLog.Tick(); Dock.Tick(); Holsters.Tick(); BackBlades.Tick(); KnifeReturn.Tick(); VanillaHolsters.Tick(); }
             catch (Exception e) { Log.Error($"update: {e}"); }
         }
 
@@ -65,6 +68,7 @@ namespace VRHolsterCustomization
                 if (Holsters.BlocksGrab(grabber, grabbable)) return false;
                 Dock.BeforeGrab(grabbable);
                 Holsters.BeforeGrab(grabbable);
+                BackBlades.OnGrab(grabber, grabbable);
             }
             catch (Exception e) { VRHolsterCustomizationMod.Log.Warning($"grab: {e.Message}"); }
             return true;

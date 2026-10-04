@@ -8,6 +8,8 @@
   <ItemGroup>
     <Compile Include="..\Choices.cs" />
     <Compile Include="..\PointerGeometry.cs" />
+    <Compile Include="..\DefaultRecord.cs" />
+    <Compile Include="..\UpdatePopup.cs" />
     <Compile Include="..\..\VRHolsterCustomization\AdjustmentHold.cs" />
   </ItemGroup>
 </Project>
