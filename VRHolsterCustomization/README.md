@@ -1,6 +1,6 @@
-# VR Holster Customization 0.3.9
+# VR Holster Customization 0.3.10
 
-Tested: 0.3.8 (2026-10-03)
+Tested: 0.3.9 (2026-10-04)
 
 This MelonLoader mod customizes the game's hip, knife, and back holsters and requires Mod Settings. It also owns the back slots for mod items, their grab and draw behavior, and their saved state. Weapon Framework uses its docking API for wall items and its back slot API for the test crowbar. Daredevil uses the back slot API for clubs.
 
@@ -34,19 +34,28 @@ Body movement and snap turns are measured relative to the holster frame. `AllUpC
 This first implementation moves the six game sockets only; Weapon Framework / Daredevil mod-item back slots retain
 their separate settings. Use each position row's Reset in Mod Settings to undo a calibration.
 
-## Belt follows head (0.3.9, untested)
+## Belt follows head (0.3.9, eased in 0.3.10)
 
 `[VRHolsters] BeltFollowsHead` (off by default, live in Mod Settings). The game's belt (`HVRPlayerWaist`) keeps its own
-heading: it turns toward your head only after a large enough yaw gap, then at a fixed speed, and on snap turns, so the
-hip and knife holsters are usually off to one side of where you face. With this on, the belt takes your head's yaw every
-frame, right after the game's own belt update. Within about 6 degrees of looking straight down or up the head has no
-usable heading, so the belt holds its last one. Back holsters already hang from the head and are not affected; Daredevil's
-belt clubs are on the same belt and follow too.
+heading: it turns toward your head only past a 70 degree gap, then at 90 deg/s, and on snap turns, so the hip and knife
+holsters are usually off to one side of where you face. With this on, the belt follows your head, right after the game's
+own belt update. Back holsters already hang from the head and are not affected; Daredevil's belt clubs are on the same
+belt and follow too.
+
+- 0.3.9 copied the head's yaw exactly. Played Oct 4 2026: it worked, but turned too fast and too far.
+- 0.3.10 (untested) eases it. Snap turns, smooth turns and teleports rotate the belt at once (the belt is kept relative
+  to the player controller); only your own head turns are eased:
+  - `BeltDeadZoneDeg` (15): your head can turn this far from the belt before the belt follows quickly. 0 = always.
+  - `BeltTurnSeconds` (0.3): how fast it catches up beyond the dead zone (time to close about two thirds of the gap). 0 = instantly.
+  - `BeltCenterSeconds` (2): inside the dead zone the belt drifts in to face where you keep looking. 0 = never; it
+    then stays up to the dead zone off your heading.
+- Within about 6 degrees of looking straight down or up the head has no usable heading, so the belt holds its last one.
 
 Cost: one call per frame while the game runs, a few transform reads; with the setting and `DebugLog` off it returns at
 once. With `DebugLog` on, once per scene: `game belt: turns past N deg at N deg/s ...` (the game's own numbers), and at
-the next scene, a toggle or quit: `belt vs head yaw: avg N deg, max N deg over N frames (follow on | game belt)`.
-Toggle it in play to compare: with it off that line measures how far the game's belt drifts from your heading.
+the next scene, a toggle, a setting changed after 300+ frames, or quit: `belt vs head yaw: avg N deg, max N deg over N
+frames (follow on: dead zone .., turn .., center .. | game belt)`, the belt's final heading against your head's.
+
 ## Color
 
 `[VRHolsters_Visual] Color` accepts `Default` or a `#RRGGBB` value. Mod Settings shows the same color palette used by Gloves, including a swatch; direct hex edits in `MelonPreferences.cfg` also work. The default `Default` preserves the original game colors captured from each socket, without guessing a yellow shade. A saved custom hex color is a changed value; Reset restores the game colors. This also tints Daredevil's club holster tubes when Daredevil is installed. The game's fade still controls whether a hologram is visible and how bright it is. Old numeric values must be replaced with a hex color.

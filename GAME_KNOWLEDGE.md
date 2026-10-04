@@ -323,8 +323,9 @@ is used (or a mod calls `SaveContractHolsters`, as VR Holster Customization does
 `ANBmain.gameStarted && !Paused`. `FollowPlayer` puts the waist at the controller's x/z, `Camera.y - CameraOffset`; then with
 `p = Vector3.SignedAngle(flat camera forward, camera forward, Camera.right)` (positive = looking down): `p < CameraAngleThreshold`
 → belt yaw = camera yaw at once; otherwise it turns only while `Vector3.Angle(Camera.forward, waist.forward) > WaistAngleThreshold`
-(that 3D angle includes the pitch), `RotateTowards` at `WaistSpeed` deg/s. `StartSnapTurn` adds snap turns. The prefab values are
-untested (VR Holster Customization 0.3.9 logs them). Override the yaw in a `FollowPlayer` postfix (VR Holster Customization `BeltFollowsHead`).
+(that 3D angle includes the pitch), `RotateTowards` at `WaistSpeed` deg/s. `StartSnapTurn` adds snap turns. Prefab values (checked in a
+log, Oct 4 2026): `WaistAngleThreshold` 70, `WaistSpeed` 90, `CameraAngleThreshold` 30. Snap/smooth turns
+(`HandleSnapRotation` / `HandleSmoothRotation`) rotate the `HVRPlayerController`'s own transform. Override the yaw in a `FollowPlayer` postfix (VR Holster Customization `BeltFollowsHead`).
 The belt is `Waist/Holsters` (hip holsters at ±0.266, knife holsters ±0.165/0.048/0.132). Back sockets live under
 `Camera/HeadRelativeInventory/LeftShoulder|RightShoulder` (local L (-0.36, 0, -0.09), R (0.33, 0, -0.09)), a frame that follows head
 pitch partly. A holster highlight (`HVRANBSocketHoverFade`) lerps `material.color` between `colorInvisible/Normal/Hover` on a
