@@ -230,6 +230,8 @@ Code paths (from the binary, `il2cpp_tools`):
    dependency and nothing throws.
 
 ### Phase 2 — move the game's own holsters (the requested feature)
+**Built** (per-slot settings, `AllUpCm`, move by hand). Open follow-ups (mirror/multi-slot move, highlight the real holster
+while moving) are in the root [ROADMAP.md](../ROADMAP.md) §1.
 - Settings per holster group, all live on the Mod Settings board (ints, as today, since free-form strings are read-only
   there): `[VRHolsters_Hip]`, `[VRHolsters_Knife]`, `[VRHolsters_Back]` with `OutCm UpCm ForwardCm` (mirrored L/R),
   `TurnDeg`, and a range setting once unknown 2 is answered. Default all 0 = vanilla.
@@ -238,6 +240,7 @@ Code paths (from the binary, `il2cpp_tools`):
   back slots were.
 
 ### Phase 3 — generic extra slots, then Daredevil's belt
+**Dropped Oct 4 2026:** moving the game's gun holsters already fixes "clubs too close to the pistols".
 - The back slots become one instance of a generic "mod slot" (body part: belt / chest / back, pose, which kinds fit).
 - Migrate Daredevil's two belt club slots onto it (they already duplicate pin/optimiser/restore code: `BillyClubs.cs`
   `Slot`, `SaveSlots`, `Holster`, `HolsterVisual.cs`, `Optimiser.cs`, `DrawWatch.cs`). Fixes "clubs too close to the
