@@ -11,7 +11,8 @@ namespace ModSettings
     // setting had (DefaultRecord) and, when an update changes it:
     //  - value still the old default (never touched) -> moved to the new default at start, listed with Revert;
     //  - value changed by the player -> left alone and listed with Use new / Keep until they decide.
-    // The list is the "Updated defaults" page, which the board opens on while anything waits for a decision.
+    // The first board open of a session shows a small popup (UpdatePopup) that sums it up; the full list is the
+    // "Updated defaults" page (first in List, opened by Review).
     internal static class DefaultChanges
     {
         internal sealed class Item
@@ -29,7 +30,9 @@ namespace ModSettings
         public static readonly List<string> Notices = new();        // e.g. "Defaults Test: settings were reset", until the board has shown them
         const string NoticeKey = "~notice";
         static readonly Dictionary<string, string> known = new(), versions = new();
-        static bool loaded, shown;
+        static bool loaded, popupShown;
+
+        public static UpdatePopup Popup;   // non-null while the popup is up (the board waits behind it)
 
         static string FilePath => Path.Combine(MelonEnvironment.UserDataDirectory, "ModSettings_defaults.txt");
 
@@ -45,15 +48,11 @@ namespace ModSettings
             var sb = new System.Text.StringBuilder();
             if (Notices.Count > 0) sb.Append(b0).Append(string.Join("\n", Notices)).Append(b1).Append('\n');
             if (Items.Count == 0) return sb.ToString().TrimEnd('\n');
-            sb.Append(b0).Append("Mods were updated and changed some default values. None of your settings were lost.").Append(b1);
-            if (VersionChanges.Count > 0) sb.Append("  (").Append(string.Join(", ", VersionChanges)).Append(')');
-            sb.Append('\n');
-            if (Items.Exists(i => i.Auto))
-                sb.Append(blue).Append(": you never changed it, so it now uses the new default. Undo gives your old value back.\n");
-            if (Items.Exists(i => !i.Auto))
-                sb.Append(yellow).Append(": you changed it, so your value was kept. Keep = stay with yours, Use = take the new default.\n");
-            sb.Append(AnyWaiting ? "Undecided rows come back every time you open this board. Press a name to open it in its own section."
-                                 : "All decided. This page goes away next start.");
+            if (VersionChanges.Count > 0) sb.Append(b0).Append("Updated: ").Append(string.Join(", ", VersionChanges)).Append(b1).Append('\n');
+            if (Items.Exists(i => !i.Auto)) sb.Append(yellow).Append(": you changed it, your value was kept. Keep it, or Use the new default.  ");
+            if (Items.Exists(i => i.Auto)) sb.Append(blue).Append(": you never changed it, it moved to the new default. Undo = old value.");
+            sb.Append('\n').Append(AskWaiting ? "Press a name to open it in its own section. Undecided rows are asked again next start."
+                                              : "All decided. This page goes away next start.");
             return sb.ToString();
         }
 
@@ -62,8 +61,8 @@ namespace ModSettings
         {
             string old = i.OldDefault, nw = i.Entry.GetDefaultValueAsString(), val = i.Entry.GetValueAsString();
             if (i.Waiting)
-                return i.Auto ? $"default {old} -> {nw}. You never changed it, so it now uses {nw}."
-                              : $"default {old} -> {nw}. You changed it to {val}, so it is kept.";
+                return i.Auto ? $"default {old} -> {nw} (you never changed it)"
+                              : $"default {old} -> {nw} (yours kept: {val})";
             return $"default {old} -> {nw} · " + i.Done switch
             {
                 "new default" => $"now uses {nw}",
@@ -74,17 +73,31 @@ namespace ModSettings
         }
 
         // Button text: "Keep 2", "Use 1"; just the verb when the value would not fit.
-        public static string Verb(string verb, string value) => value.Length <= 5 ? verb + " " + value : verb;
+        public static string Verb(string verb, string value) => verb.Length + 1 + value.Length <= 7 ? verb + " " + value : verb;   // 7 chars fit the button
         public static string KeepLabel(Item i) => Verb("Keep", i.Entry.GetValueAsString());
         public static string UseLabel(Item i) => Verb("Use", i.Entry.GetDefaultValueAsString());
 
-        // Open the board on the page while a decision is waiting, and once per session after automatic updates.
-        public static bool ShowOnOpen()
+        // First board open of the session with something to tell: put the popup up. Once per session; an undecided
+        // setting is asked again at the next start (Scan lists it again), a shown notice is not.
+        public static void OpenPopup()
         {
-            bool show = AskWaiting || ((AnyWaiting || Notices.Count > 0) && !shown);
-            if (show) shown = true;
-            if (shown && Notices.Count > 0 && versions.Remove(NoticeKey)) Save();   // seen: stop carrying it to the next start
-            return show;
+            if (popupShown || !(AnyWaiting || Notices.Count > 0)) return;
+            popupShown = true;
+            int auto = Items.FindAll(i => i.Waiting && i.Auto).Count, ask = Items.FindAll(i => i.Waiting && !i.Auto).Count;
+            var sections = new List<(string Section, int Auto, int Ask)>();   // per board section, so the popup names the mods
+            foreach (bool a in new[] { false, true })   // same order as the page: customised first
+                foreach (var i in Items)
+                {
+                    if (!i.Waiting || i.Auto != a) continue;
+                    string title = Page.CategoryTitle(i.Entry.Category);
+                    int k = sections.FindIndex(s => s.Section == title);
+                    if (k < 0) { sections.Add((title, 0, 0)); k = sections.Count - 1; }
+                    var s = sections[k];
+                    sections[k] = (title, s.Auto + (a ? 1 : 0), s.Ask + (a ? 0 : 1));
+                }
+            Popup = UpdatePopup.Build(VersionChanges, sections, Notices);
+            ModSettingsMod.Log.Msg($"update popup: shown ({auto} auto, {ask} ask, {Notices.Count} notices)");
+            if (Notices.Count > 0 && versions.Remove(NoticeKey)) Save();   // seen: stop carrying it to the next start
         }
 
         // At start (all mods have made their entries) and on every board open (for entries made later).
@@ -96,8 +109,7 @@ namespace ModSettings
                 if (!loaded)
                 {
                     loaded = true;
-                    if (File.Exists(FilePath)) DefaultRecord.Parse(File.ReadAllLines(FilePath), known, versions);
-                    else first = true;
+                    first = !DefaultRecord.Load(FilePath, known, versions);
                     dirty = ScanVersions() || first;
                     dirty |= ScanResets(first);
                 }
@@ -110,20 +122,19 @@ namespace ModSettings
                         if (e == null || e.IsHidden || Choices.ManagedByMod(e.Description)) continue;
                         string key = cat.Identifier + "." + e.Identifier;
                         if (Items.Exists(i => i.Key == key)) continue;
-                        known.TryGetValue(key, out var was);
                         string def = e.GetDefaultValueAsString(), val = e.GetValueAsString();
-                        switch (DefaultRecord.Decide(was, def, val))
+                        switch (DefaultRecord.Apply(known, key, def, val, out var was))
                         {
                             case DefaultChange.Record:
-                                recorded++;
-                                goto case DefaultChange.AlreadyNew;
+                                recorded++; dirty = true;
+                                break;
                             case DefaultChange.AlreadyNew:
-                                known[key] = def; dirty = true;
+                                dirty = true;
                                 break;
                             case DefaultChange.AutoUpdate:
                                 var old = e.BoxedValue;
                                 e.ResetToDefault();
-                                known[key] = def; dirty = saveCfg = true;
+                                dirty = saveCfg = true;
                                 Items.Add(new Item { Key = key, OldDefault = was, Entry = e, OldValue = old, Auto = true });
                                 ModSettingsMod.Log.Msg($"{key}: default {was} -> {def}; you had the old default, so it now uses the new one");
                                 auto++;
@@ -212,23 +223,33 @@ namespace ModSettings
 
         static bool ScanVersions()
         {
-            bool changed = false;
+            var mods = new List<(string, string)>();
             foreach (var m in MelonMod.RegisteredMelons)
-            {
-                if (m?.Info == null) continue;
-                string name = m.Info.Name, ver = m.Info.Version;
-                if (versions.TryGetValue(name, out var was) && was == ver) continue;
-                if (was != null) VersionChanges.Add($"{name} {was} -> {ver}");
-                versions[name] = ver;
-                changed = true;
-            }
-            return changed;
+                if (m?.Info != null) mods.Add((m.Info.Name, m.Info.Version));
+            return DefaultRecord.Versions(versions, mods, VersionChanges);
         }
 
         // ---- decisions (the board logs them and schedules the cfg save) --------------------------------
 
         public static void UseNew(Item i) { i.Entry.ResetToDefault(); Decide(i, "new default"); }
         public static void Keep(Item i) => Decide(i, "kept yours");
+
+        // The same decision for every customised setting still waiting (popup Use new / Keep mine, page Use all new).
+        // Returns their keys.
+        public static List<string> DecideAll(bool useNew)
+        {
+            var keys = new List<string>();
+            foreach (var i in Items)
+            {
+                if (!i.Waiting || i.Auto) continue;
+                if (useNew) i.Entry.ResetToDefault();
+                known[i.Key] = i.Entry.GetDefaultValueAsString();
+                i.Done = useNew ? "new default" : "kept yours";
+                keys.Add(i.Key);
+            }
+            if (keys.Count > 0) Save();
+            return keys;
+        }
 
         // Back to the value from before the automatic update; it is then simply a changed value.
         public static void Revert(Item i)
@@ -255,7 +276,7 @@ namespace ModSettings
 
         static void Save()
         {
-            try { File.WriteAllLines(FilePath, DefaultRecord.Format(known, versions)); }
+            try { DefaultRecord.Save(FilePath, known, versions); }
             catch (Exception e) { ModSettingsMod.Log.Warning($"can't write {FilePath}: {e.Message}"); }
         }
     }

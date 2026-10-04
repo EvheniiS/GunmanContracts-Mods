@@ -1,6 +1,6 @@
-# Mod Settings 1.2.1
+# Mod Settings 1.3.0
 
-Tested: 1.0.0
+Tested: 1.3.0 (2026-10-04)
 
 An in-VR settings board for every MelonLoader mod in Gunman Contracts, with a mouse-driven on-screen version for
 flat mode. It reads all categories from
@@ -37,18 +37,26 @@ MelonLoader saves every value to the cfg, so a mod update that changes a default
 remembers each setting's default in `UserData/ModSettings_defaults.txt` (delete it to start over). When an update
 changes one:
 
-- if you had left it at the old default, it moves to the new one at start (**Revert** undoes that);
-- if you had changed it, your value stays until you press **Use new** or **Keep**.
+- if you had left it at the old default, it moves to the new one at start;
+- if you had changed it, your value stays and you are asked.
 
-Both are listed on the **Updated defaults** page, which comes first and which the board opens on while a decision is
-waiting. Press a name to adjust it in its own section; **Use all new** takes the new default for every waiting row.
-The first run only records the defaults, so changes are shown from the next mod update on. Settings the mod manages
-itself are skipped.
+**Mods updated popup (1.3.0).** The first time you open the board after such an update, a small card with a blue frame
+comes up instead of the board and says what happened ("4 settings have new default values: 2 you never changed, 2 you
+changed"). Its buttons:
+
+- **Use new**: your changed settings take the new defaults too. **Keep mine**: keep your values, stop asking.
+- **Review**: opens the **Updated defaults** page: one row per setting (yours first), Keep / Use per row, **Undo** on
+  the ones that moved by themselves, **Use all new** at the bottom; press a name to adjust it in its own section.
+- **Later** (or closing the board): decide nothing; the popup comes back at the next game start.
+- **OK** / **Review** when nothing needs a decision (only untouched settings moved).
+
+The popup shows once per game session. The first run only records the defaults, so changes are shown from the next mod
+update on. Settings the mod manages itself are skipped.
 
 **Removed settings file (1.2.1).** The record also keeps how many settings you had changed per mod when the game last
 ran. If a mod had two or more changed settings and now has none (you deleted `MelonPreferences.cfg`, or its section),
-the log warns "Settings were reset: ..." and the board opens on the **Updated defaults** page with that message once
-(it is kept until the board has shown it). One setting reset by hand does not count.
+the log warns "Settings were reset: ..." and the popup says so once, with **OK** (it is kept until the board has shown
+it). One setting reset by hand does not count.
 
 ### Flat mode (no headset)
 

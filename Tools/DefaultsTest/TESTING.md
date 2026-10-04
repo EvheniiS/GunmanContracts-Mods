@@ -5,8 +5,23 @@ tested against a mod update without touching real mods. `Test-Defaults.ps1` inst
 own cfg section and record lines, and `Check` compares the game log with what the rules predict. Header of the script has
 the command order. Feature under test: Mod Settings 1.2.x (`DefaultChanges.cs`, the "Updated defaults" page, reset notice).
 
-Status: **not ready for release.** The mechanics pass; the page wording is still unclear and a popup is planned (see
-`../../ModSettings/UPDATE_POPUP_SPEC.md`). A full spec-driven test plan is the next step; the checklist below is the starting list.
+Status: **Mod Settings 1.3.0 adds the "Mods updated" popup** (spec: `../../ModSettings/UPDATE_POPUP_SPEC.md`). The
+scenario order T0-T7 and how to read `Check` are in the project skill `defaults-test`
+(`.claude/skills/defaults-test/SKILL.md`). Flat pass of 1.3.0: results table below, filled in as it runs.
+
+## Results, Mod Settings 1.3.0 flat pass (Oct 4 2026)
+
+| Step | Result |
+|---|---|
+| Unit tests: record file on disk over 5 simulated starts (first run, no change, update + new mod, undecided, downgrade), damaged lines, special lines; popup content | **PASS** (mutation-checked) |
+| T0 first run + Setup: no popup | **PASS** (329 recorded, no popup) |
+| T1 only untouched moved: OK / Review, Undo | **PASS** (popup once, 5 auto, Undo A). Found: row text cut off, reopen landed on the page: fixed (short row text, wider name column, reopen skips the page when nothing waits) |
+| T2 Use new | **PASS** via Review + Use all new: B=1, D=new in cfg and record; rows fit; reopen lands on a mod section. Found: "Keep mine" row button overflowed: fixed (value shown only if the label fits 7 chars) |
+| T3 Keep mine | **PASS** 9/9 (B=2, D=mine kept; record at the new defaults) |
+| T4 no popup after Keep mine | **PASS** (next start: no popup line, nothing asked) |
+| T5 Later, comes back next start, Review | T5a **PASS** (Later: nothing decided, record still old; List shows the page first + yellow; no popup on reopen). Added: blue list background while answers wait. T5b **PASS** (popup back next start; Keep B, Use D on the page: cfg and record right). Found: the second popup named no mod (version line only on the first start): popup now names the mods (title for one, a "Mods:" list for several). `Check` now grades each setting by its last decision (it had wrongly graded the popup's Later) |
+| T6 reset notice popup, once | **PASS** (seen by the user; second start: no popup, notice no longer carried in the record) |
+| T7 real cfg untouched | **PASS for the fixture** (Remove: only test lines). Real-cfg diff vs T0 backup: Decapitation comment (mod 1.0.0 -> 1.0.1, see below) and GrabFix.PalmOffset 0.02 -> 0.03 changed between the T3 and T5 setups (not by the fixture; open). **Lesson: `FirstRun` deletes the record for ALL mods and swallowed Decapitation 1.0.1's real default change (MinimumVRSwingSpeed 1.5 -> 3)**: run FirstRun only when no real mod was updated since the last start, or restore the record afterwards |
 
 ## The rules being tested
 
@@ -36,7 +51,7 @@ cd Tools\DefaultsTest
 .\Test-Defaults.ps1 Status | Remove
 ```
 
-## Results so far (Oct 3 2026, VR board, Mod Settings 1.2.0 then local 1.2.1 builds)
+## Results, Oct 3 2026 (VR board, Mod Settings 1.2.0 then local 1.2.1 builds)
 
 | Test | Result |
 |---|---|

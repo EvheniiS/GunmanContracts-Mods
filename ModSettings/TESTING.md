@@ -26,7 +26,11 @@ Unity hand rig or controller alignment; do this pass in the headset before relea
 - `PanelDistance` 1.4: the board opens ~1.4 m away at the same angle below the eyes; laser hover and press work.
 - Flat (Ctrl+M): List / title → click a section → lands there; wheel pages the list if it doesn't fit.
 
-## Updated defaults (1.2.0)
+## Updated defaults (1.2.0) and the Mods updated popup (1.3.0)
+
+**1.3.0:** the first board open after an update shows a small popup (Use new / Keep mine / Review / Later, or OK / Review)
+instead of opening on the page. Scenario pass T0-T7: project skill `defaults-test`; spec `UPDATE_POPUP_SPEC.md`. Steps
+below that say "the board opens on Updated defaults" now mean "the popup appears; Review opens the page".
 
 **Easiest: the Defaults Test fixture** (`Tools/DefaultsTest/`, a throwaway mod with 1.0.0 and 1.1.0 builds covering every case; touches only its own DLL, cfg section and record lines, never your real mods): `.\Test-Defaults.ps1 Setup` -> start game, quit -> `Update` -> start game, open the board -> quit -> `Check`. Details in the script header.
 

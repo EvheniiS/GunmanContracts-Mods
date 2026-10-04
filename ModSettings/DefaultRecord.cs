@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace ModSettings
@@ -19,6 +20,42 @@ namespace ModSettings
             if (value == newDefault) return DefaultChange.AlreadyNew;
             return value == known ? DefaultChange.AutoUpdate : DefaultChange.Ask;
         }
+
+        // One setting at start: what to do with it, with the record updated to match. Ask leaves the old default recorded,
+        // so the setting is asked again at every start until the player decides. recorded = the default remembered before.
+        public static DefaultChange Apply(Dictionary<string, string> known, string key, string newDefault, string value, out string recorded)
+        {
+            known.TryGetValue(key, out recorded);
+            var d = Decide(recorded, newDefault, value);
+            if (d is DefaultChange.Record or DefaultChange.AlreadyNew or DefaultChange.AutoUpdate) known[key] = newDefault;
+            return d;
+        }
+
+        // Every loaded mod's version against the recorded one. New versions and new mods are recorded; only a changed
+        // version is listed ("Daredevil 1.0.0 -> 1.1.0"). Mods no longer installed stay recorded. Returns whether anything changed.
+        public static bool Versions(Dictionary<string, string> recorded, IEnumerable<(string Name, string Version)> mods, List<string> changes)
+        {
+            bool changed = false;
+            foreach (var (name, ver) in mods)
+            {
+                if (recorded.TryGetValue(name, out var was) && was == ver) continue;
+                if (was != null) changes.Add($"{name} {was} -> {ver}");
+                recorded[name] = ver;
+                changed = true;
+            }
+            return changed;
+        }
+
+        // The file itself. Load returns false when there is none yet: the first run, which only records.
+        public static bool Load(string path, Dictionary<string, string> defaults, Dictionary<string, string> versions)
+        {
+            if (!File.Exists(path)) return false;
+            Parse(File.ReadAllLines(path), defaults, versions);
+            return true;
+        }
+
+        public static void Save(string path, Dictionary<string, string> defaults, Dictionary<string, string> versions) =>
+            File.WriteAllLines(path, Format(defaults, versions));
 
         // Settings-file removal detection. The record keeps, per category, how many settings the player had changed when
         // the game last ran ("~custom.<Category>" in the versions slot). A category that had at least minBefore changed

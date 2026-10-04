@@ -115,7 +115,8 @@ wrote (the "scale only what changed" guard did nothing). 0.1.2: `maxAngularVeloc
 board rides on the rig. 0.2.2: centre slot `App_5`, moved to `App_4` while a mission uses it. 0.3.0: flat-mode IMGUI menu (Ctrl+M).
 1.1.0: List button (jump to a section). 1.2.0: defaults changed by a mod update (`UserData/ModSettings_defaults.txt`; untouched values
 move to the new default, customised ones wait for Use new / Keep). **Release Mod Settings 1.2.0 before Daredevil 1.1.0**, because the
-first run only records.
+first run only records. 1.2.1: "Settings were reset" notice when a mod's changed settings all vanish (deleted cfg). 1.3.0 (Oct 4): a small
+"Mods updated" popup on the first board open of a session (Use new / Keep mine / Review / Later) replaces opening on the page.
 
 ## Weapon Framework (WeaponFramework/)
 0.1.0 (Sep 28): mod weapons on the arsenal panel in The Range. 0.1.1: `OnSettled` from `endAnimation`. 0.1.2: save guard moved to

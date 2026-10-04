@@ -33,7 +33,8 @@ namespace ModSettings
 
         sealed class Poker { public bool WasIn, Trigger, Grip; public float LastPress, LastDepth; public Button Hover; }
 
-        static GameObject root;
+        static GameObject root, board, popup;   // board and popup are the two children of root; one is shown at a time
+        static Transform group;                 // where Make puts new buttons while building
         static Shader flat;
         static TMP_FontAsset font;
         static readonly List<Button> buttons = new();
@@ -45,6 +46,12 @@ namespace ModSettings
         static bool listOpen;
         static int listPage;
         static int ListPages => Math.Max(1, (Pages.All.Count + Picks - 1) / Picks);
+        // The Mods updated popup: a smaller card with a blue frame, alone in front of you until it is answered.
+        const float PW = 0.46f, PH = 0.28f;
+        // Row name: normal, and widened over the two left step buttons on the Updated defaults page.
+        const float LabelX = -0.23f, LabelW = 0.245f, LabelWideX = -0.177f, LabelWideW = 0.351f;
+        static Button popTitle, popBody;
+        static readonly Button[] popButtons = new Button[4];
         static readonly Button[] resets = new Button[Rows];
         static readonly Button[,] steps = new Button[Rows, 4];
         static readonly Poker[] pokers = { new(), new() };
@@ -56,7 +63,8 @@ namespace ModSettings
         static readonly Color Bg = new(0.07f, 0.07f, 0.08f), BtnCol = new(0.22f, 0.22f, 0.25f), LabelCol = new(0.13f, 0.13f, 0.15f),
             SelCol = new(0.32f, 0.08f, 0.08f), FlashCol = new(0.75f, 0.2f, 0.2f), OnCol = new(0.12f, 0.42f, 0.16f),
             OffCol = new(0.32f, 0.1f, 0.1f), Changed = new(1f, 0.82f, 0.35f), Grey = new(0.6f, 0.6f, 0.6f),
-            NewDef = new(0.45f, 0.85f, 1f); // a default changed by a mod update
+            NewDef = new(0.45f, 0.85f, 1f), // a default changed by a mod update
+            AskCol = new(0.1f, 0.3f, 0.4f); // popup main button, Updated defaults in List while something waits
 
         public static bool IsOpen => Alive(root) && root.activeSelf;
 
@@ -85,6 +93,7 @@ namespace ModSettings
 
         public static void Close()
         {
+            Pages.PopupChoice(PopupButton.Later);   // closed with the popup still up: nothing decided
             dragging = -1;
             VRInteraction.Close();
             if (Alive(root))
@@ -133,11 +142,13 @@ namespace ModSettings
                 }
                 var local = root.transform.InverseTransformPoint(tip.position);
                 var direction = root.transform.InverseTransformDirection(VRInteraction.Direction(hand));
+                bool pop = popup.activeSelf;
+                float sizeX = pop ? PW : W, sizeY = pop ? PH : H;   // the popup card is the only thing shown while it is up
                 bool aimed = PointerGeometry.Hit(local.x, local.y, local.z, direction.x, direction.y, direction.z,
-                    root.transform.lossyScale.x, W, H, out float hitX, out float hitY);
+                    root.transform.lossyScale.x, sizeX, sizeY, out float hitX, out float hitY);
                 var hit = new Vector3(hitX, hitY, 0);
-                bool near = local.z > -0.14f && local.z < PressBack && Mathf.Abs(local.x) < W / 2 && Mathf.Abs(local.y) < H / 2;
-                bool handle = (near && local.y > H / 2 - 0.038f) || (aimed && hit.y > H / 2 - 0.038f);
+                bool near = local.z > -0.14f && local.z < PressBack && Mathf.Abs(local.x) < sizeX / 2 && Mathf.Abs(local.y) < sizeY / 2;
+                bool handle = !pop && ((near && local.y > H / 2 - 0.038f) || (aimed && hit.y > H / 2 - 0.038f));
                 if (dragging < 0 && handle && grip && !p.Grip)
                 {
                     dragging = i;
@@ -152,7 +163,7 @@ namespace ModSettings
                 VRInteraction.Show(i, hand, dragging < 0 && (aimed || near), tip.position,
                     aimed ? root.transform.TransformPoint(new Vector3(hit.x, hit.y, -0.003f)) : tip.position, flat);
                 var b = Hit(new Vector2(local.x, local.y));
-                bool touching = local.z > PressDepth && local.z < PressBack && Mathf.Abs(local.x) < W / 2 && Mathf.Abs(local.y) < H / 2;
+                bool touching = local.z > PressDepth && local.z < PressBack && Mathf.Abs(local.x) < sizeX / 2 && Mathf.Abs(local.y) < sizeY / 2;
                 bool isIn = b != null && touching;
                 p.Hover = b != null && local.z > HoverDepth && local.z < PressBack ? b : null;
                 var rayButton = aimed ? Hit(new Vector2(hit.x, hit.y)) : null;
@@ -177,7 +188,7 @@ namespace ModSettings
 
             foreach (var b in buttons)
             {
-                if (!b.Interactive || !b.Go.activeSelf) continue;
+                if (!b.Interactive || !b.Go.activeInHierarchy) continue;
                 bool hover = pokers[0].Hover == b || pokers[1].Hover == b;
                 var c = now < b.FlashUntil ? FlashCol : hover ? b.Base + new Color(0.1f, 0.1f, 0.1f) : b.Base;
                 b.Mat.SetColor("_BaseColor", c); b.Mat.SetColor("_Color", c);
@@ -190,7 +201,7 @@ namespace ModSettings
         static Button Hit(Vector2 p)
         {
             foreach (var b in buttons)
-                if (b.Interactive && b.OnPress != null && b.Go.activeSelf &&
+                if (b.Interactive && b.OnPress != null && b.Go.activeInHierarchy &&
                     Mathf.Abs(p.x - b.Center.x) <= b.Half.x && Mathf.Abs(p.y - b.Center.y) <= b.Half.y) return b;
             return null;
         }
@@ -199,6 +210,9 @@ namespace ModSettings
 
         static void Refresh()
         {
+            bool pop = DefaultChanges.Popup != null;
+            if (popup.activeSelf != pop) { popup.SetActive(pop); board.SetActive(!pop); }
+            if (pop) { RefreshPopup(); return; }
             ShowSettings(!listOpen);
             if (listOpen) { RefreshList(); return; }
             foreach (var b in picks) b.Go.SetActive(false);
@@ -218,6 +232,9 @@ namespace ModSettings
                 resets[r].Go.SetActive(s != null);
                 for (int k = 0; k < 4; k++) steps[r, k].Go.SetActive(false);
                 if (s == null) continue;
+                // The Updated defaults page has no step buttons, so its names get the room of the first two.
+                var lc = labels[r].Center;
+                Resize(labels[r], new Vector2(pg.Updates ? LabelWideX : LabelX, lc.y), new Vector2(pg.Updates ? LabelWideW : LabelW, Btn));
                 if (pg.Updates) { UpdateRow(r, s); continue; }
 
                 bool newDefault = DefaultChanges.Find(s.Entry)?.Waiting == true;
@@ -295,6 +312,46 @@ namespace ModSettings
             if (waiting && !it.Auto) SetStep(r, 3, DefaultChanges.KeepLabel(it));
         }
 
+        // The popup's text and its 1, 2 or 4 buttons, centred in one row (the first one, the main answer, in blue).
+        static void RefreshPopup()
+        {
+            var p = DefaultChanges.Popup;
+            popTitle.Text.SetIfChanged(p.Title);
+            popBody.Text.SetIfChanged(string.Join("\n", p.Lines));
+            int n = Math.Min(p.Buttons.Count, popButtons.Length);
+            float bw = n >= 4 ? 0.1f : 0.14f, gap = 0.012f, x0 = -(n * bw + (n - 1) * gap) / 2 + bw / 2;
+            for (int k = 0; k < popButtons.Length; k++)
+            {
+                var b = popButtons[k];
+                b.Go.SetActive(k < n);
+                if (k >= n) continue;
+                var c = new Vector2(x0 + k * (bw + gap), -PH / 2 + 0.034f);
+                Resize(b, c, new Vector2(bw, Btn));
+                var what = p.Buttons[k];
+                b.Text.SetIfChanged(UpdatePopup.Label(what));
+                b.Text.color = what == PopupButton.Later ? Grey : Color.white;
+                SetBase(b, k == 0 ? AskCol : what == PopupButton.Later ? LabelCol : BtnCol);
+            }
+        }
+
+        // Moves / resizes a built button (quad, text box and hit rectangle). Does nothing when already there.
+        static void Resize(Button b, Vector2 c, Vector2 size)
+        {
+            if (b.Center == c && b.Half == size / 2) return;
+            b.Center = c; b.Half = size / 2;
+            b.Go.transform.localPosition = new Vector3(c.x, c.y, 0);
+            b.Quad.transform.localScale = new Vector3(size.x, size.y, 1);
+            b.Text.rectTransform.sizeDelta = size - new Vector2(0.006f, 0.002f);
+        }
+
+        static void PopupPress(int k)
+        {
+            var p = DefaultChanges.Popup;
+            if (p == null || k >= p.Buttons.Count) return;
+            Status(Pages.PopupChoice(p.Buttons[k]));
+            Refresh();
+        }
+
         // Rows, footer and description; the rest of Refresh sets the per-row parts when they are shown.
         static void ShowSettings(bool show)
         {
@@ -324,7 +381,7 @@ namespace ModSettings
                 var pg = Pages.All[idx];
                 b.Text.SetIfChanged(pg.Title);
                 b.Text.color = pg.HasChanges ? Changed : Color.white;
-                SetBase(b, idx == Pages.Current ? SelCol : BtnCol);
+                SetBase(b, idx == Pages.Current ? SelCol : pg.Updates && DefaultChanges.AskWaiting ? AskCol : BtnCol);   // blue = waits for your answer
             }
         }
 
@@ -399,8 +456,14 @@ namespace ModSettings
             Object.DontDestroyOnLoad(root);
             root.SetActive(false);
             buttons.Clear();
+            board = new GameObject("Board");
+            board.transform.SetParent(root.transform, false);
+            popup = new GameObject("Popup");
+            popup.transform.SetParent(root.transform, false);
+            popup.SetActive(false);
+            group = board.transform;
 
-            var bg = Quad(root.transform, Vector2.zero, new Vector2(W, H), 0.002f, out _);
+            var bg = Quad(board.transform, Vector2.zero, new Vector2(W, H), 0.002f, out _);
             SetColor(bg, Bg);
 
             Make(new Vector2(0, H / 2 - 0.019f), new Vector2(W - 0.02f, 0.03f),
@@ -419,7 +482,7 @@ namespace ModSettings
             {
                 int row = r;
                 float y = top - 0.05f - r * RowStep;
-                labels[r] = Make(new Vector2(-0.23f, y), new Vector2(0.245f, Btn), "", 0.16f, LabelCol, () => Select(row), TextAlignmentOptions.MidlineLeft);
+                labels[r] = Make(new Vector2(LabelX, y), new Vector2(LabelW, Btn), "", 0.16f, LabelCol, () => Select(row), TextAlignmentOptions.MidlineLeft);
                 values[r] = Make(new Vector2(0.055f, y), new Vector2(0.09f, Btn), "", 0.16f, BtnCol, () => Step(row, 1));
                 resets[r] = Make(new Vector2(0.28f, y), new Vector2(0.12f, Btn), "", 0.15f, BtnCol, () =>
                 {
@@ -462,6 +525,23 @@ namespace ModSettings
                 picks[k].Go.SetActive(false);
             }
 
+            // The popup card: blue frame behind a dark card, header strip, text, a row of buttons (placed in RefreshPopup).
+            group = popup.transform;
+            SetColor(Quad(popup.transform, Vector2.zero, new Vector2(PW + 0.008f, PH + 0.008f), 0.003f, out _), NewDef);
+            SetColor(Quad(popup.transform, Vector2.zero, new Vector2(PW, PH), 0.002f, out _), Bg);
+            popTitle = Make(new Vector2(0, PH / 2 - 0.02f), new Vector2(PW, 0.04f), "", 0.18f, AskCol, null);
+            popTitle.Text.fontStyle = FontStyles.Bold;
+            float bodyTop = PH / 2 - 0.048f, bodyBottom = -PH / 2 + 0.062f;
+            popBody = Make(new Vector2(0, (bodyTop + bodyBottom) / 2), new Vector2(PW - 0.03f, bodyTop - bodyBottom), "", 0.14f, Bg, null,
+                TextAlignmentOptions.TopLeft, false, true);
+            popBody.Text.fontSizeMin = 0.08f;
+            for (int k = 0; k < popButtons.Length; k++)
+            {
+                int slot = k;
+                popButtons[k] = Make(new Vector2(0, -PH / 2 + 0.034f), new Vector2(0.1f, Btn), "", 0.16f, BtnCol, () => PopupPress(slot));
+            }
+            group = board.transform;
+
             ModSettingsMod.Log.Msg($"menu built: font '{font.name}', shader '{flat.name}'");
             return true;
         }
@@ -470,7 +550,7 @@ namespace ModSettings
                            TextAlignmentOptions align = TextAlignmentOptions.Center, bool interactive = true, bool wrap = false)
         {
             var go = new GameObject("Button");
-            go.transform.SetParent(root.transform, false);
+            go.transform.SetParent(group, false);
             go.transform.localPosition = new Vector3(c.x, c.y, 0);
             var quad = Quad(go.transform, Vector2.zero, size, 0, out var mat);
             var b = new Button { Go = go, Quad = quad, Mat = mat, Center = c, Half = size / 2, OnPress = onPress, Base = col, Interactive = interactive && onPress != null };

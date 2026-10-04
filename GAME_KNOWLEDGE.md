@@ -425,6 +425,16 @@ to `ANBContractData.maxTakedownEnemies` (0xB4; ctor default 40, serialized value
 separate setting. Bomb ("rook") waves: `ANBGameLogic.DeathByRook` from `ANBChallengeTriggerbox`. Player/enemy `ANBEncounterSystem`
 keeps the collective player position (`lastKnownPlayerPositionKeepTime` 3 s), flanking max 3.
 
+**Blood decals.** `ANBGameLogic.SpawnBloodDecal(point, dir, ...)` (checked) raycasts along `dir` on `BloodOnMask`, picks a random prefab
+from `BloodDecals` and instantiates it at the hit; budget `maxBloodPerFrame` / `bloodPerFrame`, gated by `showBlood` (0x11c4).
+The prefabs carry `BFX_DecalSettings` (`startScale`, `TimeScaleMin/Max` = size animation, `BloodSettings`); hit/death blood comes from
+`DecalOnHit` (`IntervalPerDecals` cooldown). **Third-party blood mods rescale every decal prefab**: Gunman Contracts Blood Overhaul
+(flowz) postfixes `BFX_DecalSettings.Awake` / `DecalOnHit.Awake` / `ANBWallBlood.Awake` and multiplies `startScale` (whole Vector3,
+depth too), the lifetime and the cooldown by its `[BloodOverhaul]` prefs (code defaults 0.7 / 2 / 3). Anything that calls
+`SpawnBloodDecal` directly (Decapitation 1.0.0 `NeckBleeding.Tick`: decal + `SpawnVolumeBlood` every 0.16-0.32 s for
+`NeckBloodSeconds`, bypassing the `DecalOnHit` cooldown) therefore inherits that scale. **Whole room turns dark red and flat after
+decapitations = oversized decals (confirmed 2026-10-04 by removing the conflict): Blood Overhaul at 10 / 5 / 10 was installed.**
+
 ---
 
 ## 7. Sound (for custom sounds later)

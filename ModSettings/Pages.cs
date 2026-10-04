@@ -52,18 +52,23 @@ namespace ModSettings
             }
             // Alphabetical, so the section list is easy to scan and < / > follow the same order.
             All.Sort((a, b) => string.Compare(a.Title, b.Title, StringComparison.OrdinalIgnoreCase));
-            // Default changes from mod updates come first, while there are any this session.
+            // Default changes from mod updates come first, while there are any this session: your customised settings
+            // (the ones with a question) first, then the ones that moved by themselves.
             if (DefaultChanges.Items.Count > 0 || DefaultChanges.Notices.Count > 0)
             {
                 var up = new Page();
-                foreach (var it in DefaultChanges.Items)
-                    try { up.Settings.Add(new Setting(it.Entry)); } catch (Exception ex) { ModSettingsMod.Dbg($"skipped {it.Key}: {ex.Message}"); }
+                foreach (bool auto in new[] { false, true })
+                    foreach (var it in DefaultChanges.Items)
+                        if (it.Auto == auto)
+                            try { up.Settings.Add(new Setting(it.Entry)); } catch (Exception ex) { ModSettingsMod.Dbg($"skipped {it.Key}: {ex.Message}"); }
                 if (keep.TryGetValue(up.Key, out var was)) up.Scroll = was.Scroll;
                 if (up.Settings.Count > 0 || DefaultChanges.Notices.Count > 0) All.Insert(0, up);
             }
             int i = All.FindIndex(p => p.Key == old);
             if (i >= 0) Current = i;
-            if (All.Count > 0 && All[0].Updates && DefaultChanges.ShowOnOpen()) Current = 0;
+            // Nothing left to answer: reopen on a mod's section, not the list of changes (it stays first in List).
+            if (Current == 0 && All.Count > 1 && All[0].Updates && !DefaultChanges.AskWaiting) Current = 1;
+            DefaultChanges.OpenPopup();
             if (All.Count == 0) { ModSettingsMod.Log.Warning("no mod settings to show"); return false; }
             Current = Math.Clamp(Current, 0, All.Count - 1);
             return true;
@@ -105,10 +110,11 @@ namespace ModSettings
         {
             if (Cur.Updates)
             {
-                int n = 0;
-                foreach (var it in DefaultChanges.Items)
-                    if (it.Waiting && !it.Auto) { Decide(it, "use new"); n++; }
-                return n > 0 ? $"{n} set to new" : "nothing waiting";
+                var keys = DefaultChanges.DecideAll(true);
+                if (keys.Count == 0) return "nothing waiting";
+                SaveAt = Time.unscaledTime + 1f;
+                ModSettingsMod.Log.Msg($"use all new ({keys.Count}: {string.Join(", ", keys)})");
+                return $"{keys.Count} set to new";
             }
             int changed = 0, failed = 0;
             foreach (var s in Cur.Settings)
@@ -136,6 +142,26 @@ namespace ModSettings
             SaveAt = Time.unscaledTime + 1f;
             ModSettingsMod.Log.Msg($"{it.Key}: {before} -> {it.Entry.GetValueAsString()} ({what})");
             return it.Done;
+        }
+
+        // A button of the Mods updated popup (closing the board while it is up counts as Later). Returns the status text.
+        public static string PopupChoice(PopupButton b)
+        {
+            if (DefaultChanges.Popup == null) return "";
+            DefaultChanges.Popup = null;
+            string what = UpdatePopup.Label(b).ToLowerInvariant(), status = "";
+            if (b == PopupButton.UseNew || b == PopupButton.KeepMine)
+            {
+                var keys = DefaultChanges.DecideAll(b == PopupButton.UseNew);
+                if (keys.Count > 0) what += $" ({keys.Count}: {string.Join(", ", keys)})";
+                if (b == PopupButton.UseNew) SaveAt = Time.unscaledTime + 1f;
+                status = b == PopupButton.UseNew ? $"{keys.Count} set to new" : $"kept {keys.Count}";
+            }
+            bool page = All.Count > 0 && All[0].Updates;
+            if (b == PopupButton.Review && page) Current = 0;
+            else if (page && Current == 0 && All.Count > 1) Current = 1;   // answered: start on a mod's section, not the list of changes
+            ModSettingsMod.Log.Msg("update popup: " + what);
+            return status;
         }
 
         // Opens a setting's own section with it selected (from the Updated defaults page).

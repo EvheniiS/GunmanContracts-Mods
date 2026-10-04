@@ -28,7 +28,7 @@ namespace ModSettings
         static int listPage, perPage = 30;
         static int ListPages => Math.Max(1, (Pages.All.Count + perPage - 1) / perPage);
 
-        static GUIStyle label, title, desc, button;
+        static GUIStyle label, title, desc, button, popText;
         static int styleSize;
 
         public static void Toggle(string how)
@@ -63,6 +63,7 @@ namespace ModSettings
         {
             if (!IsOpen) return;
             IsOpen = false;
+            Pages.PopupChoice(PopupButton.Later);   // closed with the popup still up: nothing decided
             try
             {
                 if (unlocked != null && Panel.Alive(unlocked) && !unlocked.menuShown) unlocked.ManualLockCursor();
@@ -117,6 +118,7 @@ namespace ModSettings
             if (!IsOpen || Pages.All.Count == 0) return;
             float u = Mathf.Max(Screen.height / 1080f, 0.6f);
             Styles(u);
+            if (DefaultChanges.Popup != null) { DrawPopup(u); return; }
 
             float w = 1040 * u, h = 720 * u, pad = 14 * u, row = 36 * u, gap = 6 * u;
             var win = new Rect((Screen.width - w) / 2, (Screen.height - h) / 2, w, h);
@@ -219,21 +221,50 @@ namespace ModSettings
             GUI.Label(new Rect(x0, y, inner, win.yMax - pad - y), text, desc);
         }
 
+        // The Mods updated popup (see UpdatePopup): a smaller window with a blue frame, shown instead of the menu until answered.
+        static void DrawPopup(float u)
+        {
+            var p = DefaultChanges.Popup;
+            float w = 620 * u, h = 340 * u, pad = 16 * u, row = 40 * u, gap = 12 * u, edge = 3 * u, head = 46 * u;
+            var win = new Rect((Screen.width - w) / 2, (Screen.height - h) / 2, w, h);
+            Fill(new Rect(win.x - edge, win.y - edge, w + 2 * edge, h + 2 * edge), new Color(0.45f, 0.85f, 1f));
+            Fill(win, new Color(0.06f, 0.06f, 0.07f));
+            var top = new Rect(win.x, win.y, w, head);
+            Fill(top, new Color(0.1f, 0.3f, 0.4f));
+            GUI.Label(top, p.Title, title);
+            GUI.Label(new Rect(win.x + pad, top.yMax + pad, w - 2 * pad, h - head - row - 3 * pad), string.Join("\n", p.Lines), popText);
+            int n = p.Buttons.Count;
+            float bw = n >= 4 ? 130 * u : 170 * u, x = win.x + (w - (n * bw + (n - 1) * gap)) / 2, y = win.yMax - pad - row;
+            for (int k = 0; k < n; k++, x += bw + gap)
+            {
+                var b = p.Buttons[k];
+                bool later = b == PopupButton.Later;
+                if (Btn(new Rect(x, y, bw, row), UpdatePopup.Label(b), k == 0 ? new Color(0.1f, 0.3f, 0.4f) : later ? new Color(0.13f, 0.13f, 0.15f) : null,
+                        later ? Color.gray : null))
+                {
+                    Status(Pages.PopupChoice(b));
+                    return;
+                }
+            }
+        }
+
         // A row of the Updated defaults page (see Panel.UpdateRow): name (opens its section) | value | Keep | Use new / Revert.
         static void UpdateRow(Setting s, float x0, float y, float inner, float nameW, float valW, float stepW, float resetW, float row, float gap)
         {
             var it = DefaultChanges.Find(s.Entry);
             bool waiting = it != null && it.Waiting;
             var tint = !waiting ? Color.gray : it.Auto ? new Color(0.45f, 0.85f, 1f) : new Color(1f, 0.82f, 0.35f);   // blue = moved to the new default, yellow = yours kept
-            if (Btn(new Rect(x0, y, nameW, row), $" {Page.CategoryTitle(s.Entry.Category)} · {s.Name}: {(it == null ? "" : DefaultChanges.Explain(it))}",
+            // No step buttons on this page: the name takes their room. name | value | Keep | Use / Undo
+            float wide = inner - valW - stepW - resetW - 3 * gap;
+            if (Btn(new Rect(x0, y, wide, row), $" {Page.CategoryTitle(s.Entry.Category)} · {s.Name}: {(it == null ? "" : DefaultChanges.Explain(it))}",
                     new Color(0.2f, 0.2f, 0.23f), tint, left: true))
                 Pages.JumpTo(s, Rows);
-            float x = x0 + nameW + gap;
+            float x = x0 + wide + gap;
             var vr = new Rect(x, y, valW, row);
             if (s.Kind == Kind.Color && ColorUtility.TryParseHtmlString(s.ValueText(), out var col)) Fill(vr, col);
             GUI.Label(vr, s.ValueText(), label);
             x += valW + gap;
-            if (waiting && !it.Auto && Btn(new Rect(x + 3 * (stepW + gap), y, stepW, row), DefaultChanges.KeepLabel(it), fg: tint)) Status(Pages.Decide(it, "keep"));
+            if (waiting && !it.Auto && Btn(new Rect(x, y, stepW, row), DefaultChanges.KeepLabel(it), fg: tint)) Status(Pages.Decide(it, "keep"));
             var rr = new Rect(x0 + inner - resetW, y, resetW, row);
             if (!waiting) GUI.Label(rr, "Done", label);
             else if (Btn(rr, it.Auto ? "Undo" : DefaultChanges.UseLabel(it), fg: tint)) Status(Pages.Decide(it, it.Auto ? "revert" : "use new"));
@@ -253,7 +284,7 @@ namespace ModSettings
                 if (idx >= Pages.All.Count) break;
                 var pg = Pages.All[idx];
                 var r = new Rect(x0 + k / rows * (colW + gap), y0 + k % rows * (row + gap), colW, row);
-                var bg = idx == Pages.Current ? new Color(0.45f, 0.1f, 0.1f) : new Color(0.2f, 0.2f, 0.23f);
+                var bg = idx == Pages.Current ? new Color(0.45f, 0.1f, 0.1f) : pg.Updates && DefaultChanges.AskWaiting ? new Color(0.1f, 0.3f, 0.4f) : new Color(0.2f, 0.2f, 0.23f);   // blue = waits for your answer
                 if (Btn(r, " " + pg.Title, bg, pg.HasChanges ? new Color(1f, 0.82f, 0.35f) : Color.white, left: true))
                 {
                     Pages.Jump(idx);
@@ -285,6 +316,7 @@ namespace ModSettings
             label = new GUIStyle(GUI.skin.label) { fontSize = size, alignment = TextAnchor.MiddleCenter };
             title = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(size * 1.25f), alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
             desc = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(size * 0.9f), alignment = TextAnchor.UpperLeft };
+            popText = new GUIStyle(GUI.skin.label) { fontSize = size, alignment = TextAnchor.UpperLeft, wordWrap = true };
             button = new GUIStyle(GUI.skin.button) { fontSize = size };
         }
 

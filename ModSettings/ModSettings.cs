@@ -9,7 +9,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.XR;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(ModSettings.ModSettingsMod), "Mod Settings", "1.2.1", "Evgeeso")]
+[assembly: MelonInfo(typeof(ModSettings.ModSettingsMod), "Mod Settings", "1.3.0", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace ModSettings

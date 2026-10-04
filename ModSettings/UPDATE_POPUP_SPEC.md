@@ -1,40 +1,61 @@
-# Updated defaults: popup (draft notes for a spec, Oct 3 2026)
+# "Mods updated" popup (spec, Mod Settings 1.3.0)
 
-Status: **idea only, not specified, nothing built.** Written down so the next chat can turn it into a real spec and a
-test plan (test fixture: `Tools/DefaultsTest`, plan: `Tools/DefaultsTest/TESTING.md`).
+Status: **built and tested Oct 4 2026 (flat pass T0-T7, VR UI check).** Code: `UpdatePopup.cs` (content, pure, unit-tested),
+`DefaultChanges.OpenPopup` / `DecideAll`, `Pages.PopupChoice`, drawn by `Panel.RefreshPopup` (VR) and `FlatMenu.DrawPopup`.
+Test plan: skill `defaults-test`, fixture `Tools/DefaultsTest`.
 
-## Problem
+## Why
 
-The "Updated defaults" page (1.2.0 / 1.2.1) works, but a player who just opens the board lands on a page of rows
-that looks unlike the rest, with explanatory text at the bottom that nobody reads. Colours, labels and the reason the
-mod's section changed are still unclear, even after the wording pass in 1.2.1.
+The "Updated defaults" page (1.2.x) worked, but a player who opened the board landed on a page of blue/yellow rows that
+looked like every other section, with the explanation at the bottom. The popup says what happened in two lines and takes
+the answer in one press; the page stays for people who want details.
 
-## Idea (from the user)
+## When
 
-When the board is opened and mods were updated with changed defaults, show a **small popup in a different shape**
-(smaller than the board) saying, roughly: "Your mods were updated, and some default values changed." Buttons:
+- On the first board open of a game session (VR board or flat Ctrl+M menu) if anything happened: a customised setting
+  waits for a decision, an untouched setting moved to its new default, or a "settings were reset" notice is pending.
+- Once per session. Any answer, or closing the board while it is up, closes it for the session.
+- Next game start: shown again only if a customised setting is still undecided (Later, or Review without deciding).
+  Settings that moved by themselves and shown notices are not repeated.
 
-- **Okay**
-- **Apply all new**
-- **Review**
-- **Skip**
+## Look
 
-## Open questions for the spec
+- VR: a 46 × 28 cm card (board: 72 × 56) with a blue frame and a blue header strip, shown alone; the board appears after
+  the answer. Not movable; the grip handle is off while it is up; laser and poke hit only the card.
+- Flat: a 620 × 340 window (board: 1040 × 720) with the same frame, instead of the menu.
+- First button (the main answer) blue, Later grey.
 
-- What exactly do Okay and Skip do? Okay = accept the current state (untouched settings already moved, yours kept) and
-  stop asking? Skip = ask again next time? Is one of them redundant?
-- Apply all new: Use new for the yellow (kept) rows only, as "Use all new" does today? Does it affect the blue rows?
-- Review: opens the existing page (rows, Keep / Use / Undo) or a redesigned one?
-- When does it show: first board open of a session only, or every open while something is undecided (today the board
-  opens on the page every time)? Does Skip remember across sessions, per mod update or forever?
-- What does it say: counts ("2 moved to the new default, 2 of yours kept"), which mods, versions?
-- The "Settings were reset" notice (1.2.1): same popup, a second line, or separate?
-- Shape and size in VR (reach, laser hover) and in flat mode (mouse); how it relates to the phone tile / Ctrl+M.
-- Can a mod author mark a default change as "important" (show) versus "minor" (silent)? Probably out of scope.
+## Content
 
-## Existing behaviour to keep in mind
+| State | Title | Text | Buttons |
+|---|---|---|---|
+| customised and untouched settings changed | MODS UPDATED | "Updated: <mod a -> b, up to 3>"; "N settings have new default values: X you never changed: moved to the new default. Y you changed: your value was kept. Use the new defaults for those Y too?" | Use new, Keep mine, Review, Later |
+| only customised | MODS UPDATED | "Y settings you changed have new default values. Your values were kept. Use the new defaults instead?" | same |
+| only untouched | MODS UPDATED | "X settings you never changed now use their new defaults. Review lists them; Undo there gives the old value back." | OK, Review |
+| reset notice only | SETTINGS RESET | "Settings were reset: <mods>. Everything you had changed there is back at its default ..." | OK |
 
-- Rules: value == recorded old default -> auto-updated (Undo); value == new default -> silent; otherwise asked.
-- A decision updates the recorded default; undecided rows are asked again at every start.
-- Record file: `UserData/ModSettings_defaults.txt`; code in `ModSettings/DefaultChanges.cs`, rows in `Panel.cs` /
-  `FlatMenu.cs`, page assembly in `Pages.cs`.
+A reset notice is listed above the update text when both happen. Singular wording for 1.
+
+**Mods are always named** (from the board sections of the changed settings, so also on later starts when the version
+line is gone): one section → title "<SECTION> UPDATED" and "... in <Section> ..."; several → title "MODS UPDATED", a line
+"Mods: BillyClubs (3), Gloves (1)" (up to 4, then "and N more") and "... in 2 mods ...". **Several mods = one popup**,
+never a chain; Use new / Keep mine answer all of them, Review opens one page with all their rows.
+
+## Buttons
+
+| Button | Effect | Board afterwards |
+|---|---|---|
+| Use new | every waiting customised setting takes the new default; record updated | first mod section (not the changes page) |
+| Keep mine | every waiting customised setting keeps its value; record updated, not asked again | same |
+| Review | nothing decided; the Updated defaults page (customised rows first, then the moved ones) | that page |
+| Later / closing the board | nothing decided; page stays first in List this session | first mod section |
+| OK | nothing to decide | first mod section |
+
+## Log (one line each)
+
+`update popup: shown (2 auto, 2 ask, 0 notices)`, then `update popup: use new (2: Cat.Key, Cat.Key)` /
+`keep mine (...)` / `review` / `later` / `ok`. `Test-Defaults.ps1 Check` verifies the answer against cfg and record.
+
+## Out of scope
+
+Mod-author "important vs minor" flags; a badge on the phone tile; a per-mod breakdown in the popup.
