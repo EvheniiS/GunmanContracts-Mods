@@ -28,12 +28,15 @@ slot). Two improvements, because symmetric positions are hard to set one slot at
   Only if that is not enough: grab one slot per hand and move both.
 - **Highlight the real holster while moving it**, not only the blue marker sphere: show the slot's own highlight / hologram
   (the game's holster visual) during the gesture so you see where the gun will actually sit.
-- 0.3.12 (belt follow) is tested and held for these; consider shipping it first rather than waiting.
+- 0.3.12 (belt follow) is tested and held for these; consider shipping it first rather than waiting. It answers a YouTube
+  request (@PsychoQuokkaStudio, Oct 2026: "the pistol holster follows my body, not where the headset faces"; the reply said it was
+  in the backlog), so tell him when it is live.
 
 **Slow Motion Hands → general hand feel** (work-in-progress mod; the name may change before a release). Requests asked for better hand feel overall, not only in slow motion. The glove trails the
 real controller (hand lag 16-24 ms plus grip delay on a club; a fast sideways swing can spin the hand body 160-180° when torque
 saturates). Build on the Slow Motion Hands work (hand spring/force/damper scaling, the gap log) for normal speed too, behind
-settings. Daredevil's levers (`HandStrengthScale`, `HandTorqueScale`, `ClubInertiaScale`, `ClubMaxSpin`, `HandProbe.cs`) are a
+settings. The YouTube request (Oct 2026) is about **guns**: pistols and rifles trail the aim when the hand moves, so log the gap
+with a pistol and a two-handed rifle, not only clubs. Daredevil's levers (`HandStrengthScale`, `HandTorqueScale`, `ClubInertiaScale`, `ClubMaxSpin`, `HandProbe.cs`) are a
 stopgap that should move here once it works.
 
 ## 2. Not yet exercised in play
@@ -55,6 +58,20 @@ From the retired Nexus upload sheets (Oct 3 2026), still open:
 in so their weapon shows up on the arsenal terminal and can be retrieved, with the weapon's metadata (name, picture, mount pose,
 mass, …) in a JSON file next to it. Also open: the pistol (Small Guns) wall (`LoadAssetLoop` builds it with `Pistolset_` /
 `_Pistolspot_`); put a club back on its wall slot by letting go near it. Details in `WeaponFramework/ROADMAP.md`.
+
+**Requests from YouTube (@PsychoQuokkaStudio, Oct 2026).** Holster follow and input delay are in §1. The rest:
+- **Pistol slide like Half-Life: Alyx.** Today, grabbing the slide of an empty pistol sends it forward at once; he wants it to stay
+  back while held and go forward on release. Probably HurricaneVR's slide/gun-part logic (a line grab with a lock), not
+  animation; first read how the game moves and locks the slide when empty (`il2cpp_tools`). Same pass: a better grab point for
+  the slide, and the double grip. Medium; research first.
+- **Props don't come back on Retry / Restart** (pencils, cups on the Dinner Out tables disappear after use; only a new start from
+  the base brings them back). Lead (inferred): Retry is a same-scene restart (`resetScene`, GAME_KNOWLEDGE §5), which reloads the
+  loadout but does not reload the scene, so used or destroyed props stay gone. Check what `resetScene` resets; a fix would record
+  each prop's start pose at scene load and put it back (or re-instantiate it) on restart. Separate from the Weapon Framework /
+  holster restore work, though the same hook.
+- **NPC grab reactions.** Grabbing some enemy parts makes them go limp. Wish: grab an arm and the enemy stays standing, holds the
+  arm, pain face. Large and risky (NPC jank; Death Details already fights the face animator); park until Heavy Melee and Death
+  Details are released. **Headbutt** is the cheap part: a head collider through Heavy Melee's hit path.
 
 **Hardcore: no free misses.** On Hard only two rules make enemy bullets harmless (warm-up second, hit-confirm grace; see
 GAME_KNOWLEDGE §6), about 1 harmless shot per spawned enemy. A mod = two switches: force `weaponFiredOnce` true (or skip the 1 s wait)
