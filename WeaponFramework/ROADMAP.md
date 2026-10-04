@@ -76,6 +76,11 @@ With these, `ExampleBaton.cs` drops to about 20 lines (register + `Spawn` + `Han
 
 ### 2b. Data-only weapon packs
 
+**Revised Oct 4 2026:** not a no-code pack format. The goal is a developer fixture: JSON holds the weapon's metadata
+(panel entry, wall layout, holster), code stays for behaviour. Demand first: a pinned Nexus post asks who wants to add a weapon
+([../release/WeaponFramework/PINNED_POST.txt](../release/WeaponFramework/PINNED_POST.txt), with a shorter JSON draft). The
+notes below stay as the idea pool.
+
 A folder the framework scans at start, no code:
 
 ```

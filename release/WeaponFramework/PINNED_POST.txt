@@ -1,0 +1,40 @@
+[size=4][b]Want to add your own weapon? Tell me what you need[/b][/size]
+
+Weapon Framework puts mod weapons on the arsenal panel in The Range. Right now adding one is a C# mod: a project, a
+copy of a game item, a few game quirks to work around, about 120 lines for a plain crowbar copy. The guide and a
+working example are on [url=https://github.com/EvheniiS/GunmanContracts-Mods]GitHub[/url]
+([i]WeaponFramework/MODDING_GUIDE.md[/i], [i]WeaponFramework/Example/[/i]).
+
+I want to make that much easier: a ready-made fixture you drop in, with your weapon's details in a small JSON file,
+and the framework does the panel entry, the wall slot and the retrieve for you. Before I build it, I'd like to hear
+from anyone who would actually use it.
+
+[b]Questions:[/b]
+[list=1]
+[*]What weapon would you add? (melee, gun, something odd)
+[*]Do you have a model already? Which format (FBX, OBJ, Blender)?
+[*]Are you fine writing a little C#, or do you want a no-code route?
+[*]What should the framework handle for you? For example: holstering on the back or belt, throwing, damage type,
+wall layout, picture for the panel, saving which weapon you carry.
+[/list]
+
+[b]Draft of the JSON file[/b] (nothing final, tell me what is missing or confusing):
+[code]
+{
+  "id": "Machete",                 // letters and digits, unique
+  "displayName": "Machete",        // name on the panel (shown upper case)
+  "description": "Short blade for close work.",
+  "icon": "icon.png",              // panel picture, white render on transparent, about 2.15:1
+  "mass": 2.5,                     // kg
+  "wall": {
+    "count": 1,                    // how many hang on the wall slot
+    "layout": "Upright",           // Upright, Diagonal or Cross
+    "offset": [0, 0.1, 0]          // metres, from the slot's mount point
+  },
+  "holster": "Back",               // Back, Belt or none
+  "author": "your name",
+  "version": "1.0.0"
+}
+[/code]
+
+Reply here or message me. If nobody needs it yet, the C# route keeps working as it does today.

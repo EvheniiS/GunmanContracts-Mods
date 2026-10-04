@@ -8,6 +8,18 @@ framework's own plan is [WeaponFramework/ROADMAP.md](WeaponFramework/ROADMAP.md)
 
 ## 1. Next
 
+**Order (agreed Oct 4 2026).** Size S/M/L; details of each item below.
+1. Holster **mirror pairs** (S).
+2. Holster **real-holster highlight** while moving (S-M).
+3. **Enemy Awareness Fix session** (M: one play session + log read).
+4. **Hand feel at normal speed, guns first**, inside Slow Motion Hands (M-L; the spring/force logic is the same as the slow-motion work).
+5. **Props on Retry**: read `resetScene`, one evening, research only (S), then decide on a fix (§3).
+6. **Pistol slide**: research only (M), then decide (§3).
+7. **Weapon Framework**: publish the pinned "make your own weapon" post with the draft `weapon.json`
+   ([release/WeaponFramework/PINNED_POST.txt](release/WeaponFramework/PINNED_POST.txt)); build the fixture only when someone asks.
+
+Not ordered, when in the mood: **headbutt** (just fun; §3).
+
 **Enemy Awareness Fix: another play session, then improve it.** Play a session with `DebugLog` on, then pick the next meaningful
 change from what it shows. Check in that session:
 - **Player gunfire and exposure.** An unsilenced player shot runs `playerDetector.Expose()` (visibility full for 3 s) plus
@@ -22,12 +34,20 @@ change from what it shows. Check in that session:
 - Story missions / contracts (beyond the Outpost and Restaurant challenge maps) have not been played with the Fix and Physical
   Dodge: check that story enemies still find you eventually (the anti-stall rules) and that bomb waves bring enemies to the bomb.
 
+*Done when:* one challenge map + one story mission played with `DebugLog` on for the Fix and the Log; noted per shot cluster whether
+enemies came, whether enemy fire exposed you, the door-loop counts; and one decision written here (the next Fix change, or no change).
+
 **VR Holster Customization: better move-by-hand.** Moving the game's holsters is built (`[VRHolsters_Adjustment]`, settings per
 slot). Two improvements, because symmetric positions are hard to set one slot at a time:
-- **Mirror pairs (do first).** A setting so moving one side moves its pair (left/right hip, knife, back) mirrored across the body.
-  Only if that is not enough: grab one slot per hand and move both.
+- **Mirror pairs (do first).** A setting so moving one side moves its pair (left/right hip, knife, back) mirrored across the body,
+  on all three axes (full mirror, decided Oct 4: up/down, along the belt mirrored, forward/back). Only if that is not enough: grab
+  one slot per hand and move both.
+  *Done when:* a setting turns it on/off; moving the left hip by hand moves the right hip mirrored (same for knife and back pairs);
+  each slot's Reset still works alone; played once in VR.
 - **Highlight the real holster while moving it**, not only the blue marker sphere: show the slot's own highlight / hologram
   (the game's holster visual) during the gesture so you see where the gun will actually sit.
+  *Done when:* while the move gesture is held, the game's own holster visual shows at the new position (and at the mirrored
+  partner when mirroring is on); it hides on release; it does not show for a slot that holds a gun.
 - 0.3.12 (belt follow) is tested and held for these; consider shipping it first rather than waiting. It answers a YouTube
   request (@PsychoQuokkaStudio, Oct 2026: "the pistol holster follows my body, not where the headset faces"; the reply said it was
   in the backlog), so tell him when it is live.
@@ -38,6 +58,8 @@ saturates). Build on the Slow Motion Hands work (hand spring/force/damper scalin
 settings. The YouTube request (Oct 2026) is about **guns**: pistols and rifles trail the aim when the hand moves, so log the gap
 with a pistol and a two-handed rifle, not only clubs. Daredevil's levers (`HandStrengthScale`, `HandTorqueScale`, `ClubInertiaScale`, `ClubMaxSpin`, `HandProbe.cs`) are a
 stopgap that should move here once it works.
+*Done when:* a pistol and a two-handed rifle gap log at normal speed, before and after one spring/force change behind a setting;
+the change ships only if the log shows a smaller gap and it feels better in play.
 
 ## 2. Not yet exercised in play
 
@@ -56,7 +78,8 @@ From the retired Nexus upload sheets (Oct 3 2026), still open:
 
 **Weapon Framework: a developer fixture for adding weapons.** Not data-only weapon packs: a ready-made fixture a mod developer drops
 in so their weapon shows up on the arsenal terminal and can be retrieved, with the weapon's metadata (name, picture, mount pose,
-mass, …) in a JSON file next to it. Also open: the pistol (Small Guns) wall (`LoadAssetLoop` builds it with `Pistolset_` /
+mass, …) in a JSON file next to it. Demand first: the pinned post (§1 item 7) asks who wants to add a weapon and what they need;
+build when someone answers. Today's way is the C# route in `WeaponFramework/MODDING_GUIDE.md` (`Example/ExampleBaton.cs`, ~120 lines). Also open: the pistol (Small Guns) wall (`LoadAssetLoop` builds it with `Pistolset_` /
 `_Pistolspot_`); put a club back on its wall slot by letting go near it. Details in `WeaponFramework/ROADMAP.md`.
 
 **Requests from YouTube (@PsychoQuokkaStudio, Oct 2026).** Holster follow and input delay are in §1. The rest:
@@ -71,7 +94,8 @@ mass, …) in a JSON file next to it. Also open: the pistol (Small Guns) wall (`
   holster restore work, though the same hook.
 - **NPC grab reactions.** Grabbing some enemy parts makes them go limp. Wish: grab an arm and the enemy stays standing, holds the
   arm, pain face. Large and risky (NPC jank; Death Details already fights the face animator); park until Heavy Melee and Death
-  Details are released. **Headbutt** is the cheap part: a head collider through Heavy Melee's hit path.
+  Details are released.
+- **Headbutt** (just fun, no priority; do it when in the mood): a head collider through Heavy Melee's hit path.
 
 **Hardcore: no free misses.** On Hard only two rules make enemy bullets harmless (warm-up second, hit-confirm grace; see
 GAME_KNOWLEDGE §6), about 1 harmless shot per spawned enemy. A mod = two switches: force `weaponFiredOnce` true (or skip the 1 s wait)
