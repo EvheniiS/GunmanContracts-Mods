@@ -24,13 +24,13 @@ namespace VRHolsterCustomization
 
         internal static void Init(MelonPreferences_Category c)
         {
-            enabled = c.CreateEntry("BeltFollowsHead", false, display_name: "Belt follows head",
+            enabled = c.CreateEntry("BeltFollowsHead", true, display_name: "Belt follows head",
                 description: "Hip and knife holsters turn with your head, so they stay in front of where you look. Off = the game's belt, which turns only after you look far enough to one side.");
-            deadZone = c.CreateEntry("BeltDeadZoneDeg", 15, display_name: "Belt follow: dead zone (deg)",
+            deadZone = c.CreateEntry("BeltDeadZoneDeg", 10, display_name: "Belt follow: dead zone (deg)",
                 description: "How far you can turn your head before the belt follows quickly. Inside it the belt only drifts (Belt follow: center time). 0 = every head turn moves it.");
-            turnSeconds = c.CreateEntry("BeltTurnSeconds", 0.3f, display_name: "Belt follow: turn time (s)",
+            turnSeconds = c.CreateEntry("BeltTurnSeconds", 0.1f, display_name: "Belt follow: turn time (s)",
                 description: "How quickly the belt catches up once your head is past the dead zone; higher is slower. 0 = instantly. Snap and smooth turns always move it at once.");
-            centerSeconds = c.CreateEntry("BeltCenterSeconds", 2f, display_name: "Belt follow: center time (s)",
+            centerSeconds = c.CreateEntry("BeltCenterSeconds", 1f, display_name: "Belt follow: center time (s)",
                 description: "How slowly the belt lines up with your head inside the dead zone, so it faces where you keep looking. 0 = never; it stays at the edge of the dead zone.");
             enabled.OnEntryValueChanged.Subscribe((_, on) =>
             {

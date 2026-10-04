@@ -1,6 +1,6 @@
-# VR Holster Customization 0.3.11
+# VR Holster Customization 0.3.12
 
-Tested: 0.3.9 (2026-10-04)
+Tested: 0.3.12 (2026-10-04)
 
 This MelonLoader mod customizes the game's hip, knife, and back holsters and requires Mod Settings. It also owns the back slots for mod items, their grab and draw behavior, and their saved state. Weapon Framework uses its docking API for wall items and its back slot API for the test crowbar. Daredevil uses the back slot API for clubs.
 
@@ -34,9 +34,9 @@ Body movement and snap turns are measured relative to the holster frame. `AllUpC
 This first implementation moves the six game sockets only; Weapon Framework / Daredevil mod-item back slots retain
 their separate settings. Use each position row's Reset in Mod Settings to undo a calibration.
 
-## Belt follows head (0.3.9, eased in 0.3.11)
+## Belt follows head (0.3.9, eased in 0.3.11, on by default in 0.3.12)
 
-`[VRHolsters] BeltFollowsHead` (off by default, live in Mod Settings). The game's belt (`HVRPlayerWaist`) keeps its own
+`[VRHolsters] BeltFollowsHead` (on by default since 0.3.12, live in Mod Settings). The game's belt (`HVRPlayerWaist`) keeps its own
 heading: it turns toward your head only past a 70 degree gap, then at 90 deg/s, and on snap turns, so the hip and knife
 holsters are usually off to one side of where you face. With this on, the belt follows your head, right after the game's
 own belt update. Back holsters already hang from the head and are not affected; Daredevil's belt clubs are on the same
@@ -45,11 +45,11 @@ belt and follow too.
 - 0.3.9 copied the head's yaw exactly. Played Oct 4 2026: it worked, but turned too fast and too far.
 - 0.3.10 tried to ease it relative to the player controller. Played Oct 4 2026: the settings did nothing, because the
   controller's own yaw follows the head (log: belt 0 deg off the head even with a 45 degree dead zone).
-- 0.3.11 (untested) keeps the belt's heading in world space. Snap and smooth turns are measured around the game's
+- 0.3.11 (played Oct 4 2026, works) keeps the belt's heading in world space. Snap and smooth turns are measured around the game's
   `HandleRotation` and added at once; only your own head turns are eased:
-  - `BeltDeadZoneDeg` (15): your head can turn this far from the belt before the belt follows quickly. 0 = always.
-  - `BeltTurnSeconds` (0.3): how fast it catches up beyond the dead zone (time to close about two thirds of the gap). 0 = instantly.
-  - `BeltCenterSeconds` (2): inside the dead zone the belt drifts in to face where you keep looking. 0 = never; it
+  - `BeltDeadZoneDeg` (10): your head can turn this far from the belt before the belt follows quickly. 0 = always.
+  - `BeltTurnSeconds` (0.1): how fast it catches up beyond the dead zone (time to close about two thirds of the gap). 0 = instantly.
+  - `BeltCenterSeconds` (1): inside the dead zone the belt drifts in to face where you keep looking. 0 = never; it
     then stays up to the dead zone off your heading.
 - Within about 6 degrees of looking straight down or up the head has no usable heading, so the belt holds its last one.
 
