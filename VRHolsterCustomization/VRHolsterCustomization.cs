@@ -4,7 +4,7 @@ using Il2CppHurricaneVR.Framework.Core.Grabbers;
 using MelonLoader;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(VRHolsterCustomization.VRHolsterCustomizationMod), "VR Holster Customization", "0.3.8", "Evgeeso")]
+[assembly: MelonInfo(typeof(VRHolsterCustomization.VRHolsterCustomizationMod), "VR Holster Customization", "0.3.9", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 [assembly: MelonAdditionalDependencies("ModSettings")]
 
@@ -26,6 +26,7 @@ namespace VRHolsterCustomization
             Log = LoggerInstance;
             var c = MelonPreferences.CreateCategory("VRHolsters", "VR Holster Customization");
             debug = c.CreateEntry("DebugLog", false, description: "Log holster in/out events and final holster positions.");
+            BeltFollow.Init(c);
             Holsters.Init();
             VanillaHolsters.Init();
             KnifeReturn.Init();
@@ -35,6 +36,7 @@ namespace VRHolsterCustomization
         public override void OnSceneWasInitialized(int buildIndex, string sceneName)
         {
             HolsterLog.Scene();
+            BeltFollow.Scene();
             Holsters.Scene();
             BackBlades.Scene();
             KnifeReturn.Scene();
@@ -53,7 +55,11 @@ namespace VRHolsterCustomization
             catch (Exception e) { VanillaHolsters.EndAdjustment(); Log.Error($"positions: {e.Message}"); }
         }
 
-        public override void OnDeinitializeMelon() => VanillaHolsters.EndAdjustment();
+        public override void OnDeinitializeMelon()
+        {
+            VanillaHolsters.EndAdjustment();
+            BeltFollow.Report();
+        }
     }
 
     [HarmonyLib.HarmonyPatch(typeof(HVRGrabberBase), nameof(HVRGrabberBase.GrabGrabbable))]
