@@ -1,4 +1,4 @@
-# Weapon Framework 0.2.4
+# Weapon Framework 0.3.0
 
 Tested: 0.3.0 (2026-10-04)
 
