@@ -9,8 +9,8 @@ framework's own plan is [WeaponFramework/ROADMAP.md](WeaponFramework/ROADMAP.md)
 ## 1. Next
 
 **Order (agreed Oct 4 2026).** Size S/M/L; details of each item below.
-1. Holster **mirror pairs** (S).
-2. Holster **real-holster highlight** while moving (S-M).
+1. Holster **mirror pairs** (S). Built in VR Holster Customization 0.3.13, waiting for the VR play test.
+2. Holster **real-holster highlight** while moving (S-M). Built in 0.3.13 with item 1, waiting for the same play test.
 3. **Enemy Awareness Fix session** (M: one play session + log read).
 4. **Hand feel at normal speed, guns first**, inside Slow Motion Hands (M-L; the spring/force logic is the same as the slow-motion work).
 5. **Props on Retry**: read `resetScene`, one evening, research only (S), then decide on a fix (§3).
@@ -38,11 +38,13 @@ change from what it shows. Check in that session:
 enemies came, whether enemy fire exposed you, the door-loop counts; and one decision written here (the next Fix change, or no change).
 
 **VR Holster Customization: better move-by-hand.** Moving the game's holsters is built (`[VRHolsters_Adjustment]`, settings per
-slot). Two improvements, because symmetric positions are hard to set one slot at a time:
-- **Mirror pairs (do first).** A setting so moving one side moves its pair (left/right hip, knife, back) mirrored across the body,
-  on all three axes (full mirror, decided Oct 4: up/down, along the belt mirrored, forward/back). Only if that is not enough: grab
-  one slot per hand and move both.
-  *Done when:* a setting turns it on/off; moving the left hip by hand moves the right hip mirrored (same for knife and back pairs);
+slot). Two improvements, because symmetric positions are hard to set one slot at a time. **Both built in 0.3.13 (Oct 4 2026,
+untested)**; what is left is the play test in the done lines below:
+- **Mirror pairs (do first).** A setting so moving one side moves its pair mirrored across the body, on all three axes (full
+  mirror, decided Oct 4: up/down, along the belt mirrored, forward/back). Scope narrowed Oct 4 by the user: the two hip and the two
+  knife holsters only; back sockets stay single (`MirrorPairs`, on by default). Only if that is not enough: grab one slot per hand
+  and move both.
+  *Done when:* a setting turns it on/off; moving the left hip by hand moves the right hip mirrored (same for the knife pair);
   each slot's Reset still works alone; played once in VR.
 - **Highlight the real holster while moving it**, not only the blue marker sphere: show the slot's own highlight / hologram
   (the game's holster visual) during the gesture so you see where the gun will actually sit.

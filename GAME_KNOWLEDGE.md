@@ -329,7 +329,10 @@ log, Oct 4 2026): `WaistAngleThreshold` 70, `WaistSpeed` 90, `CameraAngleThresho
 The belt is `Waist/Holsters` (hip holsters at ±0.266, knife holsters ±0.165/0.048/0.132). Back sockets live under
 `Camera/HeadRelativeInventory/LeftShoulder|RightShoulder` (local L (-0.36, 0, -0.09), R (0.33, 0, -0.09)), a frame that follows head
 pitch partly. A holster highlight (`HVRANBSocketHoverFade`) lerps `material.color` between `colorInvisible/Normal/Hover` on a
-`Shader Graphs/Rim Dissolve` material; **that shader is additive: alpha is always 0 and "invisible" is black**.
+`Shader Graphs/Rim Dissolve` material; **that shader is additive: alpha is always 0 and "invisible" is black**. Its method list
+(`il2cpp_tools/sockets.txt`) has no `Update`: only `Start`, the `lerpFunction` coroutine and the hover enter/exit handlers, so it
+writes the colour only while fading (inferred, not disassembled). VR Holster Customization 0.3.13 sets the hover colour from
+`LateUpdate` while a move gesture is held and puts the old colour back on release (untested in game).
 Items in a back slot want a draw assist (grip press within ~20 cm of the item), because Grab Fix
 allows docked items only inside the native 0.08 m sphere. A held mod item put back should give a hover haptic
 (`Controller.Vibrate(0.35, 0.06, 150)`).

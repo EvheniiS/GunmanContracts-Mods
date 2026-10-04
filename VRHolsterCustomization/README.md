@@ -1,4 +1,4 @@
-# VR Holster Customization 0.3.12
+# VR Holster Customization 0.3.13
 
 Tested: 0.3.12 (2026-10-04)
 
@@ -25,11 +25,27 @@ The mod records each socket's original local position when it first appears and 
 2. Empty your hand and the game holster. Bring your palm within 12 cm; a blue marker identifies the nearest empty slot.
 3. Hold **grip + trigger** there for **two seconds**. Amber and small pulses mean keep holding; green and a stronger
    pulse mean you can move. Pressing the buttons before approaching does not start a hold.
-4. Keep both held and move your hand. The holster follows on all three body-frame axes in 1 cm steps, normally within
-   ±50 cm of its original position. Release either button to save. Turn adjustment off when finished.
+4. Keep both held and move your hand. The holster follows on all three body-frame axes in 1 cm steps (a light tick in
+   the hand per step), normally within ±50 cm of its original position. Release either button to save. Turn adjustment
+   off when finished.
+
+**Mirror pairs (0.3.13, untested).** `[VRHolsters_Adjustment] MirrorPairs` (**Move hip and knife pairs together**, on by
+default): moving the left hip holster by hand moves the right hip mirrored (same height, same forward/back, opposite
+side along the belt), and the same for the two knife holsters, whichever side you grab. If the pair was set apart
+before, the other side jumps to the mirrored spot as soon as the holster turns green. Turn it off to move each holster
+on its own. Only the hand gesture mirrors: the position rows in Mod Settings and their Reset still change one holster.
+The game's back sockets always move alone.
+
+**The real holster lights up (0.3.13, untested).** From the start of the hold (amber) until you release, the slot shows
+the game's own holster hologram, in the colour it has when a gun is brought to it, so you see where the gun will sit;
+with mirror pairs on, the other side lights up too and gets its own marker. It goes back to the game's look on release.
+A slot with a gun or knife in it does not light up (it still moves with its pair). Hip and knife holsters only: the mod
+does not track a hologram for the back sockets, so they keep just the marker. With `DebugLog` on, the start of a hold logs
+`hold on LeftHip, RightHip mirrored: N game hologram(s)`; 0 there means only the markers will show.
 
 Leaving the slot during the initial hold cancels it; picking up an item, opening pause, disabling adjustment or changing
-scenes ends the gesture and saves any movement. A canceled hold requires releasing the buttons before retrying.
+scenes ends the gesture and saves any movement; the log names the saved values (`Holster position saved: LeftHip
+left/right -3, height 2, forward 0 cm; RightHip ...`). A canceled hold requires releasing the buttons before retrying.
 Body movement and snap turns are measured relative to the holster frame. `AllUpCm` stays separate from per-slot offsets.
 This first implementation moves the six game sockets only; Weapon Framework / Daredevil mod-item back slots retain
 their separate settings. Use each position row's Reset in Mod Settings to undo a calibration.

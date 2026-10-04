@@ -74,6 +74,20 @@ Or simulate one by editing `UserData/ModSettings_defaults.txt` with the game clo
 - Holster/draw every weapon after movement. Confirm physical sockets and holograms agree; repeat with nonzero AllUpCm.
 - Verify Weapon Framework/Daredevil items still dock and draw normally. Their custom back-slot positions are separate.
 
+### Mirror pairs and the real holster (VR Holster Customization 0.3.13, untested)
+
+Turn `DebugLog` on. `MirrorPairs` (**Move hip and knife pairs together**) is on by default.
+- Hold on the empty left hip: from amber on, both hip holsters show the game's own hologram and both have a marker.
+  Log: `hold on LeftHip, RightHip mirrored: 2 game hologram(s)` (fewer = a slot has no hologram in this scene).
+- Move: the right hip follows mirrored (up = up, forward = forward, left = right). Light ticks per centimetre, not a buzz.
+  Release: both holograms go dark again, and `Holster position saved: LeftHip ...; RightHip ...` shows opposite left/right values.
+- Same from the right knife: the left knife follows. Back sockets: only the one you hold moves, no second marker.
+- A pistol in the right hip, move the left hip: the right hip (with the pistol) moves mirrored, its hologram stays dark.
+- Set the two hips apart with `MirrorPairs` off, turn it on, hold the left hip to green: the right one jumps to the mirror.
+- `MirrorPairs` off: only the held slot moves and lights up.
+- Reset one row (e.g. right hip left/right) in Mod Settings: only that holster moves back.
+- After release, bring a pistol to each moved holster: the game's own hover highlight still appears and fades as before.
+
 Do not ship personal MelonPreferences.cfg with a release. The DLL uses declared defaults; this build adds no user
 configuration to its output. Run the release audit separately when preparing a Nexus upload.
 

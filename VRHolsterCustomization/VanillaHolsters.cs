@@ -31,6 +31,7 @@ namespace VRHolsterCustomization
         sealed class Fade
         {
             public HVRANBSocketHoverFade Component;
+            public int Index;
             public Color Base, Normal, Hover, Invisible;
         }
 
@@ -106,6 +107,7 @@ namespace VRHolsterCustomization
                 var want = s.Original + shift;
                 if ((s.Transform.localPosition - want).sqrMagnitude > 0.0000001f) s.Transform.localPosition = want;
             }
+            FollowMarkers();
         }
 
         static void Discover()
@@ -123,7 +125,7 @@ namespace VRHolsterCustomization
                 if (!HasSlot(index)) AddSocket(socket.transform, index);
                 if (!fades.ContainsKey(fade.Pointer))
                 {
-                    var f = new Fade { Component = fade, Base = fade.colorBase, Normal = fade.colorNormal,
+                    var f = new Fade { Component = fade, Index = index, Base = fade.colorBase, Normal = fade.colorNormal,
                         Hover = fade.colorHover, Invisible = fade.colorInvisible };
                     fades.Add(fade.Pointer, f);
                     Tint(f);
@@ -177,11 +179,13 @@ namespace VRHolsterCustomization
             VRHolsterCustomizationMod.Log.Msg($"{keys[index]} holster at {Path(transform)}: original local {VRHolsterCustomizationMod.V(transform.localPosition)}");
         }
 
-        static bool HasSlot(int index)
+        static bool HasSlot(int index) => FindSlot(index) != null;
+
+        static Socket FindSlot(int index)
         {
             foreach (var pair in sockets)
-                if (pair.Value.Index == index && VRHolsterCustomizationMod.Alive(pair.Value.Transform)) return true;
-            return false;
+                if (pair.Value.Index == index && VRHolsterCustomizationMod.Alive(pair.Value.Transform)) return pair.Value;
+            return null;
         }
 
         static string Path(Transform t)

@@ -230,8 +230,8 @@ Code paths (from the binary, `il2cpp_tools`):
    dependency and nothing throws.
 
 ### Phase 2 — move the game's own holsters (the requested feature)
-**Built** (per-slot settings, `AllUpCm`, move by hand). Open follow-ups (mirror/multi-slot move, highlight the real holster
-while moving) are in the root [ROADMAP.md](../ROADMAP.md) §1.
+**Built** (per-slot settings, `AllUpCm`, move by hand; 0.3.13: mirror pairs for hip and knife, the real holster lights up
+while moving, untested). Open follow-up (grab one slot per hand) is in the root [ROADMAP.md](../ROADMAP.md) §1.
 - Settings per holster group, all live on the Mod Settings board (ints, as today, since free-form strings are read-only
   there): `[VRHolsters_Hip]`, `[VRHolsters_Knife]`, `[VRHolsters_Back]` with `OutCm UpCm ForwardCm` (mirrored L/R),
   `TurnDeg`, and a range setting once unknown 2 is answered. Default all 0 = vanilla.
