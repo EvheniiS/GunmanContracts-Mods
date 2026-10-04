@@ -325,7 +325,7 @@ is used (or a mod calls `SaveContractHolsters`, as VR Holster Customization does
 → belt yaw = camera yaw at once; otherwise it turns only while `Vector3.Angle(Camera.forward, waist.forward) > WaistAngleThreshold`
 (that 3D angle includes the pitch), `RotateTowards` at `WaistSpeed` deg/s. `StartSnapTurn` adds snap turns. Prefab values (checked in a
 log, Oct 4 2026): `WaistAngleThreshold` 70, `WaistSpeed` 90, `CameraAngleThreshold` 30. Snap/smooth turns
-(`HandleSnapRotation` / `HandleSmoothRotation`) rotate the `HVRPlayerController`'s own transform. Override the yaw in a `FollowPlayer` postfix (VR Holster Customization `BeltFollowsHead`).
+(`HandleSnapRotation` / `HandleSmoothRotation`) rotate the `HVRPlayerController`'s own transform, inside `HandleRotation` (snap/smooth/mouse via vtable; mouse returns at once unless `MouseTurning`). **That transform's yaw also follows the head** (checked in a log, Oct 4 2026: a belt eased relative to it never lagged the head), so it is no body reference; measure turns around `HandleRotation` instead. Override the yaw in a `FollowPlayer` postfix (VR Holster Customization `BeltFollowsHead`).
 The belt is `Waist/Holsters` (hip holsters at ±0.266, knife holsters ±0.165/0.048/0.132). Back sockets live under
 `Camera/HeadRelativeInventory/LeftShoulder|RightShoulder` (local L (-0.36, 0, -0.09), R (0.33, 0, -0.09)), a frame that follows head
 pitch partly. A holster highlight (`HVRANBSocketHoverFade`) lerps `material.color` between `colorInvisible/Normal/Hover` on a

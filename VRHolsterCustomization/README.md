@@ -1,4 +1,4 @@
-# VR Holster Customization 0.3.10
+# VR Holster Customization 0.3.11
 
 Tested: 0.3.9 (2026-10-04)
 
@@ -34,7 +34,7 @@ Body movement and snap turns are measured relative to the holster frame. `AllUpC
 This first implementation moves the six game sockets only; Weapon Framework / Daredevil mod-item back slots retain
 their separate settings. Use each position row's Reset in Mod Settings to undo a calibration.
 
-## Belt follows head (0.3.9, eased in 0.3.10)
+## Belt follows head (0.3.9, eased in 0.3.11)
 
 `[VRHolsters] BeltFollowsHead` (off by default, live in Mod Settings). The game's belt (`HVRPlayerWaist`) keeps its own
 heading: it turns toward your head only past a 70 degree gap, then at 90 deg/s, and on snap turns, so the hip and knife
@@ -43,8 +43,10 @@ own belt update. Back holsters already hang from the head and are not affected; 
 belt and follow too.
 
 - 0.3.9 copied the head's yaw exactly. Played Oct 4 2026: it worked, but turned too fast and too far.
-- 0.3.10 (untested) eases it. Snap turns, smooth turns and teleports rotate the belt at once (the belt is kept relative
-  to the player controller); only your own head turns are eased:
+- 0.3.10 tried to ease it relative to the player controller. Played Oct 4 2026: the settings did nothing, because the
+  controller's own yaw follows the head (log: belt 0 deg off the head even with a 45 degree dead zone).
+- 0.3.11 (untested) keeps the belt's heading in world space. Snap and smooth turns are measured around the game's
+  `HandleRotation` and added at once; only your own head turns are eased:
   - `BeltDeadZoneDeg` (15): your head can turn this far from the belt before the belt follows quickly. 0 = always.
   - `BeltTurnSeconds` (0.3): how fast it catches up beyond the dead zone (time to close about two thirds of the gap). 0 = instantly.
   - `BeltCenterSeconds` (2): inside the dead zone the belt drifts in to face where you keep looking. 0 = never; it
@@ -54,7 +56,7 @@ belt and follow too.
 Cost: one call per frame while the game runs, a few transform reads; with the setting and `DebugLog` off it returns at
 once. With `DebugLog` on, once per scene: `game belt: turns past N deg at N deg/s ...` (the game's own numbers), and at
 the next scene, a toggle, a setting changed after 300+ frames, or quit: `belt vs head yaw: avg N deg, max N deg over N
-frames (follow on: dead zone .., turn .., center .. | game belt)`, the belt's final heading against your head's.
+frames, stick turns N deg (follow on: dead zone .., turn .., center .. | game belt)`, the belt's final heading against your head's.
 
 ## Color
 

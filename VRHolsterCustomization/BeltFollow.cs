@@ -6,17 +6,21 @@ using UnityEngine;
 namespace VRHolsterCustomization
 {
     // The game's belt (HVRPlayerWaist.FollowPlayer) turns toward the head only past a yaw gap (WaistAngleThreshold),
-    // then at WaistSpeed, plus on snap turns. BeltFollowsHead gives it the head's yaw instead, eased: the rig's own turns
-    // (snap, smooth, teleport rotate PlayerController) apply at once, head turns past the dead zone ease in over
+    // then at WaistSpeed, plus on snap turns. BeltFollowsHead gives it the head's yaw instead, eased: stick turns
+    // (measured around HVRPlayerController.HandleRotation) apply at once, head turns past the dead zone ease in over
     // BeltTurnSeconds, and the last few degrees drift in over BeltCenterSeconds.
+    // The PlayerController's own yaw follows the head (0.3.10 log: belt 0 deg off with a 45 deg dead zone), so it is
+    // no reference for the body; the belt's heading is kept in world space.
     static class BeltFollow
     {
         static MelonPreferences_Entry<bool> enabled;
         static MelonPreferences_Entry<int> deadZone;
         static MelonPreferences_Entry<float> turnSeconds, centerSeconds;
         static bool reported, warned, haveHead, haveBelt;
-        static float local, headLocal, gapSum, gapMax;
+        static float beltYaw, headYaw, pendingTurn, turnSum, gapSum, gapMax;
         static int frames;
+
+        internal static bool Active => enabled != null && (enabled.Value || VRHolsterCustomizationMod.DebugOn);
 
         internal static void Init(MelonPreferences_Category c)
         {
@@ -43,15 +47,16 @@ namespace VRHolsterCustomization
         {
             Report(0);
             reported = haveHead = haveBelt = false;
+            pendingTurn = 0f;
         }
 
         // One line per scene, toggle or tuned setting (if it ran 300+ frames): the belt's final yaw against the head's.
         internal static void Report(int minFrames = 0)
         {
             if (frames > 0 && frames >= minFrames && VRHolsterCustomizationMod.DebugOn)
-                VRHolsterCustomizationMod.Log.Msg($"belt vs head yaw: avg {gapSum / frames:0.#} deg, max {gapMax:0} deg over {frames} frames ({Mode()})");
+                VRHolsterCustomizationMod.Log.Msg($"belt vs head yaw: avg {gapSum / frames:0.#} deg, max {gapMax:0} deg over {frames} frames, stick turns {turnSum:0} deg ({Mode()})");
             frames = 0;
-            gapSum = gapMax = 0;
+            gapSum = gapMax = turnSum = 0f;
         }
 
         static string Mode() => enabled.Value
@@ -60,6 +65,13 @@ namespace VRHolsterCustomization
 
         static float Ease(float dt, float seconds) => seconds <= 0f ? 1f : 1f - Mathf.Exp(-dt / seconds);
 
+        internal static void RigTurned(float degrees)
+        {
+            if (Mathf.Abs(degrees) < 0.001f) return;
+            pendingTurn += degrees;
+            turnSum += Mathf.Abs(degrees);
+        }
+
         internal static void AfterGame(HVRPlayerWaist waist)
         {
             bool on = enabled.Value, debug = VRHolsterCustomizationMod.DebugOn;
@@ -67,37 +79,38 @@ namespace VRHolsterCustomization
             var head = waist.Camera;
             if (!VRHolsterCustomizationMod.Alive(head)) return;
             var belt = waist.transform;
-            var rig = waist.PlayerController;
-            float rigYaw = VRHolsterCustomizationMod.Alive(rig) ? rig.eulerAngles.y : 0f;
             if (debug && !reported)
             {
                 reported = true;
-                VRHolsterCustomizationMod.Log.Msg($"game belt: turns past {waist.WaistAngleThreshold:0} deg at {waist.WaistSpeed:0.#} deg/s, CameraAngleThreshold {waist.CameraAngleThreshold:0}, rig '{(VRHolsterCustomizationMod.Alive(rig) ? rig.name : "none")}'; {Mode()}");
+                VRHolsterCustomizationMod.Log.Msg($"game belt: turns past {waist.WaistAngleThreshold:0} deg at {waist.WaistSpeed:0.#} deg/s, CameraAngleThreshold {waist.CameraAngleThreshold:0}; {Mode()}");
             }
+            float turn = pendingTurn;
+            pendingTurn = 0f;
             var f = head.forward;
             // Within ~6 degrees of straight down or up the forward vector has no reliable yaw: keep the last one.
             if (f.x * f.x + f.z * f.z >= 0.01f)
             {
-                headLocal = Mathf.DeltaAngle(rigYaw, Mathf.Atan2(f.x, f.z) * Mathf.Rad2Deg);
+                headYaw = Mathf.Atan2(f.x, f.z) * Mathf.Rad2Deg;
                 haveHead = true;
             }
             else if (!haveHead) return;
+            else headYaw += turn;
             if (on)
             {
-                // Belt yaw is kept relative to the rig, so the rig's own turns carry it with no easing.
                 // Starts from where the game's belt is, so switching on eases in instead of jumping.
-                if (!haveBelt) local = Mathf.DeltaAngle(rigYaw, belt.eulerAngles.y);
+                if (!haveBelt) beltYaw = belt.eulerAngles.y;
+                else beltYaw += turn;
                 haveBelt = true;
-                float dt = Time.deltaTime, gap = Mathf.DeltaAngle(local, headLocal), zone = Mathf.Max(0, deadZone.Value);
+                float dt = Time.deltaTime, gap = Mathf.DeltaAngle(beltYaw, headYaw), zone = Mathf.Max(0, deadZone.Value);
                 float inner = Mathf.Clamp(gap, -zone, zone);
-                local += (gap - inner) * Ease(dt, turnSeconds.Value);
-                if (centerSeconds.Value > 0f) local += inner * Ease(dt, centerSeconds.Value);
-                local = Mathf.DeltaAngle(0f, local);
-                belt.rotation = Quaternion.Euler(0f, rigYaw + local, 0f);
+                beltYaw += (gap - inner) * Ease(dt, turnSeconds.Value);
+                if (centerSeconds.Value > 0f) beltYaw += inner * Ease(dt, centerSeconds.Value);
+                beltYaw = Mathf.Repeat(beltYaw, 360f);
+                belt.rotation = Quaternion.Euler(0f, beltYaw, 0f);
             }
             if (debug)
             {
-                float miss = Mathf.Abs(Mathf.DeltaAngle(belt.eulerAngles.y, rigYaw + headLocal));
+                float miss = Mathf.Abs(Mathf.DeltaAngle(belt.eulerAngles.y, headYaw));
                 frames++;
                 gapSum += miss;
                 if (miss > gapMax) gapMax = miss;
@@ -119,6 +132,31 @@ namespace VRHolsterCustomization
         static void Postfix(HVRPlayerWaist __instance)
         {
             try { BeltFollow.AfterGame(__instance); }
+            catch (Exception e) { BeltFollow.Warn(e); }
+        }
+    }
+
+    // Snap and smooth turns rotate the controller inside HandleRotation (mouse turning too, flat mode only).
+    [HarmonyLib.HarmonyPatch(typeof(HVRPlayerController), nameof(HVRPlayerController.HandleRotation))]
+    static class BeltRigTurnPatch
+    {
+        static float before;
+        static bool armed;
+
+        static void Prefix(HVRPlayerController __instance)
+        {
+            try
+            {
+                armed = BeltFollow.Active;
+                if (armed) before = __instance.transform.eulerAngles.y;
+            }
+            catch (Exception e) { armed = false; BeltFollow.Warn(e); }
+        }
+
+        static void Postfix(HVRPlayerController __instance)
+        {
+            if (!armed) return;
+            try { BeltFollow.RigTurned(Mathf.DeltaAngle(before, __instance.transform.eulerAngles.y)); }
             catch (Exception e) { BeltFollow.Warn(e); }
         }
     }

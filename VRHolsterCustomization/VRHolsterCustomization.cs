@@ -4,7 +4,7 @@ using Il2CppHurricaneVR.Framework.Core.Grabbers;
 using MelonLoader;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(VRHolsterCustomization.VRHolsterCustomizationMod), "VR Holster Customization", "0.3.10", "Evgeeso")]
+[assembly: MelonInfo(typeof(VRHolsterCustomization.VRHolsterCustomizationMod), "VR Holster Customization", "0.3.11", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 [assembly: MelonAdditionalDependencies("ModSettings")]
 
