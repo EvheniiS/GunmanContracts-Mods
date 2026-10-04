@@ -31,7 +31,7 @@ wall layout, picture for the panel, saving which weapon you carry.
     "layout": "Upright",           // Upright, Diagonal or Cross
     "offset": [0, 0.1, 0]          // metres, from the slot's mount point
   },
-  "holster": "Back",               // Back, Belt or none
+  "holster": "Back",               // Back or none (belt slots for mod items: ask if you need them)
   "author": "your name",
   "version": "1.0.0"
 }
