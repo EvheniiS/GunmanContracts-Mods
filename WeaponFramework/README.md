@@ -6,8 +6,7 @@ Lets other mods put their own weapons on the game's **arsenal panel** in The Ran
 rifles, shotguns and the bow). The player pages to the entry with `+` / `-`, presses **Retrieve**, and the wall slot
 comes out with the mod's items on it, ready to take. No keyboard, no UnityExplorer.
 
-First user: **Daredevil** 0.3.3 (`Daredevil/BillyClubs/Arsenal.cs`). Without this DLL it still works, with the
-spawn key only.
+First user: **Daredevil** 0.3.3 (`Daredevil/BillyClubs/Arsenal.cs`). Daredevil now requires this DLL.
 
 Install: `Mods/WeaponFramework.dll`. Config `[WeaponFramework]`: `DebugLog` (default off).
 

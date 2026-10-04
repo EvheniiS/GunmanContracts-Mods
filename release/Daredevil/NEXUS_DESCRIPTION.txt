@@ -74,7 +74,7 @@ You should end up with: [i]Gunman Contracts - Stand Alone\Mods\Daredevil.dll[/i]
 Install the required companion DLLs listed above into the same Mods folder. Remove legacy BillyClubs.dll and RadarSense.dll if present.
 
 [b]4. Check it works[/b]
-Start the game. The MelonLoader console lists [b]Daredevil v1.1.2[/b] among the loaded mods.
+Start the game. The MelonLoader console lists [b]Daredevil v1.1.3[/b] among the loaded mods.
 
 [b]Not working?[/b]
 [list]
@@ -152,7 +152,7 @@ SwingLogMinSpeed         = 4   # SwingLog: only swings where your controller mov
 HandStrengthScale        = 1   # Advanced: scales how hard the physics hand is pulled toward your controller's POSITION (both hands, whatever they hold). 2 = the hand follows with about half the lag; the damper is scaled to stay critically damped. 1 = the game's value. Too high and the hands jitter against walls. Live; range 0.5 to 4.
 HandTorqueScale          = 1.6   # Scales how hard the physics hand is turned toward your controller's ROTATION. 1 = the game's value (500 spring, 50 damper, 75 N*m max), which is too weak for a swung club: a fast sideways swing keeps turning the hand after you stop. 1.6 (default) is the tested value. Live; range 0.5 to 6.
 ClubInertiaScale         = 1   # Advanced: scales the club's resistance to being turned (its rotational inertia) without changing its mass. 0.4 = it turns much more easily, still feels 3 kg when lifted or hit. 1 = the game's value. Live; range 0.1 to 1.5.
-ClubMaxSpin              = 80   # Fastest a held club can turn, in radians per second. The game's value is 30 (about 5 turns a second); a fast wrist flick is faster, which makes the club lag the hand. Live; range 10 to 150.
+ClubMaxSpin              = 100   # Fastest a held club can turn, in radians per second. The game's value is 30 (about 5 turns a second); a fast wrist flick is faster, which makes the club lag the hand. Live; range 10 to 150.
 [/code]
 [b]Radar sense — section [RadarSense][/b]
 [code]
@@ -172,17 +172,17 @@ StepSpeed                = 0.5   # For Reveal = Moving: an enemy moving faster t
 LoudSteps                = "Always"   # Louder enemy footsteps, played on each enemy's own sound source so gunfire can't cut them off. Always (all the time), Sense (only while the radar sense is on) or Off (the game's own steps).
 HearDistance             = 30   # Enemy steps are heard up to this far (m). The game plays none beyond its own limit (logged).
 LoudRadius               = 3   # Steps are at full volume within this distance (m) and fade with distance beyond it. Bigger = louder from far away.
-StepVolume               = 3   # Step volume multiplier times the game's sound effects volume. Values above 1 make steps louder than the game's normal effect volume.
+StepVolume               = 1   # Step volume multiplier times the game's sound effects volume. Values above 1 make steps louder than the game's normal effect volume.
 FocusRevealsAll          = true   # While your own slow motion (focus, right B) is on, every enemy in Range shows, even ones you haven't detected, whatever Reveal is set to.
 ClubHighlight            = true   # Billy Clubs that are away from you (dropped, thrown, stuck behind something) show through walls too, so you can find them.
 ClubColor                = "#FFC000"   # Colour of the club highlight.
 ClubMinDistance          = 2   # A club closer to your head than this (m) isn't highlighted, so clubs in your hand or holster don't glow where your glove covers them.
-SeenFraction             = 0.7   # How much of an enemy you must see for it to count as seen directly (no highlight with Style Hidden/Blocked). The game counts an enemy as in view when ONE of its 14 sight points has a clear line to your head, so a head over a doorframe or counter switched the whole silhouette off. This is the share of sight points that must be clear: 0.7 = 10 of 14. 0 = the game's own rule (one point).
-Detail                   = "Body"   # How much of an enemy's body is outlined, live. Core (the skin mesh and the vest: the plainest silhouette, cheapest), Body (+ shirt/jacket, trousers, sleeves, hands), Clothes (+ shoes) or Full (everything, hair, beard, tie and holster too).
+SeenFraction             = 0.6   # How much of an enemy you must see for it to count as seen directly (no highlight with Style Hidden/Blocked). The game counts an enemy as in view when ONE of its 14 sight points has a clear line to your head, so a head over a doorframe or counter switched the whole silhouette off. This is the share of sight points that must be clear: 0.7 = 10 of 14. 0 = the game's own rule (one point).
+Detail                   = "Full"   # How much of an enemy's body is outlined, live. Core (the skin mesh and the vest: the plainest silhouette, cheapest), Body (+ shirt/jacket, trousers, sleeves, hands), Clothes (+ shoes) or Full (everything, hair, beard, tie and holster too).
 IncludeLods              = false   # Also outline the lower detail levels (LOD1-4) of an enemy's body. Off by default: the game switches LODs without turning the other levels' renderers off, so this draws every level on top of each other (about 4x the silhouette meshes) and did not fix any missing outline. Applies to enemies seen after the change.
 Brightness               = 0.6   # Multiplies the silhouette colour, live. Overlapping body meshes stack their opacity, so a bright colour reaches full brightness and the game's bloom turns it into a red aura around the enemies. Lower = darker red and less glow (0.3 to 1).
 ShowStill                = true   # Enemies you haven't seen that stand still also show, dimmed (StillBrightness), so you still see where they wait behind a wall. Moving ones, and everything while you focus, keep full Brightness. Needs Reveal Moving or All. Costs a little: the game's out-of-view hiding is switched off for every enemy in Range.
-StillBrightness          = 0.35   # Multiplies Brightness for standing-still enemies (ShowStill), live. 0.1 to 1.
+StillBrightness          = 0.2   # Multiplies Brightness for standing-still enemies (ShowStill), live. 0.1 to 1.
 [/code]
 Setting Reveal to All keeps more unseen enemies active and can cost more performance. Moving is the default.
 Settings that mention a restart require one. SavedHolsters is managed by the mod.

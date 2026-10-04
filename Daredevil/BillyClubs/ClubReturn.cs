@@ -9,7 +9,7 @@ namespace BillyClubs
     // a long flight never returns it in mid-air. Off by default: the clubs stay where they fall, like in the show.
     //
     // A club last drawn from a back holster (VR Holster Customization) returns there; any other goes to the belt.
-    // The belt return itself is the F8 recall (SendToSlot): free the hand, end the flight, pin the club to the belt slot.
+    // The belt return itself is the recall routine (SendToSlot): free the hand, end the flight, pin the club to the belt slot.
     // On by default (casual play; Oct 3 2026). Nothing runs while ReturnClubs is off: one bool check per club per frame.
     public partial class BillyClubsMod
     {
@@ -22,7 +22,7 @@ namespace BillyClubs
 
         static void InitReturnPrefs(MelonPreferences_Category c)
         {
-            ReturnClubs = c.CreateEntry("ReturnClubs", true, description: "A club you threw or dropped goes back to its holster on your belt by itself, like the game's knives do. Off = clubs stay where they land (F8 or the arsenal terminal bring them back).");
+            ReturnClubs = c.CreateEntry("ReturnClubs", true, description: "A club you threw or dropped goes back to its holster on your belt by itself, like the game's knives do. Off = clubs stay where they land (the arsenal terminal brings them back).");
             ReturnSeconds = c.CreateEntry("ReturnSeconds", 10f, description: "How long a club lies where it landed before it returns to its holster, in seconds. Counted from the moment it comes to rest. Only used when ReturnClubs is on.");
         }
 

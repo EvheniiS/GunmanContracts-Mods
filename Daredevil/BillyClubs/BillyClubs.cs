@@ -31,11 +31,10 @@ namespace BillyClubs
     //   release a club near a free slot and it snaps in (kinematic, parented to the belt); grab it and it
     //   comes out (HVRGrabberBase.GrabGrabbable prefix). Which slots are full is remembered across scene
     //   loads and game restarts, and the clubs are respawned into them once the player rig exists.
-    // - Spawn key (default F8): fills the empty slots. Without a player rig, a pair floats in front of you.
     // - Throw assist: dontUse off, longer search and fly distances than the crowbar's 6 m / 4 m.
     public partial class BillyClubsMod : MelonMod
     {
-        internal static MelonPreferences_Entry<string> SpawnKey, BodyColor, SlotLeft, SlotRight, SavedSlots;
+        internal static MelonPreferences_Entry<string> BodyColor, SlotLeft, SlotRight, SavedSlots;
         internal static MelonPreferences_Entry<float> Length, Radius, Mass, ThrowSpeed, MinSteerSpeed, ThrowSearch, ThrowMaxFly, SnapDistance;
         internal static MelonPreferences_Entry<bool> DebugLog, UseCustomModel, ClubDoorKick;
         static MelonPreferences_Category Cat;
@@ -111,7 +110,6 @@ namespace BillyClubs
             PackageInit();
             Log = LoggerInstance;
             var c = Cat = MelonPreferences.CreateCategory("BillyClubs", "Daredevil: Clubs");
-            SpawnKey = c.CreateEntry("SpawnKey", "F8", description: "Keyboard key that brings your clubs back into the club holsters (from wherever they are) and spawns new ones if you have fewer than two (Input System key name, e.g. F8, B, Numpad1). Visit The Range once per game start first: the clubs are copied from its crowbar.");
             Length = c.CreateEntry("Length", 0.6f, description: "Club length in metres (visual only; the grip and hit shape stay the crowbar's, about 0.6 m).");
             Radius = c.CreateEntry("Radius", 0.018f, description: "Primitive fallback radius in metres. The custom model uses its authored 34 mm grip diameter.");
             Mass = c.CreateEntry("Mass", 3f, description: "Club mass in kg (the crowbar is 8). Applies live to every club, including one in your hand.");
@@ -141,7 +139,7 @@ namespace BillyClubs
             var saved = SavedSlots.Value ?? "";
             Slots[0].Full = saved.Contains('L');
             Slots[1].Full = saved.Contains('R');
-            Log.Msg($"loaded - spawn key {SpawnKey.Value}, club holsters full: {(saved.Length > 0 ? saved : "none")}");
+            Log.Msg($"loaded - club holsters full: {(saved.Length > 0 ? saved : "none")}");
         }
 
         public override void OnSceneWasInitialized(int buildIndex, string sceneName)
@@ -183,7 +181,6 @@ namespace BillyClubs
         public override void OnUpdate()
         {
             PackageUpdate();
-            if (KeyPressed()) FillHolsters(true);
             TuningKeys();
             WatchDraws();
             WatchOptimiser();
@@ -200,7 +197,7 @@ namespace BillyClubs
             if (!Restored && Alive(Belt) && Time.time - SceneStart > 2f)
             {
                 Restored = true;
-                if (Slots[0].Full || Slots[1].Full) FillHolsters(false);
+                if (Slots[0].Full || Slots[1].Full) FillHolsters();
             }
             if (Time.time >= CheckpointRestoreAt && Alive(Belt))
             {
@@ -236,18 +233,6 @@ namespace BillyClubs
             UpdateDoorKicks();
         }
 
-        static bool KeyPressed()
-        {
-            try
-            {
-                var kb = Keyboard.current;
-                if (kb == null) return false;
-                var key = kb.FindKeyOnCurrentKeyboardLayout(SpawnKey.Value) ?? kb[SpawnKey.Value]?.TryCast<UnityEngine.InputSystem.Controls.KeyControl>();
-                return key != null && key.wasPressedThisFrame;
-            }
-            catch { return false; }
-        }
-
         static bool IsHeld(HVRGrabbable g)
         {
             try { return Alive(g) && g.IsBeingHeld; } catch { return false; }
@@ -277,40 +262,22 @@ namespace BillyClubs
             }
         }
 
-        // Spawn clubs into the holsters that are empty (fromKey) or remembered as full (after a scene load).
-        static void FillHolsters(bool fromKey)
+        // Spawn clubs into the holsters remembered as full (after a scene load).
+        static void FillHolsters()
         {
             if (!Alive(Template)) { Log.Warning("no club template yet - visit The Range once (the clubs are copied from its crowbar)"); return; }
-            if (!Alive(Belt)) { if (fromKey) SpawnFloating(); return; }
+            if (!Alive(Belt)) return;
 
-            // Clubs are never destroyed here: destroying one that a hand or the force grab still points at
-            // left the hands unable to grab (0.3.0 test). Loose clubs are brought back instead.
-            int recalled = 0, n = 0;
-            if (fromKey)
-            {
-                foreach (var k in Clubs)
-                {
-                    if ((k.In != null && !k.In.Wall) || !Alive(k.Go) || IsHandHeld(k) || OnBack(k.Go)) continue;
-                    var free = FreeSlot();
-                    if (free == null) break;
-                    SendToSlot(k, free);
-                    recalled++;
-                }
-            }
-            int alive = 0;
-            foreach (var k in Clubs) if (Alive(k.Go)) alive++;
+            int n = 0;
             foreach (var s in Slots)
             {
-                if (Alive(s.Club?.Go)) continue;
-                if (!fromKey && !s.Full) continue;
-                if (fromKey && alive >= 2) break;
+                if (Alive(s.Club?.Go) || !s.Full) continue;
                 var k = NewClub("BillyClub-" + s.Name, s.Anchor.position, s.Anchor.rotation);
                 Holster(k, s, false);
-                n++; alive++;
+                n++;
             }
             SaveSlots();
-            if (!fromKey) Log.Msg($"restored {n} holstered club(s)");
-            else Log.Msg(recalled + n == 0 ? "clubs: nothing to do (both holstered, or held in your hands)" : $"clubs: {recalled} brought back to the holsters, {n} new");
+            Log.Msg($"restored {n} holstered club(s)");
         }
 
         // The game can restart a contract in the same scene. Its player loadout is reloaded,
@@ -403,7 +370,7 @@ namespace BillyClubs
             SaveSlots();
         }
 
-        // Bring a loose club (or one on the arsenal wall) back to a belt slot, from wherever it is: F8 and the return timer.
+        // Bring a loose club (or one on the arsenal wall) back to a belt slot, from wherever it is, for the return timer and the arsenal.
         static void SendToSlot(Club k, Slot s)
         {
             try { if (IsHeld(k.Grab)) k.Grab.ForceRelease(); } catch { }
@@ -806,36 +773,6 @@ namespace BillyClubs
             Clubs.Add(k);
             ApplyInertia(k);
             return k;
-        }
-
-        // No player belt found (shouldn't happen in game scenes): a pair floats in front of you.
-        static void SpawnFloating()
-        {
-            var cam = Camera.main;
-            if (cam == null) { Log.Warning("no camera - can't place the clubs"); return; }
-            for (int i = 0; i < Clubs.Count; i++)
-                if (Clubs[i].In == null && !Clubs[i].Held && !OnBack(Clubs[i].Go)) { Object.Destroy(Clubs[i].Go); Clubs.RemoveAt(i--); }
-
-            var head = cam.transform;
-            var fwd = Vector3.ProjectOnPlane(head.forward, Vector3.up).normalized;
-            if (fwd.sqrMagnitude < 0.01f) fwd = Vector3.forward;
-            var right = Vector3.Cross(Vector3.up, fwd);
-            var basePos = head.position + fwd * 0.45f - Vector3.up * 0.35f;
-            // Lying flat, tip pointing forward, so the two clubs sit side by side and don't overlap.
-            var rot = Quaternion.LookRotation(fwd, Vector3.up) * Quaternion.FromToRotation(ClubAxis, Vector3.forward);
-
-            for (int s = -1; s <= 1; s += 2)
-            {
-                var k = NewClub(s < 0 ? "BillyClub-L" : "BillyClub-R", basePos + right * (0.12f * s), rot);
-                k.Floating = true;
-                if (Alive(k.Rb))
-                {
-                    k.Rb.useGravity = false;
-                    k.Rb.linearVelocity = Vector3.zero;
-                    k.Rb.angularVelocity = Vector3.zero;
-                }
-            }
-            Log.Msg($"no player belt found - spawned a pair of clubs in front of you at {V(basePos)}");
         }
 
         // ---------- helpers ----------

@@ -15,7 +15,8 @@
     "ThrowAssist": 39,
     "Daredevil": 40,
     "AimColors": 42,
-    "DeathDetails": 43
+    "DeathDetails": 43,
+    "MeleeUnlocks": 45
   },
   "v3": {
     "BetterBow": {
@@ -77,6 +78,10 @@
     "EnemyAwarenessFix": {
       "mod": "43654047596578",
       "file": "8049372"
+    },
+    "MeleeUnlocks": {
+      "mod": "43654047596589",
+      "file": "8084856"
     }
   }
 }

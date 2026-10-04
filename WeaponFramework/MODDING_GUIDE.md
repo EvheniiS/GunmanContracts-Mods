@@ -57,7 +57,7 @@ Decide whether your mod works without the framework.
   [assembly: MelonAdditionalDependencies("WeaponFramework")]
   ```
   MelonLoader then refuses to load your mod without it and says why.
-- **Optional** (your mod has another way to get the weapon, like Billy Clubs' spawn key):
+- **Optional** (your mod has another way to get the weapon):
   ```csharp
   [assembly: MelonOptionalDependencies("WeaponFramework")]
   ```

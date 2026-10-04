@@ -83,8 +83,7 @@ could clash.
 
 [size=4][b]Uninstall[/b][/size]
 Delete [i]Mods\WeaponFramework.dll[/i]. The mod weapons disappear from the panel; your save is unaffected.
-Weapon mods that use it keep working without it if they support that (Daredevil does: its clubs still come from its
-spawn key).
+Weapon mods that use it may keep working without it if they support that.
 
 [size=4][b]Source[/b][/size]
 [url=https://github.com/EvheniiS/GunmanContracts-Mods]GitHub[/url] (MIT). Made for game version 0.3.1.0,

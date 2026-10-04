@@ -1,6 +1,18 @@
-# Daredevil 1.1.2
+# Daredevil 1.1.3
 
-Tested: 1.1.2 (2026-10-03)
+Tested: 1.1.2 (2026-10-03); 1.1.3 built Oct 4 2026, not played yet (defaults changed to my config; F8 key removed)
+
+## 1.1.3 (Oct 4 2026, untested)
+
+- Shipped defaults now match the author's own config (found with `Tools/Check-Defaults.ps1`): `ClubMaxSpin` 100 (was 80),
+  `RadarSense` `Detail` Full (was Body), `StillBrightness` 0.2 (was 0.35), `SeenFraction` 0.6 (was 0.7), `StepVolume` 1 (was 3).
+  Mod Settings shows these on its "Updated defaults" page: untouched values move to the new default,
+  customised ones wait for Use new / Keep mine.
+- **The `SpawnKey` setting and its F8 key are gone** (an early-testing leftover from before Weapon Framework; clubs now come
+  from the arsenal terminal). Removed with it: the key handler, the recall-on-key path and the "floating pair" fallback.
+  Clubs restored into the belt after a scene load are unchanged. A leftover `SpawnKey` line in an old cfg is ignored.
+- Test: start a contract with a club on the belt, change scene and confirm it comes back; pull a club from the arsenal
+  terminal; throw one and see it return (`ReturnClubs`).
 
 ## 1.1.2 (built Oct 3 2026, tested Oct 3 2026)
 
@@ -8,12 +20,12 @@ Tested: 1.1.2 (2026-10-03)
   a while (and as VR Holster Customization's `[VRHolsters_KnifeReturn]` times them). Two settings in `[BillyClubs]`,
   both on the Mod Settings board:
   - `ReturnClubs` (`true`): a club you threw or dropped goes back to its holster by itself. Off = clubs stay
-    where they land, like in the show; F8 and the arsenal terminal still bring them back.
+    where they land, like in the show; the arsenal terminal still brings them back.
   - `ReturnSeconds` (`10`): how long it lies where it landed first. Counted from the moment it comes to rest
     (under 0.15 m/s for 0.2 s), so a long throw never returns in mid-air. A club that is still rolling 10 s after the
     release counts as at rest.
   - The timer stops while a hand holds the club, it is holstered (belt, wall, back) or in flight, and starts again
-    from zero at the next rest. The return is the F8 recall (`SendToSlot`), logged as
+    from zero at the next rest. The return uses the recall routine (`SendToSlot`), logged as
     `club returned to the left holster (N s after it came to rest)`. With both belt slots taken it waits and asks again.
   - Code: `BillyClubs/ClubReturn.cs`. Off costs one bool check per club per frame.
   - Default changed to on before release (Oct 3 2026): the casual default; `ReturnSeconds` 10 matches the game's knives.
@@ -87,7 +99,7 @@ The tested direct club-assist turn limit is 25° by default (`[BillyClubs] Throw
 Throw Assist 0.2.2 uses a matching 25° limit for head aim. Existing saved preferences keep their
 values until changed.
 
-The Daredevil package, one DLL: **billy clubs** (from the crowbar: belt holsters, F8 recall, spin styles, ricochets,
+The Daredevil package, one DLL: **billy clubs** (from the crowbar: belt holsters, spin styles, ricochets,
 knockouts, arsenal panel entry) + **radar sense** (enemy silhouettes through walls in slow motion or always, louder
 3D enemy footsteps, dropped clubs glow).
 
@@ -118,7 +130,7 @@ if present (legacy), or everything loads twice. Settings: `[BillyClubs]`, `[Rada
 
 0.3.3: the pair is fitted when the wall's slide-in ends (Weapon Framework 0.1.1 `OnSettled`), 2 cm off the board.
 0.3.2: the arsenal pair lies flat on the board (laid out in the slot's own frame, fitted once the slot stops);
-`WallLayout` Diagonal (default, 45°) / Upright / Cross. 0.3.1: clubs spawned mid-scene (arsenal wall, F8) can be grabbed again: the game's grabbable optimiser had them switched off
+`WallLayout` Diagonal (default, 45°) / Upright / Cross. 0.3.1: clubs spawned mid-scene (arsenal wall) can be grabbed again: the game's grabbable optimiser had them switched off
 (`BillyClubs/Optimiser.cs`); the arsenal pair hangs as an X on the board (`WallStyle`, `WallPosition`). 0.3.0: the gloves moved out into the Gloves mod (`[BillyClubs] GloveColor` → `[Gloves] Color`), and the package
 checks for its required mods. 0.2.0: arsenal panel entry.
 

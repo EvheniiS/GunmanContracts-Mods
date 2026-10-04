@@ -30,6 +30,7 @@ Only steps 3-4 are public and not undoable; step 5 is the user's own paste. A br
    - Test status: the mod's README `Tested:` line (see skill `mod-status`; `Check-Nexus.ps1` shows it too), and the last commit subjects (a subject ending in "untested" means it has not been played). If it is untested, say so plainly and ask before going further; do not quietly package it.
    - Requirements: read the mod's README for what it requires (for example Daredevil needs Grab Fix, Gloves, Throw Assist, Mod Settings, Weapon Framework). Run `Check-Nexus.ps1 -Mod <those>` and flag any required mod whose live version is older than needed, because then they must be released together, dependencies first.
    - Dirty tree: `git status` under the mod folder. The packaged DLL includes uncommitted work, so mention it.
+   - Defaults: run `pwsh -NoProfile -File Tools\Check-Defaults.ps1 -Mod <Mod>` (skill `check-defaults`; for a Daredevil release it covers BillyClubs and RadarSense). Any DEBUG line (a log switch defaulting to true) must be fixed to `false` in the source before packaging. Each DIFF is a place where the shipped default differs from the user's current config; show them and ask which the user wants as the new default, then change the `CreateEntry` default (and the page's Settings row). Do not build the zip until every DIFF is answered, because the DLL carries the defaults. Experiments such as `TestEntries = true` stay as they are.
 
 3. **Run the packager.**
    ```
@@ -87,6 +88,7 @@ All the sheets were deleted on Oct 3 2026 (their still-open mod-specific test no
 
 - `Check-Releases.ps1` checks the local release folders: source version vs newest zip, release DLL vs the DLL inside the zip, source changed in git since the release DLL was committed (REBUILD NEEDED), page text naming an old version. Run it before packaging when the question is "is my release folder healthy", it makes no API calls. `-Fix` rebuilds a flagged DLL and zip at the same version and never bumps a version.
 - `Compare-ReleaseDll.ps1` answers "does the release DLL still match the source?" by comparing compiled code (per-method IL and strings), since a fresh build never hashes the same as the committed DLL. Use it when `Check-Releases.ps1` says REBUILD NEEDED and you want to know whether the code really changed.
+- `Check-Defaults.ps1` (skill `check-defaults`) diffs every shipped `CreateEntry` default against the user's live cfg and flags debug switches defaulting on. Read-only; also the monthly audit.
 - `Check-Nexus.ps1` (skill `nexus-status`) is the Nexus side, read-only.
 - `Update-Nexus.ps1` is the Nexus side that writes: new version of an existing mod file (step 7). Dry run unless `-Apply`.
 - `Copy-Description.ps1` copies a mod's finished page text to the clipboard and opens its edit page for the manual paste (nothing is written to Nexus).
