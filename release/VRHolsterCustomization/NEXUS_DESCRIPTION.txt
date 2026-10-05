@@ -58,7 +58,7 @@ Extract the ZIP's [b]Mods[/b] folder into the game folder. You should have:
 Mods\VRHolsterCustomization.dll
 Mods\ModSettings.dll
 [/code]
-[b]4.[/b] Start the game. The MelonLoader console lists [b]VR Holster Customization v0.3.8[/b] among the loaded mods, along with Mod Settings.
+[b]4.[/b] Start the game. The MelonLoader console lists [b]VR Holster Customization v0.3.14[/b] among the loaded mods, along with Mod Settings.
 
 [b]Troubleshooting[/b]
 [list]
@@ -74,9 +74,15 @@ Use Mod Settings to change these live. The same entries are stored in [i]UserDat
 [code]
 [VRHolsters]
 DebugLog = false
+BeltFollowsHead = true
+BeltFreezeInMenu = true
+BeltDeadZoneDeg = 30
+BeltTurnSeconds = 0.1
+BeltCenterSeconds = 1
 
 [VRHolsters_Adjustment]
 Enabled = false
+MirrorPairs = true
 
 [VRHolsters_Positions]
 AllUpCm = 0
@@ -118,6 +124,7 @@ InEnemySeconds = 1
 OnGroundSeconds = 5
 [/code]
 BackSlots controls supported mod items: position in centimetres, rotation in degrees, snap/draw distance and saved contents. BackBlades (All, Katana or Off) chooses which of the game's blades fit the back slots; the Blade* values set how they hang. HolsterSounds, HolsterInSound and HolsterOutSound set the holster sounds (blank = a gun's click). InEnemySeconds and OnGroundSeconds set how long a thrown knife or katana stays in an enemy or on the ground before it returns to the back slot (0 = the game's own 10 s timer). SavedBackHolsters is managed automatically; do not edit it during play.
+BeltFollowsHead turns the hip and knife holsters with your head so they stay in front of you (the dead zone, turn time and center time tune how quickly); BeltFreezeInMenu keeps them still while the Mod Settings board is open, so you can set them up. MirrorPairs moves the other side's hip or knife holster to the mirrored spot when you move one by hand.
 No personal cfg is included in the download.
 [/spoiler]
 

@@ -1,6 +1,6 @@
-# VR Holster Customization 0.3.13
+# VR Holster Customization 0.3.14
 
-Tested: 0.3.12 (2026-10-04)
+Tested: 0.3.14 (2026-10-05)
 
 This MelonLoader mod customizes the game's hip, knife, and back holsters and requires Mod Settings. It also owns the back slots for mod items, their grab and draw behavior, and their saved state. Weapon Framework uses its docking API for wall items and its back slot API for the test crowbar. Daredevil uses the back slot API for clubs.
 
@@ -63,7 +63,7 @@ belt and follow too.
   controller's own yaw follows the head (log: belt 0 deg off the head even with a 45 degree dead zone).
 - 0.3.11 (played Oct 4 2026, works) keeps the belt's heading in world space. Snap and smooth turns are measured around the game's
   `HandleRotation` and added at once; only your own head turns are eased:
-  - `BeltDeadZoneDeg` (10): your head can turn this far from the belt before the belt follows quickly. 0 = always.
+  - `BeltDeadZoneDeg` (30): your head can turn this far from the belt before the belt follows quickly. 0 = always.
   - `BeltTurnSeconds` (0.1): how fast it catches up beyond the dead zone (time to close about two thirds of the gap). 0 = instantly.
   - `BeltCenterSeconds` (1): inside the dead zone the belt drifts in to face where you keep looking. 0 = never; it
     then stays up to the dead zone off your heading.

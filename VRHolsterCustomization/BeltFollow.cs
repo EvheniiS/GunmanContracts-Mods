@@ -28,7 +28,7 @@ namespace VRHolsterCustomization
                 description: "Hip and knife holsters turn with your head, so they stay in front of where you look. Off = the game's belt, which turns only after you look far enough to one side.");
             freezeInMenu = c.CreateEntry("BeltFreezeInMenu", true, display_name: "Belt stays put while settings are open",
                 description: "While the Mod Settings board is open, the hip and knife holsters stop turning with your head (and the game's own belt), so you can set them up. They catch up when you close the board.");
-            deadZone = c.CreateEntry("BeltDeadZoneDeg", 10, display_name: "Belt follow: dead zone (deg)",
+            deadZone = c.CreateEntry("BeltDeadZoneDeg", 30, display_name: "Belt follow: dead zone (deg)",
                 description: "How far you can turn your head before the belt follows quickly. Inside it the belt only drifts (Belt follow: center time). 0 = every head turn moves it.");
             turnSeconds = c.CreateEntry("BeltTurnSeconds", 0.1f, display_name: "Belt follow: turn time (s)",
                 description: "How quickly the belt catches up once your head is past the dead zone; higher is slower. 0 = instantly. Snap and smooth turns always move it at once.");

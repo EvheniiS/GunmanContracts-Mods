@@ -7,7 +7,7 @@ using MelonLoader.Utils;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-[assembly: MelonInfo(typeof(SkipMainMenu.SkipMainMenuMod), "Skip Main Menu", "0.2.2", "Evgeeso")]
+[assembly: MelonInfo(typeof(SkipMainMenu.SkipMainMenuMod), "Skip Main Menu", "0.3.0", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace SkipMainMenu
@@ -18,12 +18,13 @@ namespace SkipMainMenu
     // Every step is written to UserData/SkipMainMenu/timeline.txt (one line per event, time = seconds since the process started).
     public class SkipMainMenuMod : MelonMod
     {
-        internal static MelonPreferences_Entry<bool> Enabled, DirectToRange, Timeline;
+        internal static MelonPreferences_Entry<bool> Enabled, DirectToRange, ContinueContract, Timeline;
         internal static MelonPreferences_Entry<string> RangeScene;
         internal static MelonPreferences_Entry<float> FallbackSeconds;
 
         internal static bool menuUnlocked;     // the game's own "menu is interactive" call (ANBGameLogic.unlockMainMenu) was seen
         internal static bool done;
+        internal static bool launchRange;      // the first Range load of this launch was ours; check for a saved contract once it is ready
         internal static bool overrideSet;      // we put The Range into ANBChangeMap.overrideMap; it must be cleared once that load is done
         static float readySince = -1f;
         static string lastState = "";
@@ -36,6 +37,7 @@ namespace SkipMainMenu
             var c = MelonPreferences.CreateCategory("SkipMainMenu", "Skip Main Menu");
             Enabled = c.CreateEntry("Enabled", true, description: "Skip the main menu when the game launches and go to The Range. Returning to the main menu later (phone) is left alone.");
             DirectToRange = c.CreateEntry("DirectToRange", true, description: "Make the game's boot loader load The Range instead of the main menu: one loading screen. If off (or if it fails) the mod presses Start Game once the main menu is ready instead.");
+            ContinueContract = c.CreateEntry("ContinueContract", true, description: "If a contract with a checkpoint is saved, go from The Range straight back into it (the same call as the Range elevator and the Resume button), restoring the last checkpoint. Otherwise you stay in The Range.");
             RangeScene = c.CreateEntry("RangeScene", "The_Range_001", description: "Scene name of The Range, as the game logs it.");
             FallbackSeconds = c.CreateEntry("FallbackSeconds", 6f, description: "Start Game fallback only: if the game never reports the menu unlocked, press Start Game this many seconds after the menu scene is ready.");
             Timeline = c.CreateEntry("Timeline", true, description: "Write UserData/SkipMainMenu/timeline.txt: scene loads, loader and menu calls with times, readiness changes.");
@@ -45,7 +47,7 @@ namespace SkipMainMenu
                 string dir = Path.Combine(MelonEnvironment.UserDataDirectory, "SkipMainMenu");
                 Directory.CreateDirectory(dir);
                 path = Path.Combine(dir, "timeline.txt");
-                File.WriteAllText(path, $"# Skip Main Menu 0.2.2 timeline, {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n");
+                File.WriteAllText(path, $"# Skip Main Menu 0.3.0 timeline, {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n");
             }
             catch { path = null; }
 
@@ -93,6 +95,8 @@ namespace SkipMainMenu
                 string st = $"state main={B(main)} ui={B(ui)} anim={B(anim)} fx={B(fx)} loading={B(loading)} inbound={B(inbound)} unlocked={B(menuUnlocked)}";
                 if (st != lastState) { lastState = st; Mark(st); }
 
+                if (launchRange && Enabled.Value && gm != null && gm.IsRangeScene && gm.gameStarted && !loading) { launchRange = false; CheckContract(gm); }
+
                 // Start Game press: only for the first main menu, and in direct mode only if MainMenu got loaded anyway.
                 if (done || !Enabled.Value || !main) { readySince = -1f; return; }
                 if (!ui || !anim || !fx || loading) { readySince = -1f; return; }
@@ -102,6 +106,7 @@ namespace SkipMainMenu
                 if (!menuUnlocked && !timedOut) return;
 
                 done = true;
+                launchRange = true;
                 Mark(menuUnlocked ? "press Start Game (menu unlocked)" : $"press Start Game (fallback after {FallbackSeconds.Value:0.#} s)");
                 gm.UIManager.StartGame();
             }
@@ -111,6 +116,18 @@ namespace SkipMainMenu
                 Mark($"gave up: {ex.Message}");
                 Log.Warning($"gave up: {ex.Message}");
             }
+        }
+
+        // The game restores its save into ANBGameLogic.CD_* when the Range scene wakes up; LoadContract() loads CD_loadScene (or The Range if empty).
+        static void CheckContract(ANBGameLogic gm)
+        {
+            string scene = gm.CD_loadScene, id = gm.CD_ContractID, map = gm.CD_MapSaveID;
+            int cp = gm.CD_checkpoint;
+            Mark($"saved contract: loadScene='{scene}' id='{id}' mapSaveId='{map}' checkpoint={cp} contractNum={gm.CD_contractNum} dataSet={B(gm.contractDataSet)} retryTime={gm.CD_hours:0}:{gm.CD_minutes:0}:{gm.CD_seconds:0}");
+            if (!ContinueContract.Value) return;
+            if (string.IsNullOrEmpty(scene) || scene == RangeScene.Value || scene == "MainMenu" || cp <= 0) { Mark("no running contract with a checkpoint: staying in The Range"); return; }
+            Mark($"continuing contract in '{scene}' from checkpoint {cp}");
+            gm.LoadContract();
         }
 
         static string B(bool v) => v ? "1" : "0";
@@ -130,6 +147,7 @@ namespace SkipMainMenu
                 if (!string.IsNullOrEmpty(__instance.overrideMap)) return;   // a playtest override is already set: leave it
                 __instance.overrideMap = SkipMainMenuMod.RangeScene.Value;
                 SkipMainMenuMod.overrideSet = true;
+                SkipMainMenuMod.launchRange = true;
                 SkipMainMenuMod.Mark($"overrideMap -> '{__instance.overrideMap}'");
             }
             catch (Exception ex) { SkipMainMenuMod.Mark($"override failed: {ex.Message}"); }

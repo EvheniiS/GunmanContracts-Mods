@@ -152,7 +152,7 @@ draw-call summaries (the draw-call `ProfilerRecorder` constructor is unavailable
 unproven mod-isolation method is in ROADMAP).
 
 ## Skip Main Menu (SkipMainMenu/)
-0.1.0 (Oct 5 2026): the first main menu after launch pressed Start Game itself after a fixed delay. 0.2.0 (`DirectToRange` TESTED Oct 5: Range loaded directly, ~12 s faster; 0.2.1 stops the double-patching that logged every event twice; 0.2.2 clears `overrideMap` after the Range loads, because the loader reads it on every load and Return to Main Menu went back to the Range): `DirectToRange` sets the boot
+0.1.0 (Oct 5 2026): the first main menu after launch pressed Start Game itself after a fixed delay. 0.2.0 (`DirectToRange` TESTED Oct 5: Range loaded directly, ~12 s faster; 0.2.1 stops the double-patching that logged every event twice; 0.2.2 clears `overrideMap` after the Range loads, because the loader reads it on every load and Return to Main Menu went back to the Range; 0.3.0 untested: `ContinueContract` goes from the Range into the saved contract's last checkpoint via `LoadContract`): `DirectToRange` sets the boot
 loader's `ANBChangeMap.overrideMap` so `MainMenu` never loads (one loading screen); Start Game press kept as fallback, triggered by
 `unlockMainMenu` instead of a delay; `UserData/SkipMainMenu/timeline.txt` logs the startup sequence.
 
