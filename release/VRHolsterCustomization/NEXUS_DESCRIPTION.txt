@@ -1,6 +1,6 @@
 [size=5][b]VR Holster Customization[/b][/size]
 
-Move the game's [b]hip, knife and back holsters[/b] to suit your reach. [b]Grab an empty holster's position point with grip + trigger, then drag the holster by hand[/b]—even out in front of you. Fine-tune positions live in Mod Settings. Keep the [b]original game colours[/b] or choose another colour. And [b]carry a katana or knife on your back[/b]: it hangs on your shoulder, comes out with a grip press, and flies back to your back after you throw it.
+Move the game's [b]hip, knife and back holsters[/b] to suit your reach. [b]Grab an empty holster's position point with grip + trigger, then drag the holster by hand[/b]—even out in front of you. Fine-tune positions live in Mod Settings. Keep the [b]original game colours[/b] or choose another colour. Your [b]hip and knife holsters follow your head[/b], so they stay in front of you. And [b]carry a katana or knife on your back[/b]: it hangs on your shoulder, comes out with a grip press, and flies back to your back after you throw it.
 
 [b]Required:[/b] [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28]Mod Settings[/url] — install the latest version. This is a hard dependency, not an optional menu.
 
@@ -17,7 +17,7 @@ This is the quickest way to place a holster where your hand naturally reaches: f
 Approach before pressing the buttons. Moving away during the initial hold cancels it; release and try again.
 Positions move in 1 cm steps, normally within ±50 cm of the original position. Only one slot moves at a time.
 
-This gesture moves the [b]six game holsters[/b]: left/right pistol, knife and back slots. Mod-item back slots use their separate settings.
+This gesture moves the [b]six game holsters[/b]: left/right pistol, knife and back slots. Mod-item back slots use their separate settings. By default the hip and knife holsters move [b]in mirrored pairs[/b] (Move hip and knife pairs together): move one and the other side follows to the matching spot. Turn it off to move each one alone. The game's own holster hologram lights up while you hold the gesture.
 
 [size=4][b]Fine-tune with the board[/b][/size]
 Under [b]VR Holster Customization: positions[/b], each holster has height, left/right and forward/back controls, labelled in centimetres. Positive values move up, right or forward; negative values move in the opposite direction. [b]All holsters: height[/b] shifts all six together.
@@ -25,6 +25,10 @@ Under [b]VR Holster Customization: positions[/b], each holster has height, left/
 The actual sockets move with their highlights, so the grab positions follow your settings. Changes apply live and survive scene changes and restarts. Zero per-slot offsets leave the original position, plus any All holsters height adjustment.
 
 Grip Mod Settings' top bar to move or tilt the board near your holsters, then point and press trigger to adjust from a distance. [b]Reset[/b] beside a position restores that parameter's declared default.
+
+[size=4][b]Holsters that follow your head[/b][/size]
+The game's belt turns toward your head only after you look far to one side. With [b]Belt follows head[/b] (on by default) the hip and knife holsters turn with you, so they are always in front of where you look. Looking around inside a dead zone (30 degrees) barely moves them; past it they catch up quickly, and snap or smooth turns move them at once. Dead zone, turn time and center time are adjustable in Mod Settings, and the whole thing can be switched off to get the game's belt back.
+While the Mod Settings board is open the belt [b]stays still[/b] (Belt stays put while settings are open), so you can set holsters up without them swinging away. They catch up when you close the board.
 
 [size=4][b]Katana and knives on your back[/b][/size]
 The game's [b]katanas and knives[/b] fit the two back slots, one blade per side.
@@ -48,7 +52,9 @@ Cycle colours in Mod Settings, or enter a custom [b]#RRGGBB[/b] value in the cfg
 Placing a gun or knife in a holster [b]in The Range[/b] schedules a loadout save about a second later. Contract holster activity does not trigger this automatic save, so putting a knife away while a pistol is drawn does not overwrite your prepared loadout with an empty pistol slot. Blades and registered mod-item back slots also save in The Range and restore their prepared items after a same-scene checkpoint retry, including Weapon Framework's crowbar.
 
 [size=4][b]Install[/b][/size]
-[b]Find the game folder:[/b] Steam → right-click [i]Gunman Contracts - Stand Alone[/i] → [i]Manage[/i] → [i]Browse local files[/i].
+Takes about 5 minutes the first time. Steps 1 and 2 are needed only once, for all MelonLoader mods.
+
+[b]Where is my game folder?[/b] Steam → right-click [i]Gunman Contracts - Stand Alone[/i] → [i]Manage[/i] → [i]Browse local files[/i].
 
 [b]1.[/b] Install [url=https://github.com/LavaGang/MelonLoader/releases]MelonLoader[/url] for [i]GunmanContracts.exe[/i]. Tested with [b]0.7.3[/b]; 0.6.x does not work.
 [b]2.[/b] Start the game once, then quit.
@@ -60,13 +66,16 @@ Mods\ModSettings.dll
 [/code]
 [b]4.[/b] Start the game. The MelonLoader console lists [b]VR Holster Customization v0.4.0[/b] among the loaded mods, along with Mod Settings.
 
-[b]Troubleshooting[/b]
+[size=4][b]Not working?[/b][/size]
+[spoiler]
 [list]
-[*]A missing ModSettings dependency means [i]ModSettings.dll[/i] is absent from the game's Mods folder. Install the required mod.
-[*]No adjustment marker? Enable move-by-hand mode, empty the slot and your hand, release both buttons, then approach again.
-[*]Position controls remain available even when move-by-hand mode is off.
-[*]Do not nest the DLLs under [i]Mods\Mods[/i].
+[*][b]The mod isn't in the console list:[/b] check the file isn't at [i]Mods\Mods\VRHolsterCustomization.dll[/i] (a folder too deep). Move it up so it sits directly in [i]Mods[/i].
+[*][b]No console window at all:[/b] MelonLoader isn't installed on this game. Repeat step 1 and make sure you picked [i]GunmanContracts.exe[/i].
+[*][b]Errors right at startup:[/b] you likely have MelonLoader 0.6. Install 0.7.3 or newer.
+[*][b]A missing ModSettings error:[/b] [i]ModSettings.dll[/i] is absent from the Mods folder. Install Mod Settings.
+[*][b]No adjustment marker?[/b] Enable move-by-hand mode, empty the slot and your hand, release both buttons, then approach again.
 [/list]
+[/spoiler]
 
 [size=4][b]Settings[/b][/size]
 [spoiler]
@@ -126,14 +135,25 @@ OnGroundSeconds = 5
 BackSlots controls supported mod items: position in centimetres, rotation in degrees, snap/draw distance and saved contents. BackBlades (All, Katana or Off) chooses which of the game's blades fit the back slots; the Blade* values set how they hang. HolsterSounds, HolsterInSound and HolsterOutSound set the holster sounds (blank = a gun's click). InEnemySeconds and OnGroundSeconds set how long a thrown knife or katana stays in an enemy or on the ground before it returns to the back slot (0 = the game's own 10 s timer). SavedBackHolsters is managed automatically; do not edit it during play.
 BeltFollowsHead turns the hip and knife holsters with your head so they stay in front of you (the dead zone, turn time and center time tune how quickly); BeltFreezeInMenu keeps them still while the Mod Settings board is open, so you can set them up. MirrorPairs moves the other side's hip or knife holster to the mirrored spot when you move one by hand.
 No personal cfg is included in the download.
+Or change these live in-VR with [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28][b]Mod Settings[/b][/url], which this mod requires. No restart, no text editor.
 [/spoiler]
 
-[size=4][b]Compatibility[/b][/size]
-[b]Mod Settings is required.[/b] Weapon Framework and Daredevil are optional. With those installed, this mod also provides docking and back-slot support for registered mod items such as the test crowbar and Billy Clubs. Their back-slot positions are separate from the six game holsters' move-by-hand controls.
+[size=4][b]Changelog[/b][/size]
+[spoiler]
+[b]0.4.0[/b]
+[list]
+[*][b]New: holsters follow your head.[/b] Hip and knife holsters turn with you instead of waiting until you look far aside (Belt follows head; dead zone, turn time and center time adjustable).
+[*][b]New: holsters hold still while the settings board is open[/b], so they are easy to set up.
+[*][b]New: mirrored pairs.[/b] Moving a hip or knife holster by hand moves the other side to the mirrored spot, and the game's own holster hologram lights while you hold the gesture.
+[*][b]New: back-slot holster sounds[/b] and knife return timers (1 second in an enemy, 5 on the ground).
+[*][b]New: katanas and knives fit the back slots[/b], and a blade drawn from the back returns there.
+[/list]
+[b]0.3.8[/b]: previous release.
+[/spoiler]
 
 [size=4][b]Uninstall[/b][/size]
 Delete [i]Mods\VRHolsterCustomization.dll[/i]. Game holster position and colour overrides stop applying. Saved cfg values remain.
-Weapon Framework versions that depend on this DLL must also be removed or updated. Keep Mod Settings if other installed mods require it.
+Keep Mod Settings if other installed mods need it.
 
 [size=4][b]Source[/b][/size]
 [url=https://github.com/EvheniiS/GunmanContracts-Mods]GitHub[/url] (MIT). Made for game version 0.3.1.0 and MelonLoader 0.7.3.
