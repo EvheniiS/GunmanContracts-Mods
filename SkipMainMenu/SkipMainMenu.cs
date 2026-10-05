@@ -7,7 +7,7 @@ using MelonLoader.Utils;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-[assembly: MelonInfo(typeof(SkipMainMenu.SkipMainMenuMod), "Skip Main Menu", "0.3.0", "Evgeeso")]
+[assembly: MelonInfo(typeof(SkipMainMenu.SkipMainMenuMod), "Skip Main Menu", "0.3.1", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace SkipMainMenu
@@ -47,7 +47,7 @@ namespace SkipMainMenu
                 string dir = Path.Combine(MelonEnvironment.UserDataDirectory, "SkipMainMenu");
                 Directory.CreateDirectory(dir);
                 path = Path.Combine(dir, "timeline.txt");
-                File.WriteAllText(path, $"# Skip Main Menu 0.3.0 timeline, {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n");
+                File.WriteAllText(path, $"# Skip Main Menu 0.3.1 timeline, {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n");
             }
             catch { path = null; }
 
@@ -123,14 +123,23 @@ namespace SkipMainMenu
         {
             string scene = gm.CD_loadScene, id = gm.CD_ContractID, map = gm.CD_MapSaveID;
             int cp = gm.CD_checkpoint;
-            Mark($"saved contract: loadScene='{scene}' id='{id}' mapSaveId='{map}' checkpoint={cp} contractNum={gm.CD_contractNum} dataSet={B(gm.contractDataSet)} retryTime={gm.CD_hours:0}:{gm.CD_minutes:0}:{gm.CD_seconds:0}");
+            Mark("launch " + Cd(gm));
             if (!ContinueContract.Value) return;
             if (string.IsNullOrEmpty(scene) || scene == RangeScene.Value || scene == "MainMenu" || cp <= 0) { Mark("no running contract with a checkpoint: staying in The Range"); return; }
             Mark($"continuing contract in '{scene}' from checkpoint {cp}");
             gm.LoadContract();
         }
 
-        static string B(bool v) => v ? "1" : "0";
+        // Contract fields of ANBGameLogic in one short line (what the game saves/restores for a running contract).
+        internal static string Cd(ANBGameLogic gm)
+        {
+            if (gm == null) return "cd: no ANBGameLogic";
+            string data = gm.CD_checkpoint_data;
+            return $"cd: scene='{gm.CD_loadScene}' tmp='{gm.CD_loadSceneTMP}' id='{gm.CD_ContractID}' cp={gm.CD_checkpoint} cpData={(data == null ? -1 : data.Length)}b num={gm.CD_contractNum} " +
+                   $"mode={B(gm.CD_playmodeContract)}{B(gm.CD_playmodeTakedown)}{B(gm.CD_playmodeLaststand)} spawns={gm.CD_totalSpawns:0} set={B(gm.contractDataSet)} started={B(gm.gameStarted)}";
+        }
+
+        internal static string B(bool v) => v ? "1" : "0";
     }
 
     // --- direct mode: the loader's coroutine reads ANBChangeMap.overrideMap (non-empty wins over the default map) ---
@@ -166,6 +175,17 @@ namespace SkipMainMenu
     [HarmonyPatch(typeof(ANBGameLogic), "PlayerStartGame")] static class PlayerStart { static void Postfix() => SkipMainMenuMod.Mark("ANBGameLogic.PlayerStartGame"); }
     [HarmonyPatch(typeof(ANBUIManager), "Start")] static class UiStart { static void Postfix() => SkipMainMenuMod.Mark("ANBUIManager.Start"); }
     [HarmonyPatch(typeof(ANBUIManager), "StartGame")] static class UiStartGame { static void Prefix() => SkipMainMenuMod.Mark("ANBUIManager.StartGame"); }
+
+    // --- contract-state probes: what is in CD_* at each save / load / menu action ---
+    [HarmonyPatch(typeof(ANBSaveData), "SaveContractData")] static class CdSave { static void Prefix() => SkipMainMenuMod.Mark("SaveContractData " + SkipMainMenuMod.Cd(ANBStaticGameManager.ANBmain)); }
+    [HarmonyPatch(typeof(ANBGameLogic), "Awake")] static class CdAwake { static void Postfix(ANBGameLogic __instance) => SkipMainMenuMod.Mark("ANBGameLogic.Awake (save loaded) " + SkipMainMenuMod.Cd(__instance)); }
+    [HarmonyPatch(typeof(ANBGameLogic), "LoadContract")] static class CdLoad { static void Prefix(ANBGameLogic __instance) => SkipMainMenuMod.Mark("LoadContract " + SkipMainMenuMod.Cd(__instance)); }
+    [HarmonyPatch(typeof(ANBUIManager), "ResumeGame")] static class CdResume { static void Prefix() => SkipMainMenuMod.Mark("UI ResumeGame " + SkipMainMenuMod.Cd(ANBStaticGameManager.ANBmain)); }
+    [HarmonyPatch(typeof(ANBUIManager), "RetryCheckpoint")] static class CdRetry { static void Prefix() => SkipMainMenuMod.Mark("UI RetryCheckpoint " + SkipMainMenuMod.Cd(ANBStaticGameManager.ANBmain)); }
+    [HarmonyPatch(typeof(ANBUIManager), "RestartContract")] static class CdRestart { static void Prefix() => SkipMainMenuMod.Mark("UI RestartContract " + SkipMainMenuMod.Cd(ANBStaticGameManager.ANBmain)); }
+    [HarmonyPatch(typeof(ANBUIManager), "CancelContract")] static class CdCancel { static void Prefix() => SkipMainMenuMod.Mark("UI CancelContract " + SkipMainMenuMod.Cd(ANBStaticGameManager.ANBmain)); }
+    [HarmonyPatch(typeof(ANBUIManager), "ReturnToMainMenu")] static class CdMenu { static void Prefix() => SkipMainMenuMod.Mark("UI ReturnToMainMenu " + SkipMainMenuMod.Cd(ANBStaticGameManager.ANBmain)); }
+    [HarmonyPatch(typeof(ANBUIManager), "QuitGame")] static class CdQuit { static void Prefix() => SkipMainMenuMod.Mark("UI QuitGame " + SkipMainMenuMod.Cd(ANBStaticGameManager.ANBmain)); }
 
     [HarmonyPatch(typeof(ANBGameLogic), "unlockMainMenu")]
     static class MenuUnlock
