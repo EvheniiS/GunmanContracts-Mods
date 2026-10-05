@@ -98,10 +98,6 @@ DebugLog      = false  Log each gun you hold (its original mode and fire rate) a
 Or change these live in-VR with [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28][b]Mod Settings[/b][/url] (optional) — no restart, no text editor.
 [/spoiler]
 
-[size=4][b]Compatibility[/b][/size]
-[url=https://www.nexusmods.com/gunmancontractsstandalone/mods/22]Better Bow[/url]'s dagger grip also uses A / X, but only
-while that hand holds an arrow, so the two never clash.
-
 [size=4][b]Uninstall[/b][/size]
 Delete [i]Mods\FireSelector.dll[/i]. Your guns go back to their normal mode.
 
