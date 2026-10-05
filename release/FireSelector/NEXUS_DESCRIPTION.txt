@@ -1,9 +1,9 @@
 [size=5][b]Fire Selector[/b][/size]
 
 Automatic weapons get a [b]fire selector[/b]: switch between [b]full auto[/b], [b]3-round burst[/b] and
-[b]single shot[/b] without letting go of the gun.
+[b]single shot[/b], in VR without letting go of the gun, or with one key on desktop.
 
-[size=4][b]How to use[/b][/size]
+[size=4][b]How to use in VR[/b][/size]
 Hold the gun normally. With your [b]other hand[/b] (on the foregrip or free), [b]hold X[/b] (left hand)
 or [b]A[/b] (right hand) for about a third of a second. Each hold moves one step:
 [b]Automatic → 3-round burst → Single → Automatic[/b].
@@ -16,16 +16,23 @@ Your hand vibrates to tell you which mode you're in:
 [b]Don't want burst?[/b] Set [b]AllowBurst = false[/b] in the settings (see below). The hold then
 switches between [b]Automatic[/b] and [b]Single[/b] only, so you always know which mode you're in.
 
+[size=4][b]How to use on desktop (flat screen)[/b][/size]
+Press [b]B[/b] with an automatic gun in your hands. Each press moves one step through the same cycle,
+and a short message on screen shows the new mode. B is not used by the game; pick another key with
+[b]FlatKey[/b] in the settings. There is no gamepad button for it, because the game already uses every one.
+VR and desktop share the remembered modes: a mode picked in one is there in the other.
+
 [size=4][b]How the modes fire[/b][/size]
 [list]
 [*][b]Single:[/b] one shot per trigger pull, as fast as the gun can cycle.
 [*][b]3-round burst:[/b] three shots at the gun's own automatic fire rate. The burst finishes even if
-you let go of the trigger, and stops early if the magazine runs dry.
+you let go of the trigger, and stops early if the magazine runs dry. Keep holding and it waits: let
+go and pull again for the next burst.
 [*][b]Automatic:[/b] unchanged, fires until you let go.
 [/list]
 Each weapon type [b]remembers[/b] the mode you picked, also after restarting the game.
 
-[size=4][b]Your buttons keep working[/b][/size]
+[size=4][b]Your buttons keep working (VR)[/b][/size]
 [list]
 [*][b]The gun hand's A / X still drops the magazine instantly.[/b] The mod doesn't touch it.
 [*]In the game, a [b]quick tap[/b] of A / X with the hand on the foregrip also drops the magazine,
@@ -37,8 +44,9 @@ it. A [b]hold[/b] switches the fire mode instead, so switching never costs you a
 not affected. Enemy weapons are not affected.
 [/list]
 
-The three modes are already built into the game's VR framework (HurricaneVR). The game just
-never lets you switch, so this mod only switches the mode. Shooting itself is the game's own code.
+The three modes are already built into the game's VR framework (HurricaneVR), and the desktop
+controls have their own automatic switch. The game just never lets you change either, so this mod
+only switches the mode. Shooting itself is the game's own code.
 
 [size=4][b]Install[/b][/size]
 Takes about 5 minutes the first time. Steps 1 and 2 are needed only once, for all MelonLoader mods.
@@ -61,9 +69,10 @@ game folder, and if Windows asks, choose to replace / merge.
 You should end up with: [i]Gunman Contracts - Stand Alone\Mods\FireSelector.dll[/i]
 
 [b]4. Check it works[/b]
-Start the game. The MelonLoader console lists [b]Fire Selector v1.1.0[/b] among the loaded mods.
+Start the game. The MelonLoader console lists [b]Fire Selector v1.2.3[/b] among the loaded mods.
 
-[b]Not working?[/b]
+[size=4][b]Not working?[/b][/size]
+[spoiler]
 [list]
 [*][b]The mod isn't in the console list:[/b] check the file isn't at [i]Mods\Mods\FireSelector.dll[/i] (a folder
 too deep). Move it up so it sits directly in [i]Mods[/i].
@@ -71,29 +80,31 @@ too deep). Move it up so it sits directly in [i]Mods[/i].
 sure you picked [i]GunmanContracts.exe[/i].
 [*][b]Errors right at startup:[/b] you likely have MelonLoader 0.6. Install 0.7.3 or newer.
 [/list]
+[/spoiler]
 
 [size=4][b]Settings (optional)[/b][/size]
 [spoiler]
 After the first launch, edit [i]UserData\MelonPreferences.cfg[/i], section [b][FireSelector][/b]:
 [code]
-Enabled       = true   the fire selector
-AllowBurst    = true   include 3-round burst; false = only automatic and single
-HoldSeconds   = 0.35   how long to hold A / X before the mode switches
-Haptics       = true   vibrate to show the new mode
-RememberModes = true   each weapon type keeps its mode, also after a restart
-SavedModes    = ""     the remembered modes (written by the mod)
-DebugLog      = false  log each gun and every switch to the MelonLoader console
+Enabled       = true   Hold A / X on the support hand to switch an automatic gun between automatic, 3-round burst and single shot.
+AllowBurst    = true   Include 3-round burst in the cycle. false = the selector only switches between automatic and single shot.
+HoldSeconds   = 0.35   How long to hold A / X before the mode switches.
+Haptics       = true   Vibrate the support hand on a switch: 1 pulse = single, 3 pulses = burst, a long buzz = automatic.
+RememberModes = true   Each gun type keeps the mode you picked, also after a restart.
+FlatKey       = "B"    Flat (desktop) mode: this key cycles the fire mode of the gun in your hands (empty = off).
+SavedModes    = ""     The remembered modes (weapon=mode;...). Written by the mod.
+DebugLog      = false  Log each gun you hold (its original mode and fire rate) and every selector press.
 [/code]
+Or change these live in-VR with [url=https://www.nexusmods.com/gunmancontractsstandalone/mods/28][b]Mod Settings[/b][/url] (optional) — no restart, no text editor.
 [/spoiler]
 
 [size=4][b]Compatibility[/b][/size]
-Works alongside my other mods ([url=https://www.nexusmods.com/gunmancontractsstandalone/mods/22]Better Bow[/url],
-Knee Shot Stun). Better Bow's dagger grip also uses A / X, but only while that hand holds an
-arrow, so the two never clash.
+[url=https://www.nexusmods.com/gunmancontractsstandalone/mods/22]Better Bow[/url]'s dagger grip also uses A / X, but only
+while that hand holds an arrow, so the two never clash.
 
 [size=4][b]Uninstall[/b][/size]
 Delete [i]Mods\FireSelector.dll[/i]. Your guns go back to their normal mode.
 
 [size=4][b]Source[/b][/size]
-[url=https://github.com/EvheniiS/GunmanContracts-Mods]GitHub[/url] (MIT). Made for game version 0.3.1.0 and
+[url=https://github.com/EvheniiS/GunmanContracts-Mods]GitHub[/url] (MIT). Tested on game version 0.3.1.1 and
 MelonLoader 0.7.3.
