@@ -13,7 +13,7 @@ namespace VRHolsterCustomization
     // no reference for the body; the belt's heading is kept in world space.
     static class BeltFollow
     {
-        static MelonPreferences_Entry<bool> enabled;
+        static MelonPreferences_Entry<bool> enabled, freezeInMenu;
         static MelonPreferences_Entry<int> deadZone;
         static MelonPreferences_Entry<float> turnSeconds, centerSeconds;
         static bool reported, warned, haveHead, haveBelt;
@@ -26,6 +26,8 @@ namespace VRHolsterCustomization
         {
             enabled = c.CreateEntry("BeltFollowsHead", true, display_name: "Belt follows head",
                 description: "Hip and knife holsters turn with your head, so they stay in front of where you look. Off = the game's belt, which turns only after you look far enough to one side.");
+            freezeInMenu = c.CreateEntry("BeltFreezeInMenu", true, display_name: "Belt stays put while settings are open",
+                description: "While the Mod Settings board is open, the hip and knife holsters stop turning with your head (and the game's own belt), so you can set them up. They catch up when you close the board.");
             deadZone = c.CreateEntry("BeltDeadZoneDeg", 10, display_name: "Belt follow: dead zone (deg)",
                 description: "How far you can turn your head before the belt follows quickly. Inside it the belt only drifts (Belt follow: center time). 0 = every head turn moves it.");
             turnSeconds = c.CreateEntry("BeltTurnSeconds", 0.1f, display_name: "Belt follow: turn time (s)",
@@ -72,8 +74,48 @@ namespace VRHolsterCustomization
             turnSum += Mathf.Abs(degrees);
         }
 
+        static Func<bool> boardOpen;
+        static bool boardLookedUp, frozen;
+        static Quaternion frozenRot;
+
+        // Mod Settings' Panel.IsOpen, found by reflection (this mod does not reference it). Missing = never open.
+        static bool BoardOpen()
+        {
+            if (!boardLookedUp)
+            {
+                boardLookedUp = true;
+                try
+                {
+                    foreach (var a in AppDomain.CurrentDomain.GetAssemblies())
+                    {
+                        if (a.GetName().Name != "ModSettings") continue;
+                        var p = a.GetType("ModSettings.Panel")?.GetProperty("IsOpen",
+                            System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+                        if (p != null) boardOpen = (Func<bool>)Delegate.CreateDelegate(typeof(Func<bool>), p.GetGetMethod(true));
+                    }
+                }
+                catch (Exception e) { Warn(e); }
+            }
+            try { return boardOpen != null && boardOpen(); }
+            catch { return false; }
+        }
+
+        // Before the game's belt update: note where the belt is, if it should stay put (settings board open).
+        internal static void BeforeGame(HVRPlayerWaist waist)
+        {
+            frozen = freezeInMenu.Value && BoardOpen();
+            if (frozen) frozenRot = waist.transform.rotation;
+        }
+
         internal static void AfterGame(HVRPlayerWaist waist)
         {
+            if (frozen)
+            {
+                waist.transform.rotation = frozenRot;
+                haveBelt = false;   // when the board closes, our follow eases in from wherever the belt is
+                pendingTurn = 0f;
+                return;
+            }
             bool on = enabled.Value, debug = VRHolsterCustomizationMod.DebugOn;
             if (!on && !debug) return;
             var head = waist.Camera;
@@ -129,6 +171,12 @@ namespace VRHolsterCustomization
     [HarmonyLib.HarmonyPatch(typeof(HVRPlayerWaist), nameof(HVRPlayerWaist.FollowPlayer))]
     static class BeltFollowPatch
     {
+        static void Prefix(HVRPlayerWaist __instance)
+        {
+            try { BeltFollow.BeforeGame(__instance); }
+            catch (Exception e) { BeltFollow.Warn(e); }
+        }
+
         static void Postfix(HVRPlayerWaist __instance)
         {
             try { BeltFollow.AfterGame(__instance); }

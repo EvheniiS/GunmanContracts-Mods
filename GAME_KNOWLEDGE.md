@@ -496,3 +496,13 @@ decapitations = oversized decals (confirmed 2026-10-04 by removing the conflict)
   from `Character.Update`, not `ShootArrow`. **Flat pickup** = `ANBFpsInteraction` (raycast + button).
 - **Detection:** `!XRSettings.isDeviceActive` (in `UnityEngine.VRModule`), or the `Character` exists and no VR hands do.
 - Per-mod verdicts and the plan: [ROADMAP.md](ROADMAP.md) "Flat mode".
+
+**Main menu → Range (checked in disassembly, game 0.3.1.x, Oct 5 2026; not played).** The Start Game button runs `ANBUIManager.StartGame()` (0x181c276d0):
+if `startInbound` (0x3f5) is false it plays `fadeOut` on `ANBGameLogic.CameraEffects`, calls `MainMenuHide`, `requestSaving`, starts `StartGameDelay` and sets
+`startInbound`; that coroutine ends in `ANBGameLogic.LoadMap(ANBMaplist.first map (0x30), delay)`. `ANBGameLogic.MapLoadQuickRange()` does the same
+without the UI; `MapLoadRangeWithIntro()` first sets `ANBStaticGameManager.forceRangeIntro`. `unlockMainMenu` clears `startInbound` and starts the button
+group. Used by `SkipMainMenu/`.
+**Boot order and the loader (Oct 5 2026; scenes confirmed in a log, rest from disassembly, untested).** `GameLoader` -> `MainMenu` -> `The_Range_001`. `ANBChangeMap` (GameLoader):
+`Awake` sets `ANBStaticGameManager.MapChanger/LoadingCamera/ANBsaveData`, loads languages and the save (`ANBSaveData.LoadCore`); `Start` runs `changeLanguage`,
+`CheckCommandLines`, then the `LoadMapExec` coroutine: wait `loadAfterTime`, `PreLoadMap` (loading screen), take the scene name from `ANBStaticGameManager.MapToLoad`
+**unless `overrideMap` (0x60) is non-empty**, `LoadSceneAsync(additive)`, `PostLoadMap`. Setting `overrideMap` skips the MainMenu load. Used by `SkipMainMenu/`.
