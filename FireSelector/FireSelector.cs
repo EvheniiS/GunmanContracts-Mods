@@ -6,12 +6,14 @@ using Il2Cpp;
 using Il2CppHurricaneVR.Framework.Core;
 using Il2CppHurricaneVR.Framework.Core.Grabbers;
 using Il2CppHurricaneVR.Framework.Weapons.Guns;
+using Il2CppInfimaGames.LowPolyShooterPack;
 using Il2CppInterop.Runtime;
 using MelonLoader;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(FireSelector.FireSelectorMod), "Fire Selector", "1.1.0", "Evgeeso")]
+[assembly: MelonInfo(typeof(FireSelector.FireSelectorMod), "Fire Selector", "1.2.3", "Evgeeso")]
 [assembly: MelonGame("ANB_Seth", "GunmanContracts")]
 
 namespace FireSelector
@@ -34,12 +36,18 @@ namespace FireSelector
     // the laser/light attachment (AT2); with a free hand it does nothing. The game acts on the press,
     // so the mod holds a selector press back: a tap replays the game's own action on release, a hold
     // switches the mode instead.
+    //
+    // Flat (desktop) mode uses the Low Poly Shooter Pack Character, which ignores FireType: Character.Update
+    // fires again while the fire button is held only if Weapon.IsAutomatic() (the `automatic` field), and a
+    // non-automatic weapon fires once per press from OnTryFire. So flat Single = automatic off, Burst =
+    // automatic on until the third Character.Fire, then off until the button is released. Every gamepad
+    // button is taken in flat, so the switch is a keyboard key (B is unbound in the game).
     public class FireSelectorMod : MelonMod
     {
         internal static MelonLogger.Instance Log;
         internal static MelonPreferences_Entry<bool> Enabled, AllowBurst, Haptics, RememberModes, DebugLog;
         internal static MelonPreferences_Entry<float> HoldSeconds;
-        internal static MelonPreferences_Entry<string> SavedModes;
+        internal static MelonPreferences_Entry<string> SavedModes, FlatKey;
 
         // Filled by a Harmony postfix on HVRHandGrabber.Start, plus one search per scene as a safety net.
         internal static readonly List<HVRHandGrabber> Hands = new();
@@ -79,6 +87,7 @@ namespace FireSelector
             HoldSeconds = c.CreateEntry("HoldSeconds", 0.35f, description: "How long to hold A / X before the mode switches. A shorter press still toggles the flashlight on guns that have one.");
             Haptics = c.CreateEntry("Haptics", true, description: "Vibrate the support hand on a switch: 1 pulse = single, 3 pulses = burst, a long buzz = automatic.");
             RememberModes = c.CreateEntry("RememberModes", true, description: "Each gun type keeps the mode you picked, also after a restart.");
+            FlatKey = c.CreateEntry("FlatKey", "B", description: "Flat (desktop) mode: this key cycles the fire mode of the gun in your hands (Input System key name, empty = off). The game does not use B.");
             SavedModes = c.CreateEntry("SavedModes", "", description: "The remembered modes (weapon=mode;...). Written by the mod.");
             DebugLog = c.CreateEntry("DebugLog", false, description: "Log each gun you hold (its original mode and fire rate) and every selector press.");
             LoadSaved();
@@ -91,6 +100,8 @@ namespace FireSelector
             foreach (var p in Presses) { p.Gun = null; p.Held = null; p.Switched = false; }
             Pulses.Clear();
             Guns.Clear();                     // keyed by pointer, which the GC can hand to another object
+            FlatGuns.Clear();
+            _burstWeapon = null; _burstShots = 0;
             _fallbackScanAt = Now + 3.0;
         }
 
@@ -101,6 +112,7 @@ namespace FireSelector
             try
             {
                 Prune();
+                UpdateFlat();
                 var game = ANBStaticGameManager.ANBmain;
                 if (!Alive(game)) return;
                 ApplyChosen(game.rightHandGun);
@@ -201,7 +213,7 @@ namespace FireSelector
         // mode back - so the picked mode is re-applied to whatever gun is in hand.
         static void ApplyChosen(ANBHVRGunBase gun)
         {
-            if (!Alive(gun)) return;
+            if (!Alive(gun) || gun.FPSGun) return;   // flat guns are handled by the flat code below
             var info = GunInfoOf(gun);
             if (!info.Selectable || !Chosen.TryGetValue(info.Key, out var mode)) return;
             if (mode == GunFireType.ThreeRoundBurst && !AllowBurst.Value) mode = GunFireType.Automatic;   // burst remembered from before it was turned off
@@ -270,6 +282,166 @@ namespace FireSelector
             }
             catch (Exception e) { Log.Warning($"replay: {e.Message}"); }
             finally { Replaying = false; }
+        }
+
+        // ---- flat (desktop) mode ----------------------------------------------------------------------
+
+        static Character _character;          // set by the Character.Fire patch, or looked up on a key press
+        class FlatInfo { public string Key; public bool Selectable; }
+        static readonly Dictionary<IntPtr, FlatInfo> FlatGuns = new();
+        static Weapon _burstWeapon;           // the weapon in a burst; automatic is switched off after shot 3
+        static int _burstShots, _burstCalls;
+        static ANBHVRGunBase _fireGun;        // the HVR gun behind the weapon in the current Fire call
+        static float _fireStamp;              // its TimeOfLastShot before the call
+        static float _burstShotAt;          // game time, so slow motion does not cut a burst short
+        internal static bool FireHeld;        // the real fire button, from Character.OnTryFire (Started / Canceled)
+        static bool _keyWasDown;
+        static string _toast;
+        static double _toastUntil;
+        static GUIStyle _toastStyle;
+
+        static void UpdateFlat()
+        {
+            UpdateBurst();
+
+            // Own edge detection: wasPressedThisFrame stayed true for two frames once (one press, two switches).
+            var kb = Keyboard.current;
+            if (kb == null || string.IsNullOrEmpty(FlatKey.Value) || !Enum.TryParse<Key>(FlatKey.Value, true, out var key)) return;
+            bool down = kb[key].isPressed, pressed = down && !_keyWasDown;
+            _keyWasDown = down;
+            if (!pressed || kb.ctrlKey.isPressed) return;   // Ctrl + key belongs to other mods' menus
+            if (!Alive(_character)) _character = Object.FindFirstObjectByType<Character>();
+            if (!Alive(_character) || !_character.cursorLocked || _character.menuShown || _character.editingGun) return;
+            var w = FlatWeapon(_character);
+            if (w == null) return;
+            var info = FlatInfoOf(w);
+            if (!info.Selectable) { Toast("This gun has one fire mode"); return; }
+
+            var cur = Chosen.TryGetValue(info.Key, out var m) ? m : (w.automatic ? GunFireType.Automatic : GunFireType.Single);
+            if (cur == GunFireType.ThreeRoundBurst && !AllowBurst.Value) cur = GunFireType.Automatic;
+            var next = cur switch
+            {
+                GunFireType.Automatic => AllowBurst.Value ? GunFireType.ThreeRoundBurst : GunFireType.Single,
+                GunFireType.ThreeRoundBurst => GunFireType.Single,
+                _ => GunFireType.Automatic,
+            };
+            EndBurst();
+            Chosen[info.Key] = next;
+            w.automatic = next != GunFireType.Single;
+            if (RememberModes.Value) Save();
+            Log.Msg($"{info.Key}: fire mode -> {Name(next)} (flat)");
+            Toast($"Fire mode: {Name(next)}");
+        }
+
+        static Weapon FlatWeapon(Character ch)
+        {
+            var wb = ch.equippedWeapon;
+            return Alive(wb) ? wb.TryCast<Weapon>() : null;
+        }
+
+        // Same key as VR (the HVR gun's WeaponID), so a mode picked in one mode carries over to the other.
+        static FlatInfo FlatInfoOf(Weapon w)
+        {
+            if (FlatGuns.TryGetValue(w.Pointer, out var info)) return info;
+            ANBFpsWeapons fps = null; ANBHVRGunBase gun = null;
+            try { fps = w.ANBfps; gun = Alive(fps) ? fps.HVRgunbase : null; } catch { }
+            string key = null;
+            try { key = Alive(gun) ? gun.ANBwpt?.WeaponID : null; } catch { }
+            if (string.IsNullOrEmpty(key)) key = (Alive(gun) ? gun.name : w.name).Replace("(Clone)", "").Trim();
+            bool special = (Alive(gun) && (gun.isBow || gun.isShotgun)) || (Alive(fps) && fps.isShotgun);
+            info = new FlatInfo { Key = key, Selectable = (w.automatic || Chosen.ContainsKey(key)) && !special };
+            FlatGuns[w.Pointer] = info;
+            if (DebugLog.Value)
+                Log.Msg($"flat gun '{w.name}' ({key}): {(w.automatic ? "automatic" : "single")}, {w.roundsPerMinutes} rounds/min{(info.Selectable ? " - selector available" : "")}");
+            return info;
+        }
+
+        // Character.Fire prefix: put the picked mode on the weapon (flat guns are rebuilt on loads and swaps).
+        // A remembered Single on a weapon that is still automatic costs nothing: this shot goes out, then
+        // Update stops because automatic is now off - exactly one shot.
+        internal static void BeforeFlatFire(Character ch)
+        {
+            if (!Enabled.Value) return;
+            _character = ch;
+            var w = FlatWeapon(ch);
+            if (w == null) return;
+            // FPSshoot fakes a trigger pull + release on the HVR gun behind the flat weapon; only Single
+            // fires on the pull (Automatic is cancelled by the release: no bullet, Burst fires 3 per shot).
+            // ANBFpsWeapons.Init sets it to Single; keep it there.
+            _fireGun = null;
+            try
+            {
+                var gun = w.ANBfps?.HVRgunbase;
+                if (Alive(gun))
+                {
+                    if (gun.FireType != GunFireType.Single) SetMode(gun, GunFireType.Single);
+                    _fireGun = gun; _fireStamp = gun.TimeOfLastShot;
+                }
+            }
+            catch { }
+            var info = FlatInfoOf(w);
+            if (!info.Selectable || !Chosen.TryGetValue(info.Key, out var mode)) return;
+            if (mode == GunFireType.ThreeRoundBurst && !AllowBurst.Value) mode = GunFireType.Automatic;
+            if (mode == GunFireType.Single) w.automatic = false;
+            else if (_burstShots == 0) w.automatic = true;
+        }
+
+        // Character.Update calls Fire EVERY FRAME while an automatic weapon is held: the rate of fire is the HVR
+        // gun's Cooldown, checked in TriggerPulled, which stamps TimeOfLastShot only when a round really goes
+        // out. So a burst counts stamp changes, not Fire calls (3 calls = 3 frames = one round).
+        internal static void AfterFlatFire(Character ch)
+        {
+            if (!Enabled.Value || !AllowBurst.Value) return;
+            var w = FlatWeapon(ch);
+            if (w == null) return;
+            var info = FlatInfoOf(w);
+            if (!info.Selectable || !Chosen.TryGetValue(info.Key, out var mode) || mode != GunFireType.ThreeRoundBurst) return;
+            if (_burstShots == 0) { _burstWeapon = w; _burstShotAt = Time.time; _burstCalls = 0; }
+            _burstCalls++;
+            if (!Alive(_fireGun) || _fireGun.TimeOfLastShot == _fireStamp) return;   // in cooldown: no round
+            _burstShotAt = Time.time;
+            if (++_burstShots >= 3)
+            {
+                w.automatic = false;
+                ch.holdingButtonFire = FireHeld;   // hand the flag back to the real button
+            }
+        }
+
+        // A burst always fires 3 rounds, like HVR's (TriggerReleased doesn't stop a burst): a click is shorter
+        // than 3 rounds at 650 rounds/min (0.18 s), so the held flag is kept on until round 3. After round 3 it
+        // waits for the button to come up; before it, it gives up when the weapon changes or no round comes for
+        // 0.5 s of game time (empty magazine).
+        static void UpdateBurst()
+        {
+            if (_burstWeapon == null) return;
+            bool sameWeapon = Alive(_character) && Alive(_burstWeapon) && Alive(_character.equippedWeapon) &&
+                              _character.equippedWeapon.Pointer == _burstWeapon.Pointer;
+            if (!sameWeapon) { EndBurst(); return; }
+            if (_burstShots >= 3) { if (!FireHeld) EndBurst(); return; }
+            if (Time.time - _burstShotAt > 0.5) { EndBurst(); return; }
+            _character.holdingButtonFire = true;
+        }
+
+        static void EndBurst()
+        {
+            if (_burstWeapon == null) return;
+            if (DebugLog.Value) Log.Msg($"burst: {_burstShots} round(s) from {_burstCalls} Fire call(s){(_burstShots < 3 ? " - cut short" : "")}");
+            if (Alive(_burstWeapon)) _burstWeapon.automatic = true;
+            if (Alive(_character) && _burstShots < 3) _character.holdingButtonFire = FireHeld;
+            _burstShots = 0; _burstCalls = 0; _burstWeapon = null;
+        }
+
+        static void Toast(string text) { _toast = text; _toastUntil = Now + 1.5; }
+
+        public override void OnGUI()
+        {
+            if (_toast == null || Now > _toastUntil) return;
+            _toastStyle ??= new GUIStyle(GUI.skin.label) { fontSize = 28, alignment = TextAnchor.MiddleCenter };
+            var r = new Rect(0, Screen.height * 0.72f, Screen.width, 40);
+            var c = GUI.color;
+            GUI.color = Color.black; GUI.Label(new Rect(r.x + 2, r.y + 2, r.width, r.height), _toast, _toastStyle);
+            GUI.color = Color.white; GUI.Label(r, _toast, _toastStyle);
+            GUI.color = c;
         }
 
         // ---- haptics ----------------------------------------------------------------------------------
@@ -350,6 +522,31 @@ namespace FireSelector
         static void Postfix(HVRHandGrabber __instance)
         {
             try { FireSelectorMod.Register(__instance); } catch { }
+        }
+    }
+
+    [HarmonyLib.HarmonyPatch(typeof(Character), nameof(Character.Fire))]
+    internal static class FlatFirePatch
+    {
+        static void Prefix(Character __instance)
+        {
+            try { FireSelectorMod.BeforeFlatFire(__instance); }
+            catch (Exception e) { FireSelectorMod.Log.Warning($"flat fire: {e.Message}"); }
+        }
+        static void Postfix(Character __instance)
+        {
+            try { FireSelectorMod.AfterFlatFire(__instance); }
+            catch (Exception e) { FireSelectorMod.Log.Warning($"flat fire: {e.Message}"); }
+        }
+    }
+
+    // Started sets holdingButtonFire, Canceled clears it: read it back as the real button state.
+    [HarmonyLib.HarmonyPatch(typeof(Character), nameof(Character.OnTryFire))]
+    internal static class FlatTryFirePatch
+    {
+        static void Postfix(Character __instance)
+        {
+            try { FireSelectorMod.FireHeld = __instance.holdingButtonFire; } catch { }
         }
     }
 

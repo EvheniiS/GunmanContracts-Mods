@@ -489,7 +489,18 @@ decapitations = oversized decals (confirmed 2026-10-04 by removing the conflict)
 - **Flat guns are the same game guns:** `ANBFPSCore.addGun(pos, grabbedGun)` builds the flat inventory from the HVR guns; each
   `ANBFpsWeapons` keeps `HVRgunbase`. Firing: `Character.Fire` → `ANBFpsWeapons.fire` → `ANBHVRGunBase.FPSshoot` → `FireBulletNew`
   → `ANBGameLogic.FireBullet` → `BulletImpact` → `ANBBasicNPC.TakeDamage` → `GetHit`. **Anything hooked on the bullet → enemy damage
-  path already runs in flat.** Flat `Weapon.automatic` (bool, 0x44) is the only fire mode; every gamepad button is taken.
+  path already runs in flat.** Flat `Weapon.automatic` (bool, 0x44) is the only fire mode: `Character.Update` refires while `holdingButtonFire` only if
+  `IsAutomatic()`, else `OnTryFire` (Performed) fires once per press; HVR `FireType` is ignored. Every gamepad button is taken;
+  unbound keyboard keys include **B** and middle mouse (bindings read from `sharedassets1.assets`). `Character.shotsFired` resets
+  whenever a held shot is blocked, so count shots in a `Character.Fire` patch. `OnTryFire` phases: Started sets `holdingButtonFire` (and clears run), Performed
+  fires a non-automatic weapon once, Canceled clears it. A `Keyboard` key's `wasPressedThisFrame` was seen true on two frames
+  in a row (one press toggled twice): detect key-down edges from `isPressed` yourself.
+  **Flat rate of fire is the HVR gun's, not LPSP's:** `Character.Update` calls `Fire` every frame while an automatic weapon is
+  held (no `lastShotTime` check); `HVRGunBase.TriggerPulled` (Single) shoots only if `Time.time - TimeOfLastShot >= Cooldown` and
+  then stamps `TimeOfLastShot`. Count real rounds by that stamp, never by `Character.Fire` calls.
+  **The HVR gun behind a flat weapon must stay `FireType` Single:** `ANBFpsWeapons.Init` sets `FPSGun = true` and `FireType = 0`,
+  and `FPSshoot` calls the gun's trigger-pull then trigger-release virtuals, so Automatic is cancelled before a bullet (recoil
+  animation, no shot) and Burst fires 3 per flat shot. `ANBmain.rightHandGun` points at that gun in flat: VR code must skip `FPSGun`.
 - **Shared:** enemies, spawners, alerts, slow motion (`Character.OnSlowMotionToggle` → `buttonSlowMotion` → `toggleSlowMotion`, same
   `ANBGameLogic.Slowmotion`). **Flat melee** = LPSP "Knife Attack" (`Character.PlayMelee`), damage probably via
   `ANBKnifeSlasher.OnTriggerEnter` → `TakeKnifeSlashDamage` → `GetHit` (inferred). **Flat bow** = `ANBHVRGunBase.BowFPSShootStart/End`

@@ -138,7 +138,7 @@ game runs.
 ## 4. Flat mode
 
 Done as far as planned: Mod Settings has a flat menu (Ctrl+M), and each mod's Nexus page says whether it is VR-only or also works on
-desktop. No flat ports are planned. How flat works: GAME_KNOWLEDGE §8.
+desktop. No flat ports are planned, except Fire Selector 1.2.x (flat on key B, tested 1.2.3 Oct 5). How flat works: GAME_KNOWLEDGE §8.
 
 ## 5. Dropped (Oct 4 2026), with the reason
 

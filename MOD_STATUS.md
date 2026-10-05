@@ -6,7 +6,7 @@
 
 - **Knee Shot Stun** (longer leg-shot kneel),
 
-- **Fire Selector** (hold support-hand A/X: auto/burst/single, which the framework already implements),
+- **Fire Selector** (hold support-hand A/X: auto/burst/single, which the framework already implements; 1.2.x adds flat mode on key B, flat tested 1.2.3),
 
 - **Heavy Melee** (gun/bow hits stagger + damage, stronger fists, downed enemies take hits and stay down; 1.0.0 release candidate, release undecided),
 

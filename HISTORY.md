@@ -36,7 +36,16 @@ and `isGettingHit` are kept up so a follow-up hit can't shorten the stun.
 ## Fire Selector (FireSelector/)
 1.0.0 (Sep 25, released): hold support-hand A/X ≥ 0.35 s to cycle Auto → Burst → Single (haptics 1/3/long). The mod holds back the
 game's A press and replays it on a short tap; per-weapon mode remembered. 1.1.0 (Sep 27): `AllowBurst` (a Nexus request).
-The flat version was assessed and not built (no free gamepad buttons).
+The flat version was first assessed and not built (no free gamepad buttons). 1.2.0 (Oct 5, untested): flat mode on keyboard **B**
+(unbound in the game, `FlatKey`): flat ignores `FireType`, so the mod writes LPSP `Weapon.automatic`; burst = automatic until the
+third `Character.Fire`, then off until fire is released. Same per-weapon key as VR, so a picked mode carries across; on-screen toast. 1.2.1: flat Automatic fired nothing: the VR code
+wrote the picked mode into the HVR gun behind the flat weapon, and `FPSshoot` fakes a trigger pull + release on it, which only
+fires on Single. VR code now skips `FPSGun` guns and the flat path keeps them on Single. 1.2.2: a flat burst was cut to one
+round by a normal click (3 rounds at 650 rpm take 0.18 s); now `holdingButtonFire` is kept on until round 3, like an HVR burst
+(real button state from an `OnTryFire` postfix; 0.5 s game-time timeout). One B press could switch twice
+(`wasPressedThisFrame` true on two frames): own key-down edge instead. 1.2.3: the burst still fired one round, because flat
+`Character.Update` calls `Fire` every frame and the HVR gun's `Cooldown` drops most calls: 3 calls = 3 frames = 1 round. Rounds
+are now counted by `TimeOfLastShot` changing; after round 3 the burst waits for release (the 0.5 s timeout had restarted it).
 
 ## Heavy Melee (HeavyMelee/)
 1.0.0 (= 0.4.0 + `DebugLog` off; release undecided). Guns and bows hit like heavy metal (damage ×3, always stumble on a standing
