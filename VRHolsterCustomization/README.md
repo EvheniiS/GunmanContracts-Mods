@@ -1,6 +1,6 @@
-# VR Holster Customization 0.3.14
+# VR Holster Customization 0.4.0
 
-Tested: 0.3.14 (2026-10-05)
+Tested: 0.4.0 (2026-10-05)
 
 This MelonLoader mod customizes the game's hip, knife, and back holsters and requires Mod Settings. It also owns the back slots for mod items, their grab and draw behavior, and their saved state. Weapon Framework uses its docking API for wall items and its back slot API for the test crowbar. Daredevil uses the back slot API for clubs.
 
@@ -148,4 +148,4 @@ Build `VRHolsterCustomization.csproj` with .NET 6 and the game's generated Melon
 Compile and hold-state verification are available; direct adjustment, native socket behaviour and the revised menu
 still need the in-game VR pass in [ModSettings/TESTING.md](../ModSettings/TESTING.md).
 
-**Belt stays put while settings are open (0.3.14, untested).** `[VRHolsters] BeltFreezeInMenu` (on by default): while the Mod Settings board is open, the belt (hip and knife holsters) keeps its heading instead of following your head, so you can set holsters up; it catches up when the board closes. Needs Mod Settings; without it nothing changes.
+**Belt stays put while settings are open (0.4.0, tested).** `[VRHolsters] BeltFreezeInMenu` (on by default): while the Mod Settings board is open, the belt (hip and knife holsters) keeps its heading instead of following your head, so you can set holsters up; it catches up when the board closes. Needs Mod Settings; without it nothing changes.
